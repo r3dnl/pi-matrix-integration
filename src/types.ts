@@ -211,7 +211,7 @@ export interface MatrixConfig {
 // Side-chain sub-agent reporting. Detection and
 // routing are always on; these keys gate the REPORTING only.
 export interface SubagentsConfig {
-  /** Master (G5): off → sub-agents are silent in Matrix. Default true. */
+  /** Master switch: off → sub-agents are silent in Matrix. Default true. */
   enabled?: boolean;
   /** post the spawn line at all. Default true. */
   spawnMessages?: boolean;
@@ -219,7 +219,7 @@ export interface SubagentsConfig {
    *  line is an anchor edited in place at settle; false → plain spawn +
    *  settle lines. Default true. */
   summarizeResultIntoSpawnLine?: boolean;
-  /** (G5) `turn-end` (default): only the turn's final assistant message;
+  /** `turn-end` (default): only the turn's final assistant message;
    *  `all`: every assistant message. */
   postMode?: "turn-end" | "all";
   /** User-pinned type → #RRGGBB (wins over the palette hash). */

@@ -16,7 +16,7 @@
  *  - Adapters own every wire-format detail (event names, payload shapes,
  *    completion correlation). Nothing else may know a dialect.
  *  - Availability failure is a VALUE, never a throw: no provider → callers
- *    fall back exactly as before the contract existed (G3).
+ *    fall back exactly as before the contract existed.
  */
 
 import type { AgentSpawnInput } from "./subagent-bus.js";

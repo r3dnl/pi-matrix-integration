@@ -11,7 +11,7 @@
  *
  * Per configuration-and-room-behaviour.md: the default provider is the tintinweb
  * adapter holding the original bodies verbatim; the existing fake-bus tests
- * replay unchanged (the refactor's correctness gate, G2).
+ * replay unchanged (the refactor's correctness check).
  */
 
 import type { MatrixLogger } from "./logger.js";

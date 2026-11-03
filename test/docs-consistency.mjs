@@ -129,7 +129,7 @@ if (pendingHits.length > 8) console.log(`warn  … and ${pendingHits.length - 8}
 // outside the tree that minted them. The reason behind the id is public; the
 // id is not.
 const TICKET_LABEL =
-  /\b(?:FINDING|REVIEW)-\d+\b|\bBUG-[A-Z][A-Z-]{4,}\b|\breviewer row [A-Z]?\d+\b|\bbacklog #\d+|\bphase[- –]?\d+\b|\b[A-Z]\d phase \d/i
+  /\b(?:FINDING|REVIEW)-\d+\b|\bBUG-[A-Z][A-Z-]{4,}\b|\breviewer row [A-Z]?\d+\b|\bbacklog #\d+|\bphase[- –]?\d+\b|\b[A-Z]\d phase \d|\bD\d+\b|\bU-\d+\b|\bG\d+\b|\boption [A-Z]\b|\bfeedback round \d|\b[A-Z]{4,}-(?:DECISION|DESIGN|PLAN)\b|\bgate, G\d/i
 
 const SOURCE_FILES = [...walk('src').filter(f => /\.ts$/.test(f)), 'index.ts']
 let labelHits = 0

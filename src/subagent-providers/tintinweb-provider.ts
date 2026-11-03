@@ -15,7 +15,7 @@
  * watchers never see it — no stray "pi-matrix-integration-thread-summarizer" sub-thread.
  *
  * This adapter is the test oracle: the existing fake-bus tests replay
- * against it unchanged (the refactor's correctness gate, G2).
+ * against it unchanged (the refactor's correctness check).
  */
 
 import type { AgentSpawnInput } from "../subagent-bus.js";
