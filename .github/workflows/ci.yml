@@ -1,0 +1,26 @@
+name: CI
+
+# Quality gate on every push and pull request (story 7). The credential
+# scan job from the release plan slots in as the FIRST step when story 5
+# lands its scanner; the order below is the remaining agreed chain.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Unit + stubbed e2e tier (offline)
+        run: npm test
