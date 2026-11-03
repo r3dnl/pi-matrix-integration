@@ -363,7 +363,7 @@ export const DEFAULT_CONFIG: MatrixConfig = {
   matrixLoginEnabled: true,
   // Whether the startup banner is echoed to stdout.
   displayStdoutOnStartup: false,
-  // Always on (feedback round 1, 2026-10-08): the sdk is the only transport
+  // Always on: the sdk is the only transport
   // and the pipeline translates markdown <-> HTML in both directions
   // (outbound `formatted_body`, inbound `htmlToMarkdown` in formatForPi).
   // Keep `false` only as a debug escape hatch (plain-mode invariant: no
@@ -513,7 +513,7 @@ export function getExtensionDir(): string {
 }
 
 /**
- * Project-local config candidate (option C): the CURRENT project's `.pi`
+ * Project-local config candidate candidate: the CURRENT project's `.pi`
  * folder. Pi runs with the project as cwd, so `<cwd>/.pi/matrix/` is
  * per-project: config, profiles, the last-active-profile pointer, and
  * `state/` all live there. Absent → global resolution continues.
@@ -611,7 +611,7 @@ export function getActiveConfigDir(): string | undefined {
  *
  * - active config is the project-local `.pi/matrix/` file →
  *   `<project>/.pi/matrix/state` (per-project isolation: own thread map,
- *   own watermarks — the "1 project : 1 room" invariant, option C).
+ *   own watermarks — the "1 project : 1 room" invariant).
  * - otherwise → the historical `<extension-dir>/state` (existing installs
  *   keep their state where it is — no silent migration).
  */

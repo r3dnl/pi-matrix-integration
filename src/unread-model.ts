@@ -2,11 +2,11 @@
  * Pi Matrix Integration - Unread model
  *
  * Port of the account-store unread model (transport-and-state.md)
- * **plus the D1 thread dimension**
+ * **plus the per-thread dimension**
  * (transport-and-state.md): one unread unit per conversation with new
  * activity, not one per event.
  *
- * D1 semantics (option B, settled): `total = new_flat_messages +
+ * Semantics: `total = new_flat_messages +
  * threads_with_new_replies`. A thread counts ONCE for any number of new
  * replies since the last clear; flat messages count per message; a new
  * thread root is a new conversation, so it counts as one unit like a flat
@@ -16,12 +16,12 @@
  * - `since` is **per-room** (this extension is single-account, single-room
  *   per config), not account-level; it is a `number` (ms), matching
  *   Python's `int` so the cross-language shadow diff type-joins.
- * - `total` is the D1 conversation-unit count, not per-event counting.
- * - the `count?` per-thread reply counter (D1 option C, deferred) ships
+ * - `total` is the conversation-unit count, not per-event counting.
+ * - the `count?` per-thread reply counter (no UI consumes it yet) ships
  *   from day one — zero migration when a UI adopts it later.
  *
- * Invariants (the Python originals'): U-01 atomic save (tmp + replace),
- * U-04 idempotent watermark (`since` advances only past seen events), U-06
+ * Invariants (the Python originals'): atomic save (tmp + replace),
+ * idempotent watermark (`since` advances only past seen events),
  * load degrades (absent/corrupt → empty), and never storing full bodies
  * (transport-and-state.md: count + a length-bounded, single-line preview only).
  */
@@ -34,7 +34,7 @@ export const PREVIEW_LIMIT = 80;
 
 export const API_VERSION = 'pi-matrix/v1';
 export const SCHEMA = 'pi-matrix/unread';
-/** v3 = the Python v2 layout (per-room map + watermark) + the D1 thread map. */
+/** v3 = the Python v2 layout (per-room map + watermark) + the per-thread map. */
 export const VERSION = 3;
 
 export function makePreview(body: string, limit: number = PREVIEW_LIMIT): string {
@@ -42,21 +42,21 @@ export function makePreview(body: string, limit: number = PREVIEW_LIMIT): string
   return text.length <= limit ? text : text.slice(0, limit - 1) + '…';
 }
 
-/** Per-thread unread entry (D1): keyed by thread root id. */
+/** Per-thread unread entry: keyed by thread root id. */
 export interface ThreadUnread {
   lastTs: number;
   preview: string;
-  /** Per-thread reply counter (D1 option C deferred; the field ships now). */
+  /** Per-thread reply counter (no UI consumes it yet; the field ships now). */
   count?: number;
 }
 
-/** One room's unread state: watermark + flat counter + D1 thread map. */
+/** One room's unread state: watermark + flat counter + per-thread map. */
 export interface RoomUnread {
   /** Watermark: the newest `origin_server_ts` (ms) already counted. */
   since: number;
   /** Unread flat (non-thread) messages since the last clear. */
   flat: number;
-  /** D1: rootId → entry. Each present key is one "new conversation" unit. */
+  /** Per-thread: rootId → entry. Each present key is one "new conversation" unit. */
   threads: Map<string, ThreadUnread>;
 }
 
@@ -84,7 +84,7 @@ export class UnreadModel {
     this.room(roomId).since = since;
   }
 
-  /** D1 bump (TRANSPORT-DECISION D1, transport-and-state.md):
+  /** Per-thread bump (transport-and-state.md):
    * - a thread root (content carries `m.thread`) keys under its own event
    *   id — a new conversation, one unit;
    * - a reply (`threadRoot` set) keys under its root — the first reply
@@ -130,7 +130,7 @@ export class UnreadModel {
     room.since = Math.max(room.since, event.ts);
   }
 
-  /** Zero a room's unread (flat counter AND the D1 thread map; U-02).
+  /** Zero a room's unread (flat counter AND the per-thread map).
    *  Other rooms are untouched; an unseen room is a no-op. The watermark
    *  (`since`) is NOT cleared — it is read progress, not unread state. */
   clear(roomId: string): void {
@@ -140,7 +140,7 @@ export class UnreadModel {
     room.threads.clear();
   }
 
-  /** The D1 total for one room (the number the footer shows):
+  /** The per-thread total for one room (the number the footer shows):
    *  one unit per flat message + one unit per thread with new replies
    *  since the last clear. */
   totalFor(roomId: string): number {
@@ -148,7 +148,7 @@ export class UnreadModel {
     return room ? room.flat + room.threads.size : 0;
   }
 
-  /** The D1 total across all rooms (the Python account-level property). */
+  /** The per-thread total across all rooms (the Python account-level property). */
   total(): number {
     let n = 0;
     for (const room of this.rooms.values()) n += room.flat + room.threads.size;
@@ -194,7 +194,7 @@ export class UnreadModel {
     return model;
   }
 
-  /** Load from disk. Absent/corrupt → empty (degradable, U-06: readers
+  /** Load from disk. Absent/corrupt → empty (degradable: readers
    *  show "stale", never error). */
   static load(path: string): UnreadModel {
     let raw: string | undefined;
@@ -213,7 +213,7 @@ export class UnreadModel {
     }
   }
 
-  /** Atomically write to disk (tmp + replace, U-01). A failed replace
+  /** Atomically write to disk (tmp + replace). A failed replace
    *  removes the temp file — no partial or leftover. */
   save(path: string): void {
     mkdirSync(dirname(path), { recursive: true });

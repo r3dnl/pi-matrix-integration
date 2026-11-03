@@ -138,7 +138,7 @@ export interface SdkDeliveryCallbacks {
     refs: string[];
     timestamp: number;
   }): void;
-  /** D1 unread-model bump for a surviving message. */
+  /** Per-thread unread-model bump for a surviving message. */
   bumpUnread(
     roomKey: string,
     entry: {

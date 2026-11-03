@@ -111,7 +111,7 @@ import { createRequire } from "node:module";
  */
 export interface MatrixStack {
   outbox: SdkOutbox;
-  /** D1 unread model (was owned by the deleted facade) — per-env path.
+  /** Per-thread unread model (was owned by the deleted facade) — per-env path.
    *  Ephemeral by design — no state/ persistence beyond its own
    *  `unread-<env>.json` load/save (7fc13e1 check). */
   unreadModel: UnreadModel;
@@ -824,7 +824,7 @@ export class MatrixIntegration {
         seenPath: join(getStateDir(), `sdk-seen-${stateServer}.json`),
         logger: this.logger,
       });
-    // The D1 unread model (was owned by the deleted facade, the per-server
+    // The per-thread unread model (was owned by the deleted facade, the per-server
     // path under state/ — 7fc13e1: day-0 persistence).
     // getStateDir(): project-local `.pi/matrix/state` when the project
     // config is active, the historical extension-local state/ otherwise.
@@ -1062,7 +1062,7 @@ export class MatrixIntegration {
     // The SdkDeliveryCallbacks bundle (the terminal slice wires it): the
     // full shape — onMessage/onReaction legs into the CURRENT Inbound
     // (call-time read — a /matrix-switch rebind stays wired, no
-    // re-registration), the D1 unread bump, the seed log line, and the
+    // re-registration), the per-thread unread bump, the seed log line, and the
     // sync-error feed into the Lifecycle snapshot. Ephemeral by design —
     // no state/ persistence (7fc13e1 check). Declared BEFORE the
     // lifecycle (which takes it as a dep); its legs read `inbound` /

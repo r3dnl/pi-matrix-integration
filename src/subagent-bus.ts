@@ -57,7 +57,7 @@ export interface SubagentBusPost {
 }
 
 export interface SubagentSettings {
-  /** Master gate (G5): off → no reporting at all (records still exist —
+  /** Master gate: off → no reporting at all (records still exist —
    *  detection is always on). */
   enabled: boolean;
   spawnMessages: boolean;
@@ -170,7 +170,7 @@ export function firstLine(s: string, max = 200): string {
 
 /** Fixed tint for the `⚡ Agent result:` label — distinct from the agent's
  *  type color so a result reads as "done" against the spawn line (the design doc
- *  configuration-and-room-behaviour.md, feedback round 1, 2026-10-08). */
+ *  configuration-and-room-behaviour.md). */
 export const RESULT_LINE_COLOR = "#2E7D32";
 
 /**
@@ -198,7 +198,7 @@ export function spawnLine(
   sendFormatted: boolean,
 ): { text: string; html?: string } {
   const marker = settings.plainMarker ?? "⚡";
-  // Explicit meta (configuration-and-room-behaviour.md, feedback round 1, 2026-10-08): type, model
+  // Explicit meta (configuration-and-room-behaviour.md): type, model
   // and thinking always show; unknown thinking renders as `default`.
   const meta = [rec.type, rec.model, rec.thinking ? `thinking=${rec.thinking}` : "thinking=default"]
     .filter(Boolean)
@@ -217,9 +217,9 @@ export function settleLine(
 ): { text: string; html?: string } {
   const dur = fmtDuration((rec.settleAt ?? rec.spawnAt) - rec.spawnAt);
   const marker = settings.plainMarker ?? "⚡";
-  // A settled spawn IS the spawn message (feedback round 2, 2026-10-08), now
-  // showing status + explicit meta. No result text (feedback round 6,
-  // 2026-10-08): the result lives only in the `⚡ Agent result:` line.
+  // A settled spawn IS the spawn message, now
+  // showing status + explicit meta. No result text —
+  // the result lives only in the `⚡ Agent result:` line.
   const label =
     rec.depth === 2
       ? `↳ ${rec.name} [nested]: settled in ${dur}`
@@ -353,7 +353,7 @@ export function createSubagentBus(
     }
     if (s.summarizeResultIntoSpawnLine && rec.spawnAnchorEventId) {
       // summarizeResultIntoSpawnLine: edit the spawn anchor in place into
-      // the settle header (status + meta, no result — feedback round 6);
+      // the settle header (status + meta, no result);
       // the plain settle line lands only when the edit did not.
       void post
         .edit(rec.spawnAnchorEventId, line.text, line.html)
