@@ -90,14 +90,14 @@ export interface MatrixConfig {
   // Error log file owned by the extension (recurring errors land here
   // instead of the TUI console). Default `~/.pi/logs/pi-matrix.log`.
   logPath?: string;
-  // Relay room-typed `/command` messages into Pi as composer input .
+  // Relay room-typed `/command` messages into Pi as composer input.
   // Unknown names get a plain-text fuzzy-suggestion reply. Default true.
   slashRelay?: boolean;
   // Dual-surface RPIV decisions: mirror `ask_user_question` questionnaires
   // into the room; a phone reply proceeds the decision (terminal stays
   // usable, first surface to complete wins). Default true.
   mirrorAskUser?: boolean;
-  // Native Matrix polls for RPIV decision questions :
+  // Native Matrix polls for RPIV decision questions:
   // each single-select question also posts as a tappable m.poll. No-op
   // when mirrorAskUser is false. Default true.
   mirrorAskUserPolls?: boolean;
@@ -165,7 +165,7 @@ export interface MatrixConfig {
   threadSummarizeMaxLines?: number;
   // Model pin ("provider/modelId") for the thread-summary subagent run; a
   // small model keeps the cadence runs cheap. Omit to inherit the session's
-  // model . Default undefined.
+  // model. Default undefined.
   threadSummarizeModel?: string;
   // Where the summarizer's delta comes from. "room" (default) = the thread's
   // own Matrix messages; "session" = the Pi session's own context (legacy
@@ -208,7 +208,7 @@ export interface MatrixConfig {
   maxBytesUpload?: number;
 }
 
-// Side-chain sub-agent reporting . Detection and
+// Side-chain sub-agent reporting. Detection and
 // routing are always on; these keys gate the REPORTING only.
 export interface SubagentsConfig {
   /** Master (G5): off → sub-agents are silent in Matrix. Default true. */

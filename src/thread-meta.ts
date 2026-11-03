@@ -15,7 +15,7 @@
 
 import type { MatrixEvent, MatrixMessage } from './types.js';
 
-/** Thread grouping for one event :
+/** Thread grouping for one event:
  * - an event whose content carries the `m.thread` marker is a ROOT →
  *   its own conversation unit (`threadRoot` stays undefined; the root
  *   keys under its own event id in the unread model);
@@ -106,7 +106,7 @@ export function parseMatrixEvent(
     return null;
   }
 
-  // Thread metadata: shared extraction .
+  // Thread metadata: shared extraction.
   const meta = extractThreadMeta(event.content);
 
   // Media fields (voice transcription): carried when present —

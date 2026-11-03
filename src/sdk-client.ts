@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration — SDK transport .
+ * Pi Matrix Integration — SDK transport.
  *
  * `SdkOutbox`: the `matrix-js-sdk` implementation of the Outbox seam
  * (src/outbox.ts) + the sync-based read pipeline that replaces the poll
@@ -156,7 +156,7 @@ export interface SdkDeliveryCallbacks {
 }
 
 /**
- * Resolve the device id for a connection .
+ * Resolve the device id for a connection.
  * The credentials file's own `device_id` wins (the token is device-bound —
  * the spike's 400 M_BAD_JSON root cause was a hardcoded id that didn't match
  * the device the token was minted for). The fresh-login default is

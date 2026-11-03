@@ -71,7 +71,7 @@ export type ThreadMapState = Record<string, ThreadMapEntry>;
 export type SessionStartReason = "startup" | "reload" | "new" | "resume" | "fork";
 
 /**
- * The thread-write surface the composition root injects :
+ * The thread-write surface the composition root injects:
  * ThreadManager computes route + ledger and delegates the actual writes
  * to the MessageHandler pipeline (format + dedupe live there; markdown.ts
  * is the single formatter). The manager holds no transport reference —
@@ -155,7 +155,7 @@ export interface ThreadSendResult {
   timestamp: number;
 }
 
-/** A kind of outgoing message, used to update the root ledger . */
+/** A kind of outgoing message, used to update the root ledger. */
 export type SendKind = "milestone" | "final" | "user" | "decision" | "other";
 
 /**
@@ -166,7 +166,7 @@ export type SendKind = "milestone" | "final" | "user" | "decision" | "other";
  * non-blocking enhancement.
  */
 /**
- * Summary-cadence gate . Fixed mode: the
+ * Summary-cadence gate. Fixed mode: the
  * original modulo check. Fibonacci mode (default): the trigger points are
  * absolute per root — intervals 1, 1, 2, 3, 5, 8, 13… capped at `cap`
  * (whichever is lower) — so a busy thread settles onto the

@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration — Outbox seam .
+ * Pi Matrix Integration — Outbox seam.
  *
  * The transport surface `threading.ts` and the composition root code
  * against for room writes + state reads. The single transport
@@ -17,7 +17,7 @@ import type { ThreadDeltaMessage } from "./summarize.js";
 /**
  * Soft-fail op result shape shared by every Outbox op. Re-homed from
  * the legacy transport (deleted in phase 6) — the seam's canonical home
- * owns the type every op signature returns .
+ * owns the type every op signature returns.
  */
 export interface MatrixHttpResult {
   success: boolean;

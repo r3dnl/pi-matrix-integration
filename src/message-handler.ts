@@ -37,7 +37,7 @@ export interface MessageHandlerOptions {
    *  thread-targeted posts + edits (`postInThread` / `editInThread`).
    *  Absent → thread writes soft-fail (`{ success: false }`, flat mode). */
   outbox?: Outbox;
-  /** Where warnings/debug lines go; defaults to the console . */
+  /** Where warnings/debug lines go; defaults to the console. */
   logger?: MatrixLogger;
   /** Icon for milestone messages. Default "🎯". */
   milestoneIcon?: string;
@@ -105,7 +105,7 @@ export function isPiMachineTraffic(body: string): boolean {
  * Message handler for Pi-Matrix integration
  */
 export class MessageHandler {
-  // Normalized outgoing body → last-send time . Expired entries are
+  // Normalized outgoing body → last-send time. Expired entries are
   // pruned lazily; cleared in cleanup().
   private recentSends: Map<string, number> = new Map();
   private dedupeWindowMs: number;

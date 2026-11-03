@@ -6,7 +6,7 @@
  * pi-hook + client-event registrations) → registerCommands (the
  * /matrix-* commands + matrix_* tools as thin adapters).
  *
- * The object-stable rebind discipline :
+ * The object-stable rebind discipline:
  * /matrix-switch re-points the composition root's internals — never
  * the registrations. Nothing re-registers or deregisters.
  */

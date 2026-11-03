@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration — composition root .
+ * Pi Matrix Integration — composition root.
  *
  * The object-stable composition root (threads-and-summaries.md,
  * transport-and-state.md): the single object the one-time pi-hook registrations in
@@ -131,9 +131,9 @@ export interface MatrixStack {
   inbound: Inbound;
   /** The active profile's config (the switch re-pointing, read at call time). */
   config: MatrixConfig;
-  /** The sub-agent bus generation . */
+  /** The sub-agent bus generation. */
   subagentBus: SubagentBusImpl;
-  /** Teardown of the provider completion-channel subscription . */
+  /** Teardown of the provider completion-channel subscription. */
   unsubCompletion?: () => void;
 }
 
@@ -254,7 +254,7 @@ export class MatrixIntegration {
   }
 
   /**
-   * The owner decision at session_start :
+   * The owner decision at session_start:
    * side-chain sessions never dispose the owner (one connection per
    * process); the main line disposes the parked previous owner and claims
    * the pointer.
@@ -275,7 +275,7 @@ export class MatrixIntegration {
     (globalThis as MatrixGlobal)[PI_MATRIX_KEY] = this;
     // The owner's sub-agent registry is the process registry: side-chain
     // instances built their stack in the constructor but never claim, so
-    // only the main line publishes .
+    // only the main line publishes.
     publishOwnerBus(this.stack.subagentBus);
   }
 
@@ -708,7 +708,7 @@ export class MatrixIntegration {
   }
 
   /**
-   * The shared /matrix-switch body . No
+   * The shared /matrix-switch body. No
    * arg → interactive menu of the available profiles (the active one
    * marked) — pick one to switch, Esc to cancel. With a profile
    * name: load + validate in memory, rebuild the whole stack against
@@ -835,7 +835,7 @@ export class MatrixIntegration {
     // integrator (which injects the directive) is created after the
     // manager.
     const summarizeRef: { current?: (root: ThreadRootState) => void | Promise<void> } = {};
-    // Cadence subagent driver :
+    // Cadence subagent driver:
     // isolated, tool-less `pi-matrix-integration-thread-summarizer` type over the pi-subagents RPC
     // bus. Absent package → isAvailable() is false → the in-session
     // fallback below. The dialect comes from the resolved provider
@@ -1146,7 +1146,7 @@ export class MatrixIntegration {
     // The room-UX aggregation (transport-and-state.md phase 4): the slash suggestion
     // reply, both pickers ("@" file / "@@" artifact), and the
     // /matrix-help guide — every room auto-reply posts through the
-    // outgoing pipeline . The picker instance is factory
+    // outgoing pipeline. The picker instance is factory
     // scope (zero-delta move of the two original trackers — it survives
     // /matrix-switch, as they did).
     const roomUx = createRoomUx({

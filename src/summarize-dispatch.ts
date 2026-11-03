@@ -30,7 +30,7 @@ export interface SummarizeRoot {
   topic: string;
   lastSummary?: string;
   lastSummarizedEventId?: string;
-  /** Persisted milestone ledger — the evergreen fir-tree anchor . */
+  /** Persisted milestone ledger — the evergreen fir-tree anchor. */
   milestones?: readonly string[];
 }
 

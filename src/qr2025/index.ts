@@ -19,7 +19,7 @@
  * ponytail: v1 is QR generation only (the new-device role — no scanning),
  * a static QR pane (Esc cancels), and the secrets bundle is NOT imported
  * (login + E2EE for new rooms work; old-message history stays locked until
- * a secrets import lands). Upgrade paths: overlay status component ,
+ * a secrets import lands). Upgrade paths: overlay status component,
  * secrets import, drop the vendored copy once js-sdk ships MSC4388.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";

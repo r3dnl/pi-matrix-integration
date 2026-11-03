@@ -369,12 +369,12 @@ export const DEFAULT_CONFIG: MatrixConfig = {
   // Keep `false` only as a debug escape hatch (plain-mode invariant: no
   // HTML is ever posted).
   sendFormatted: true,
-  // Only if mobile chokes on inline tables .
+  // Only if mobile chokes on inline tables.
   tablesInSeparateMessage: false,
   // Recurring extension errors (reconnect loops, failed sends) append here
-  // instead of the TUI console .
+  // instead of the TUI console.
   logPath: '.pi/matrix/logs/pi-matrix.log',
-  // Relay room-typed /commands into Pi as composer input .
+  // Relay room-typed /commands into Pi as composer input.
   slashRelay: true,
   // Dual-surface RPIV decisions: mirror `ask_user_question` questionnaires
   // into the room so a phone reply can proceed a RPIV decision (terminal
@@ -404,7 +404,7 @@ export const DEFAULT_CONFIG: MatrixConfig = {
   // ranking, soft-falls-back to builtin when the binary is missing).
   fileSearchMethod: "builtin",
   // Cap for inlined @-attached file content (bytes); bigger files get a
-  // one-line note instead of content .
+  // one-line note instead of content.
   attachMaxBytes: 200_000,
   // Candidate list length for both pickers: the numbered list shows at most
   // this many matches (closest path first) and says how many it hid.
@@ -943,13 +943,13 @@ export function validateConfig(config: MatrixConfig): { valid: boolean; errors: 
 
   if (!config.homeserver) {
     // Derivable from the credentials file in loadConfig; no default
-    // fallback anymore .
+    // fallback anymore.
     errors.push('homeserver is required (set in config/env or the credentials file)');
   }
 
   if (!config.userId) {
     // loadConfig derives userId from the credentials owner when absent;
-    // reaching this means neither the file nor config/env had it .
+    // reaching this means neither the file nor config/env had it.
     errors.push(
       identity?.owner
         ? `userId is required: it should have been derived from the credentials owner (${identity.owner})`
@@ -983,7 +983,7 @@ export function validateConfig(config: MatrixConfig): { valid: boolean; errors: 
     }
   }
 
-  // Sub-agent reporting block .
+  // Sub-agent reporting block.
   const sa = config.subagents;
   if (sa !== undefined) {
     if (sa.postMode !== undefined && sa.postMode !== 'turn-end' && sa.postMode !== 'all') {

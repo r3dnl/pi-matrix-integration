@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration — Lifecycle .
+ * Pi Matrix Integration — Lifecycle.
  *
  * The session/connect state the entry point used to hold in closures
  * (index.ts): the `enabled` flag, the shared connect + start sequence,
@@ -68,7 +68,7 @@ export function hasAskUserCall(message: { content?: unknown }): boolean {
   );
 }
 
-/** A side-chain session's own identity . */
+/** A side-chain session's own identity. */
 interface SubagentSelf {
   sessionId: string;
   sessionName: string;
@@ -77,7 +77,7 @@ interface SubagentSelf {
 }
 
 /**
- * Side-chain (sub-agent) session detection :
+ * Side-chain (sub-agent) session detection:
  * the session header carries `parentSession` for fork/branch/sub-agent
  * lineages; `fork`/`resume` are MAIN-line replacements, so only the other
  * reasons with a parent header are side chains.
@@ -381,7 +381,7 @@ export class Lifecycle {
     }
     this.deps.threadManager.beginSession(event.reason, ctx.sessionManager?.getSessionId?.());
     if (this.deps.cfg.autoConnect) {
-      // Default: connect at session start . Opt out with
+      // Default: connect at session start. Opt out with
       // autoConnect: false and use /matrix-connect manually.
       //
       // When the `sendSessionStartStopMilestones` toggle is on, push a short
