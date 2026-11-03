@@ -93,19 +93,16 @@ for (const file of markdown) {
 }
 
 // --- 2. internal identifiers ---
-// docs/ and src/ are held to the rule today: docs are written for publication,
-// and the source-comment scrub removed every historical reference, so source has
-// no excuse either. README.md and QUICKSTART.md still carry references from
-// before this check existed; they are reported as warnings and join the hard gate
-// when the user-facing rewrite lands, which keeps the gate enforceable from the
-// day it was committed instead of muted.
+// Every shipped file is held to the rule: docs are written for publication,
+// the source-comment scrub removed every historical reference, and the
+// user-facing rewrite cleared README.md and QUICKSTART.md. No file has an
+// excuse any more.
 const STRICT = [
+  'README.md', 'QUICKSTART.md', 'package.json',
   ...walk('docs').filter(f => f.endsWith('.md')),
   ...walk('src').filter(f => /\.(ts|mjs)$/.test(f)),
   ...walk('index.ts'),
 ]
-const PENDING = [...markdown.filter(f => !f.startsWith('docs/'))]
-  .filter(f => /\.(ts|mjs|md|json|jsonc)$/.test(f))
 
 function scanInternalNames (files) {
   const hits = []
@@ -122,9 +119,6 @@ function scanInternalNames (files) {
 
 const strictHits = scanInternalNames(STRICT)
 strictHits.forEach(h => fail(`${h.file}:${h.line}: contains internal identifier "${h.name}"`))
-const pendingHits = scanInternalNames(PENDING)
-pendingHits.slice(0, 8).forEach(h => console.log(`warn  ${h.file}:${h.line}: internal identifier "${h.name}" (pending cleanup)`))
-if (pendingHits.length > 8) console.log(`warn  … and ${pendingHits.length - 8} more pending internal-identifier cleanups`)
 
 // --- 3. review-ticket labels in source comments ---
 // Ids like FINDING-<n>, a BUG-<NAME> branch tag, a reviewer-table row, a
@@ -179,7 +173,7 @@ for (const file of OUR_SOURCE) {
   })
 }
 
-console.log(`checked ${markdown.length} markdown files (${linkCount} internal links); identifier scan: ${STRICT.length} files strict (${strictHits.length} hits), ${PENDING.length} files pending (${pendingHits.length} hits); ticket-label scan: ${SOURCE_FILES.length} files (${labelHits} hits); stale-reference scan: ${OUR_SOURCE.length} files (${staleHits} hits)`) 
+console.log(`checked ${markdown.length} markdown files (${linkCount} internal links); identifier scan: ${STRICT.length} files strict (${strictHits.length} hits); ticket-label scan: ${SOURCE_FILES.length} files (${labelHits} hits); stale-reference scan: ${OUR_SOURCE.length} files (${staleHits} hits)`) 
 if (failures > 0) {
   console.log(`\n${failures} documentation-consistency failure(s)`)
   process.exit(1)
