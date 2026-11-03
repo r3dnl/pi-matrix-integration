@@ -71,7 +71,7 @@ export class SessionIntegrator {
    *   "[Matrix] vincent: yes"
    */
   injectMatrixMessage(matrixMessage: MatrixMessage, piMessage: PiMessage): void {
-    const senderName = this.extractSenderName(matrixMessage.sender);
+    const senderName = localpartOf(matrixMessage.sender);
     const content = `${this.config.piTerminalMatrixMessagePrefix}${senderName}: ${piMessage.content}`;
 
     const details: MatrixMessageDetails = {
@@ -169,7 +169,7 @@ export class SessionIntegrator {
   registerMatrixMessageRenderer(pi: ExtensionAPI): void {
     pi.registerMessageRenderer<MatrixMessageDetails>("matrix-message", (message, { expanded }, theme) => {
       const data = message.details;
-      const senderName = data?.senderName || this.extractSenderName(data?.sender ?? "unknown");
+      const senderName = data?.senderName || localpartOf(data?.sender ?? "unknown");
       const header = `${this.config.piTerminalMatrixMessagePrefix}${senderName}:`;
       const rawContent = String(message.content ?? "");
 
@@ -203,13 +203,6 @@ export class SessionIntegrator {
   // ==========================================================================
   // Utility Methods
   // ==========================================================================
-
-  /**
-   * Extract sender name from Matrix ID
-   */
-  private extractSenderName(sender: string): string {
-    return localpartOf(sender);
-  }
 
   // ==========================================================================
   // Cleanup

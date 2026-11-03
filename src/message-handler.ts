@@ -16,7 +16,7 @@ import type {
   PiMessageType,
   MatrixSendResult,
 } from './types.js';
-import { DEFAULT_OUTGOING_ICONS, normalizeDedupeKey } from './classify.js';
+import { DEFAULT_OUTGOING_ICONS, localpartOf, normalizeDedupeKey } from './classify.js';
 import type { OutboxResult, Outbox } from './outbox.js';
 import type { ThreadManager, SendKind } from './threading.js';
 import { convertMarkdown, htmlToMarkdown, looksLikeHtml, removeTableBlocks, stripHtmlTags } from './markdown.js';
@@ -389,7 +389,7 @@ export class MessageHandler {
    * Format Matrix message for Pi session
    */
   formatForPi(matrixMessage: MatrixMessage): PiMessage {
-    const senderName = this.extractSenderName(matrixMessage.sender);
+    const senderName = localpartOf(matrixMessage.sender);
     // The room speaks HTML (formatted_body); the session speaks markdown.
     // Render HTML back so the injection is native to the Pi terminal and
     // cheaper in tokens. Plain bodies (no tags) pass through untouched.
@@ -459,20 +459,6 @@ export class MessageHandler {
       default:
         return '🤖 Pi: ';
     }
-  }
-
-  /**
-   * Extract sender name from Matrix ID
-   */
-  private extractSenderName(sender: string): string {
-    // Remove @ and :domain from Matrix ID
-    if (sender.startsWith('@')) {
-      const parts = sender.split(':');
-      if (parts.length > 0) {
-        return parts[0].substring(1); // Remove @
-      }
-    }
-    return sender;
   }
 
   // ==========================================================================
