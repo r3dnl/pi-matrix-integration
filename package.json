@@ -43,6 +43,15 @@
     "pi-subagents": "*"
   },
   "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "@earendil-works/pi-tui": {
+      "optional": true
+    },
+    "typebox": {
+      "optional": true
+    },
     "@juicesharp/rpiv-voice": {
       "optional": true
     },
@@ -61,7 +70,7 @@
     "test:live": "node test/live-check.mjs",
     "typecheck": "tsc -p .",
     "lint": "eslint .",
-    "prepare": "npm run typecheck"
+    "prepack": "npm run typecheck"
   },
   "pi": {
     "extensions": [

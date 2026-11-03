@@ -30,22 +30,39 @@ runs against the unpacked npm artifact.
 
 ## Runtime dependencies
 
-Five packages are installed with every version of this extension; all are
-public npm packages with the upstream projects as maintainers:
+Five packages are installed with every version of this extension. All are
+public npm packages, verified registry-signed on every CI run, and every
+install is reproducible from the committed lockfile (a CI contract test
+reinstalls the production tree from the lockfile alone and rejects any
+package it cannot account for).
 
-- `matrix-js-sdk` and `@matrix-org/matrix-sdk-crypto-wasm` — Matrix client
-  and encryption (Matrix.org Foundation)
-- `matrix-encrypt-attachment` — encrypted file attachments (Matrix.org Foundation)
-- `jsqr` and `qrcode` — QR sign-in and QR rendering
+| Package | Release in use | Why it is needed | Upstream maintainer |
+| --- | --- | --- | --- |
+| `matrix-js-sdk` | 42.4.0 (2026-09) | Matrix client: sync, send, receive, E2EE orchestration | Matrix.org Foundation C.I.C. (Element) |
+| `@matrix-org/matrix-sdk-crypto-wasm` | 18.9.0 (2026-09) | the encryption engine the SDK drives; loaded **from the installed package only**, never fetched remotely (contract-tested offline) | Matrix.org Foundation C.I.C. |
+| `matrix-encrypt-attachment` | 1.0.3 (2022-04) | decrypts encrypted file attachments (`m.file` events) | Matrix.org Foundation C.I.C. |
+| `jsqr` | 1.4.0 (2021-04) | decodes the QR code during sign-in-with-QR | npm maintainers `jefff`, `templaedhel` |
+| `qrcode` | 1.5.4 (2024-08) | renders the QR code for the other sign-in participant | npm maintainers `soldair`, `vigreco` |
+
+Two notes reviewers ask for. **Encrypted attachments:** files posted to
+the room are decrypted locally with `matrix-encrypt-attachment` (the
+Matrix spec's AES-CTR + SHA-256 attachment scheme); keys come from the
+event itself and are never logged — the plaintext body of a message or
+file is treated as model input only and never posted back. The package
+has seen no release since 2022; it is small, spec-stable, and maintained
+inside the Matrix.org org — if that changes, a replacement is a decision
+we will make deliberately, not silently.
+
+**QR encode/decode:** `jsqr` + `qrcode` are kept rather than hand-rolled
+because this is crypto-adjacent code we do not want to own; both are
+small and stable.
 
 Optional integrations (`@juicesharp/rpiv-ask-user-question`, subagent
 extensions, the voice engine) are declared as optional peers and only
-load when installed. `src/qr2025/` is vendored upstream prototype code,
-carrying its original headers and attribution in `NOTICE`.
-
-A stricter supply-chain review (audited dependency inventory, lockfile
-bot automation) is tracked as open work for this release; this file will
-carry the inventory it produces.
+load when installed. The host-provided packages (`pi-coding-agent`,
+`pi-tui`, `typebox`) are declared peers your Pi install supplies — the
+extension never installs them itself. `src/qr2025/` is vendored upstream
+prototype code, carrying its original headers and attribution in `NOTICE`.
 
 ## Out of scope
 
