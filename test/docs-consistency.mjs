@@ -34,7 +34,7 @@ const INTERNAL_NAMES = [
   ['r3', 'd', '.', 'nl'].join(''),
 ]
 
-const DOC_ROOTS = ['README.md', 'QUICKSTART.md', 'docs']
+const DOC_ROOTS = ['README.md', 'QUICKSTART.md', 'AGENTS.md', 'CONTRIBUTING.md', 'SECURITY.md', 'CHANGELOG.md', 'docs']
 
 function walk (rel, out = []) {
   const abs = path.join(ROOT, rel)
@@ -98,7 +98,7 @@ for (const file of markdown) {
 // user-facing rewrite cleared README.md and QUICKSTART.md. No file has an
 // excuse any more.
 const STRICT = [
-  'README.md', 'QUICKSTART.md', 'package.json',
+  'README.md', 'QUICKSTART.md', 'AGENTS.md', 'CONTRIBUTING.md', 'SECURITY.md', 'CHANGELOG.md', 'package.json',
   ...walk('docs').filter(f => f.endsWith('.md')),
   ...walk('src').filter(f => /\.(ts|mjs)$/.test(f)),
   ...walk('index.ts'),
@@ -232,7 +232,24 @@ for (const file of OUR_SOURCE) {
   }
 }
 
-console.log(`checked ${markdown.length} markdown files (${linkCount} internal links); identifier scan: ${STRICT.length} files strict (${strictHits.length} hits); ticket-label scan: ${SOURCE_FILES.length} files (${labelHits} hits); stale-reference scan: ${OUR_SOURCE.length} files (${staleHits} hits); surface: README commands + /matrix-help guide + PI_MATRIX_* keys cross-checked against src/`) 
+// --- 6. AGENTS.md names exactly the npm scripts that exist ---
+// The working contract's loop must be runnable: every command it prints
+// exists, and every script the package has appears in the contract.
+{
+  const scripts = new Set(Object.keys(JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).scripts))
+  const agents = fs.readFileSync(path.join(ROOT, 'AGENTS.md'), 'utf8')
+  const named = new Set()
+  for (const m of agents.matchAll(/npm run ([a-z][a-z:-]+)/g)) named.add(m[1])
+  if (/^\s*npm test/m.test(agents)) named.add('test')
+  for (const name of named) {
+    if (!scripts.has(name)) fail(`AGENTS.md names \`npm run ${name}\` but package.json has no such script`)
+  }
+  for (const name of scripts) {
+    if (!named.has(name)) fail(`package.json script ${name} is missing from AGENTS.md's loop`)
+  }
+}
+
+console.log(`checked ${markdown.length} markdown files (${linkCount} internal links); identifier scan: ${STRICT.length} files strict (${strictHits.length} hits); ticket-label scan: ${SOURCE_FILES.length} files (${labelHits} hits); stale-reference scan: ${OUR_SOURCE.length} files (${staleHits} hits); surface: README commands + /matrix-help guide + AGENTS.md commands + PI_MATRIX_* keys cross-checked against src/`) 
 if (failures > 0) {
   console.log(`\n${failures} documentation-consistency failure(s)`)
   process.exit(1)

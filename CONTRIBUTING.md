@@ -41,6 +41,10 @@ preference.
 
 ## Conventions
 
+`AGENTS.md` is the working contract for coding agents — what they may and
+may not change here. Read it before letting one touch this repository;
+humans are held to the same scope discipline.
+
 - Commit messages: Conventional Commits, lowercase imperative
   (`fix:`, `feat:`, `docs:`, `build:`, `test:`, `security:`).
 - User-visible surface is sacred: configuration keys, `/matrix-*` command
