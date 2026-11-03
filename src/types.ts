@@ -458,6 +458,8 @@ export type PiMessageType = 'milestone' | 'question' | 'response' | 'status' | '
 export interface PiMessage {
   type: PiMessageType;
   content: string;
+  /** Caller-attached bag. `flat` is routing (skip thread routing); every
+   *  other key renders into the room body as a Details block. */
   metadata?: Record<string, unknown>;
   timestamp: number;
   entryId?: string;

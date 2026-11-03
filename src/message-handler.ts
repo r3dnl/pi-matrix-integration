@@ -472,12 +472,16 @@ export class MessageHandler {
     const prefix = this.getMessagePrefix(piMessage.type);
     const content = piMessage.content;
 
-    // Add details if present
+    // The metadata bag carries everything a caller attached. One key is
+    // routing (`flat`, read in handleOutgoingMessage); the rest is body
+    // material and belongs in the room. Nothing nests its payload under a
+    // `details` key, so reading the bag is what makes it arrive.
     let metadataText = '';
     if (piMessage.metadata) {
-      const metadata = piMessage.metadata as Record<string, unknown>;
-      if (metadata.details) {
-        metadataText = `\n\nDetails: ${JSON.stringify(metadata.details, null, 2)}`;
+      const attached = { ...piMessage.metadata } as Record<string, unknown>;
+      delete attached.flat;
+      if (Object.keys(attached).length > 0) {
+        metadataText = `\n\nDetails: ${JSON.stringify(attached, null, 2)}`;
       }
     }
 
