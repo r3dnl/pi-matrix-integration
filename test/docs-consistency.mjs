@@ -1,13 +1,15 @@
 /**
  * Documentation consistency gate.
  *
- * Two checks, both cheap and both catching real mistakes in this tree:
+ * Three checks, all cheap and all catching real mistakes in this tree:
  *
  *   1. Internal links resolve — every relative path and #anchor used in the
  *      markdown actually exists in the shipped tree.
  *   2. No internal identifier ships — maintainer-only hostnames, account
  *      names and environment names must not appear in source, docs or README.
  *      Examples use matrix.example.org instead.
+ *   3. No review-ticket labels in source comments — a comment must name the
+ *      event it means, not the id its planning tree minted for it.
  *
  * The denied names are assembled from fragments on purpose: the file that
  * enforces the rule must not itself contain the string it forbids. Do not
@@ -121,7 +123,28 @@ const pendingHits = scanInternalNames(PENDING)
 pendingHits.slice(0, 8).forEach(h => console.log(`warn  ${h.file}:${h.line}: internal identifier "${h.name}" (pending cleanup)`))
 if (pendingHits.length > 8) console.log(`warn  … and ${pendingHits.length - 8} more pending internal-identifier cleanups`)
 
-console.log(`checked ${markdown.length} markdown files (${linkCount} internal links); identifier scan: ${STRICT.length} files strict (${strictHits.length} hits), ${PENDING.length} files pending (${pendingHits.length} hits)`)
+// --- 3. review-ticket labels in source comments ---
+// Ids like FINDING-<n>, a BUG-<NAME> branch tag, a reviewer-table row or a
+// backlog number resolve to nothing for anyone outside the tree that minted
+// them. The reason behind the id is public; the id is not.
+const TICKET_LABEL =
+  /\b(?:FINDING|REVIEW)-\d+\b|\bBUG-[A-Z][A-Z-]{4,}\b|\breviewer row [A-Z]?\d+\b|\bbacklog #\d+/i
+
+const SOURCE_FILES = [...walk('src').filter(f => /\.ts$/.test(f)), 'index.ts']
+let labelHits = 0
+for (const file of SOURCE_FILES) {
+  const lines = fs.readFileSync(path.join(ROOT, file), 'utf8').split('\n')
+  lines.forEach((line, i) => {
+    if (!/^\s*(\/\/|\/?\*+|\/\*)/.test(line)) return // comments only, never code
+    const m = TICKET_LABEL.exec(line)
+    if (m) {
+      fail(`${file}:${i + 1}: comment cites the internal ticket "${m[0]}"`)
+      labelHits++
+    }
+  })
+}
+
+console.log(`checked ${markdown.length} markdown files (${linkCount} internal links); identifier scan: ${STRICT.length} files strict (${strictHits.length} hits), ${PENDING.length} files pending (${pendingHits.length} hits); ticket-label scan: ${SOURCE_FILES.length} files (${labelHits} hits)`) 
 if (failures > 0) {
   console.log(`\n${failures} documentation-consistency failure(s)`)
   process.exit(1)
