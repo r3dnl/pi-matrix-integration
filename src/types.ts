@@ -78,9 +78,6 @@ export interface MatrixConfig {
   // Final-message broadcast cutoff (chars); longer answers are truncated.
   // Default 2000.
   maxFinalMessageLength?: number;
-  // Reserved: a production-mutation allowance that external tooling may read
-  // from the environment. Nothing in this extension reads it. Default false.
-  allowProd?: boolean;
   // Convert outgoing markdown to HTML and send it as `formatted_body`
   // (`format: org.matrix.custom.html`).
   // The room client decides how a formatted body renders, so this stays off
@@ -256,7 +253,6 @@ export interface PartialMatrixConfig {
   dedupeWindowMs?: number;
   maxMessageAgeMinutes?: number;
   maxFinalMessageLength?: number;
-  allowProd?: boolean;
   sendFormatted?: boolean;
   tablesInSeparateMessage?: boolean;
   logPath?: string;
