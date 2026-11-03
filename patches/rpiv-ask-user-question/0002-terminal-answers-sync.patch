@@ -1,0 +1,165 @@
+diff -ruN a/answer-channel.ts b/answer-channel.ts
+--- a/answer-channel.ts	2026-10-18 22:21:28
++++ b/answer-channel.ts	2026-10-18 22:22:15
+@@ -2,6 +2,7 @@
+ import {
+ 	ASK_USER_ANSWER_EVENT,
+ 	ASK_USER_ANSWER_RESULT_EVENT,
++	ASK_USER_ANSWERS_STATE_EVENT,
+ 	type AskUserAnswerRejectCode,
+ 	type AskUserAnswerResultEventPayload,
+ } from "./events.ts";
+@@ -64,6 +65,19 @@
+ 		return true;
+ 	}
+ 
++	/** Patch A2.13-0002: outbound state emitter, injected at open() from the
++	 *  channel's bus handle; set to no-op when the questionnaire closes. */
++	stateEmitter: ((answers: QuestionAnswer[]) => void) | undefined;
++
++	/**
++	 * Patch A2.13-0002: broadcast the dialog's current answer map on the
++	 * `answers-state` channel (a mirroring host keeps its own surface in
++	 * sync with terminal-side answers). No-op before open()/after close().
++	 */
++	broadcastAnswers(answers: QuestionAnswer[]): void {
++		this.stateEmitter?.(answers);
++	}
++
+ 	/** First answer wins. False when this questionnaire is already settled. */
+ 	settle(result: QuestionnaireResult): boolean {
+ 		if (this.result) return false;
+@@ -133,11 +147,16 @@
+ 	return {
+ 		open(toolCallId, questions, host) {
+ 			const questionnaire = new OpenQuestionnaire(toolCallId, questions, host);
++			// Patch A2.13-0002: while open, answer-map changes broadcast on the
++			// bus so mirroring hosts see terminal-side answers.
++			questionnaire.stateEmitter = (answers) =>
++				pi.events.emit(ASK_USER_ANSWERS_STATE_EVENT, { toolCallId, answers });
+ 			open.set(toolCallId, questionnaire);
+ 			return questionnaire;
+ 		},
+ 		close(questionnaire) {
+ 			if (open.get(questionnaire.toolCallId) === questionnaire) open.delete(questionnaire.toolCallId);
++			questionnaire.stateEmitter = undefined; // no broadcasts after close
+ 		},
+ 	};
+ }
+diff -ruN a/ask-user-question.ts b/ask-user-question.ts
+--- a/ask-user-question.ts	2026-10-18 22:21:28
++++ b/ask-user-question.ts	2026-10-18 22:22:33
+@@ -233,6 +233,9 @@
+ 			itemsByTab,
+ 			// Through the first-answer-wins gate shared with inbound answers.
+ 			done: (result) => open.settle(result),
++			// Patch A2.13-0002: every answer-map change (terminal or partial)
++			// broadcasts on the answers-state channel for mirroring hosts.
++			onAnswersChanged: (answers) => open.broadcastAnswers(answers),
+ 			keybindings,
+ 			editInput: async (value) => {
+ 				try {
+diff -ruN a/events.ts b/events.ts
+--- a/events.ts	2026-10-18 22:21:28
++++ b/events.ts	2026-10-18 22:22:15
+@@ -134,6 +134,35 @@
+ export const ASK_USER_ANSWER_RESULT_EVENT = "rpiv:ask-user:answer-result" as const;
+ 
+ /**
++ * OUTBOUND — patch A2.13-0002. One entry per currently-registered answer,
++ * emitted whenever the mounted dialog's answer map CHANGES — from a
++ * terminal keystroke or from a `partial` registration. Mirroring hosts
++ * (a Matrix/bridge relay) merge it to learn terminal-side answers, which
++ * the answer channel never sees. Full map, not a delta: an entry's absence
++ * means "not (yet) answered", and per-question re-registration is
++ * idempotent. Emitted only while a dialog is mounted; the final answers
++ * ship through the normal tool result.
++ */
++export const ASK_USER_ANSWERS_STATE_EVENT = "rpiv:ask-user:answers-state" as const;
++
++/** One registered answer — the TUI's own `QuestionAnswer` shape, JSON-safe. */
++export interface AskUserAnswersStateEntry {
++	questionIndex: number;
++	question: string;
++	kind: "option" | "custom" | "multi";
++	answer: string | null;
++	selected?: string[];
++	notes?: string;
++}
++
++export interface AskUserAnswersStateEventPayload {
++	/** The questionnaire this state belongs to — its prompt's `toolCallId`. */
++	toolCallId: string;
++	/** Every question currently answered, in registration order. */
++	answers: readonly AskUserAnswersStateEntry[];
++}
++
++/**
+  * Why an answer was refused — branch on this, not on `reason`:
+  * - `not_found`: no open questionnaire has that `toolCallId` (never opened, or already closed).
+  * - `invalid_payload`: a field is missing or has the wrong type.
+diff -ruN a/index.ts b/index.ts
+--- a/index.ts	2026-10-18 22:21:28
++++ b/index.ts	2026-10-18 22:22:52
+@@ -42,12 +42,15 @@
+ export {
+ 	ASK_USER_ANSWER_EVENT,
+ 	ASK_USER_ANSWER_RESULT_EVENT,
++	ASK_USER_ANSWERS_STATE_EVENT,
+ 	ASK_USER_BLOCKED_EVENT,
+ 	ASK_USER_PROMPT_EVENT,
+ 	type AskUserAnswerEntry,
+ 	type AskUserAnswerEventPayload,
+ 	type AskUserAnswerRejectCode,
+ 	type AskUserAnswerResultEventPayload,
++	type AskUserAnswersStateEntry,
++	type AskUserAnswersStateEventPayload,
+ 	type AskUserBlockedEventPayload,
+ 	type AskUserPromptEventPayload,
+ 	type AskUserPromptOption,
+diff -ruN a/state/questionnaire-session.ts b/state/questionnaire-session.ts
+--- a/state/questionnaire-session.ts	2026-10-18 22:21:28
++++ b/state/questionnaire-session.ts	2026-10-18 22:22:28
+@@ -20,6 +20,11 @@
+ 	keybindings: QuestionnaireRuntime["keybindings"];
+ 	/** Opens Pi's configured external editor. Resolve `undefined` on a reported launch failure. */
+ 	editInput: (value: string) => Promise<string | undefined>;
++	/** Patch A2.13-0002: outbound sync — called after every commit whose
++	 *  reduce changed the answer map (terminal input or a partial
++	 *  registration). A mirroring host keeps its own surface in sync with
++	 *  terminal-side answers. */
++	onAnswersChanged?: (answers: QuestionAnswer[]) => void;
+ 	/** Key spec for the collapse/expand shortcut, e.g. `"ctrl+]"` or `"alt+o"`. */
+ 	collapseKey: string;
+ 	/**
+@@ -87,11 +92,13 @@
+ 
+ 	private readonly tui: QuestionnaireSessionConfig["tui"];
+ 	private readonly done: QuestionnaireSessionConfig["done"];
++	private readonly onAnswersChanged: ((answers: QuestionAnswer[]) => void) | undefined;
+ 	readonly component: QuestionnaireSessionComponent;
+ 
+ 	constructor(config: QuestionnaireSessionConfig) {
+ 		this.tui = config.tui;
+ 		this.done = config.done;
++		this.onAnswersChanged = config.onAnswersChanged;
+ 		this.questions = config.params.questions;
+ 		this.isMulti = this.questions.length > 1;
+ 		this.itemsByTab = config.itemsByTab;
+@@ -163,10 +170,16 @@
+ 
+ 	private commit(action: QuestionnaireAction): void {
+ 		const result = reduce(this.state, action, this.applyContext());
++		// Patch A2.13-0002: reference compare — the reducer only rebuilds the
++		// answers map when a handler touched it, so one sync per real change.
++		const answersChanged = result.state.answers !== this.state.answers;
+ 		this.state = result.state;
+ 		for (const effect of result.effects) this.runEffect(effect);
+ 		this.state = this.mirrorNotesDraft(this.state);
+ 		this.viewAdapter.apply(this.state);
++		// After the view update: terminal-first ordering. The map never
++		// shrinks, so the full value list is a safe state snapshot.
++		if (answersChanged) this.onAnswersChanged?.([...this.state.answers.values()]);
+ 	}
+ 
+ 	private mirrorNotesDraft(s: QuestionnaireState): QuestionnaireState {

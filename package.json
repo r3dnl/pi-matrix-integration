@@ -1,11 +1,12 @@
 {
   "name": "pi-matrix-integration",
   "version": "1.0.0",
-  "description": "Matrix integration for the Pi coding agent (via the mtx CLI)",
+  "description": "Matrix integration for the Pi coding agent",
   "main": "index.ts",
   "type": "module",
   "keywords": [
     "pi",
+    "pi-package",
     "matrix",
     "integration",
     "chat",

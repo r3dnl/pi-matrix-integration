@@ -1,0 +1,246 @@
+diff -ruN a/answer-channel.ts b/answer-channel.ts
+--- a/answer-channel.ts	2026-10-18 22:01:57
++++ b/answer-channel.ts	2026-10-18 22:03:55
+@@ -5,8 +5,8 @@
+ 	type AskUserAnswerRejectCode,
+ 	type AskUserAnswerResultEventPayload,
+ } from "./events.ts";
+-import { resolveExternalAnswer } from "./tool/external-answer.ts";
+-import type { QuestionData, QuestionnaireResult } from "./tool/types.ts";
++import { resolveExternalAnswer, resolvePartialAnswer } from "./tool/external-answer.ts";
++import type { QuestionAnswer, QuestionData, QuestionnaireResult } from "./tool/types.ts";
+ 
+ /** "rpc" while the RPC dialog walker owns the prompts — those cannot be answered from outside. */
+ export type AnswerHost = "tui" | "rpc";
+@@ -42,6 +42,28 @@
+ 		this.deliver = done;
+ 	}
+ 
++	/** Patch A2.13-0001: the mounted session that shows display-only partial
++	 *  sets. Set at mount; absent before the dialog mounts and after it ends. */
++	private partialTarget: { applyExternalPartial(answers: QuestionAnswer[], clears: number[]): void } | undefined;
++
++	/** Patch A2.13-0001: register the mounted dialog as the target of
++	 *  `partial` display sets (see `applyPartial`). */
++	attachPartial(target: { applyExternalPartial(answers: QuestionAnswer[], clears: number[]): void }): void {
++		this.partialTarget = target;
++	}
++
++	/**
++	 * Patch A2.13-0001: forward a validated partial set to the mounted
++	 * dialog. Display-only — never settles. Returns false when nothing can
++	 * show it (no dialog mounted yet, or the wait already resolved); dropping
++	 * is correct there, the authoritative answer is a separate complete set.
++	 */
++	applyPartial(answers: QuestionAnswer[], clears: number[]): boolean {
++		if (!this.partialTarget || this.result) return false;
++		this.partialTarget.applyExternalPartial(answers, clears);
++		return true;
++	}
++
+ 	/** First answer wins. False when this questionnaire is already settled. */
+ 	settle(result: QuestionnaireResult): boolean {
+ 		if (this.result) return false;
+@@ -89,6 +111,18 @@
+ 		const target = open.get(toolCallId);
+ 		if (!target || target.settled) return reply("not_found", `no open questionnaire for tool call ${toolCallId}`);
+ 		if (target.host === "rpc") return reply("unsupported_host", "this host shows the questions in its own dialogs");
++
++		if (payload.partial === true) {
++			// Patch A2.13-0001: display-only partial registration — a mirroring
++			// host syncs the terminal tab as the remote surface answers question
++			// by question. Validated with the partial relaxations (incomplete ok,
++			// empty entry = clear); never settles the wait. Dropped (still ok)
++			// when no dialog is mounted to show it.
++			const partial = resolvePartialAnswer(target.questions, payload);
++			if (!partial.ok) return reply(partial.code, partial.reason);
++			target.applyPartial(partial.answers, partial.clears);
++			return reply();
++		}
+ 
+ 		const outcome = resolveExternalAnswer(target.questions, payload);
+ 		if (!outcome.ok) return reply(outcome.code, outcome.reason);
+diff -ruN a/ask-user-question.ts b/ask-user-question.ts
+--- a/ask-user-question.ts	2026-10-18 22:01:57
++++ b/ask-user-question.ts	2026-10-18 22:03:55
+@@ -256,6 +256,9 @@
+ 			rowBudget: rowBudgetForHost(tui.terminal, presentation.rowBudget),
+ 		});
+ 		sessionRef.current = session;
++		// Patch A2.13-0001: the mounted session receives `partial` display sets
++		// on the answer channel (see OpenQuestionnaire.applyPartial).
++		open.attachPartial(session);
+ 		return session.component;
+ 	};
+ }
+diff -ruN a/events.ts b/events.ts
+--- a/events.ts	2026-10-18 22:01:57
++++ b/events.ts	2026-10-18 22:03:06
+@@ -82,7 +82,10 @@
+  * Validation is strict and all-or-nothing: every question answered, every index
+  * in range, nothing duplicated — or nothing is applied and the dialog stays open.
+  * A partially applied answer would reach the model indistinguishable from one
+- * the user gave. Unknown fields are ignored (policy rule 2).
++ * the user gave. Unknown fields are ignored (policy rule 2). The one exception
++ * is the `partial` display-sync mode (patch A2.13-0001): partial sets register
++ * into the mounted dialog WITHOUT reaching the model — the wait still resolves
++ * only on a complete, flagless set.
+  *
+  * Every attempt gets one verdict on `ASK_USER_ANSWER_RESULT_EVENT`; this payload
+  * carries no callback because payloads must survive JSON serialization.
+@@ -100,6 +103,15 @@
+ 	globalNote?: string;
+ 	/** Decline the questionnaire, as Esc does: the model is told the user declined. */
+ 	cancel?: boolean;
++	/** Patch A2.13-0001: register the entries into the MOUNTED dialog for
++	 *  display without resolving the wait — a mirroring host syncs the
++	 *  terminal tab as the remote surface answers question by question.
++	 *  Relaxed validation: the set need not be complete, and an entry with
++	 *  neither `optionIndexes` nor `text` CLEARS that question's answer.
++	 *  Display-only: with no dialog mounted the set is accepted and dropped,
++	 *  and it never settles the wait — the authoritative answer still ships
++	 *  as a complete (flagless) set. */
++	partial?: boolean;
+ }
+ 
+ /**
+diff -ruN a/state/key-router.ts b/state/key-router.ts
+--- a/state/key-router.ts	2026-10-18 22:01:57
++++ b/state/key-router.ts	2026-10-18 22:03:06
+@@ -34,6 +34,10 @@
+ 	| { kind: "notes_forward"; data: string }
+ 	/** Flip `state.collapsed`. Always available, regardless of inner mode (see top intercept in `routeKey`). */
+ 	| { kind: "toggle_collapsed" }
++	/** Patch A2.13-0001: register host-relayed answers into the dialog for
++	 *  DISPLAY (the terminal tab follows the remote surface) without
++	 *  resolving the wait. Not keyboard-routed — emitted by the answer channel. */
++	| { kind: "external_partial"; answers: QuestionAnswer[]; clears: number[] }
+ 	| { kind: "ignore" };
+ 
+ export interface QuestionnaireKeybindings {
+diff -ruN a/state/questionnaire-session.ts b/state/questionnaire-session.ts
+--- a/state/questionnaire-session.ts	2026-10-18 22:01:57
++++ b/state/questionnaire-session.ts	2026-10-18 22:03:24
+@@ -1,7 +1,7 @@
+ import type { Theme } from "@earendil-works/pi-coding-agent";
+ import type { Editor, OverlayHandle, TUI } from "@earendil-works/pi-tui";
+ import { COLLAPSE_KEY_OFF, formatKeySpecForDisplay } from "../config.ts";
+-import type { QuestionData, QuestionnaireResult, QuestionParams } from "../tool/types.ts";
++import type { QuestionAnswer, QuestionData, QuestionnaireResult, QuestionParams } from "../tool/types.ts";
+ import type { WrappingSelectItem } from "../view/components/wrapping-select.ts";
+ import { COLLAPSED_HINT_TEMPLATE, HINT_PART_CANCEL, KEY_PLACEHOLDER } from "../view/dialog-builder.ts";
+ import type { QuestionnairePropsAdapter } from "../view/props-adapter.ts";
+@@ -285,5 +285,17 @@
+ 	 */
+ 	toggleCollapsedExternal(): void {
+ 		if (!this.inputEditorOpen) this.commit({ kind: "toggle_collapsed" });
++	}
++
++	/**
++	 * Patch A2.13-0001 entry for the answer channel's `partial` sets: register
++	 * host-relayed answers for DISPLAY — the terminal tab follows the remote
++	 * surface — without resolving the wait. Gated only on the input editor:
++	 * dropping a display update mid-edit is safe because the authoritative
++	 * answer arrives separately as a complete set on the same channel.
++	 */
++	applyExternalPartial(answers: QuestionAnswer[], clears: number[]): void {
++		if (this.inputEditorOpen) return;
++		this.commit({ kind: "external_partial", answers, clears });
+ 	}
+ }
+diff -ruN a/state/state-reducer.ts b/state/state-reducer.ts
+--- a/state/state-reducer.ts	2026-10-18 22:01:57
++++ b/state/state-reducer.ts	2026-10-18 22:03:24
+@@ -266,6 +266,22 @@
+ 	return doneFor(synced, ctx, false);
+ };
+ 
++// Patch A2.13-0001: host-relayed answers for DISPLAY (a mirroring host syncs
++// the terminal as the remote surface answers). Register the entries, apply
++// clears, then advance to the next unanswered question via the same
++// transition keyboard tab switches use; a completing set lands on the review
++// tab (`questions.length`, terminal auto-advance parity). Never emits `done`
++// — the wait resolves only through the terminal surface or a complete
++// flagless set on the answer channel.
++const externalPartialHandler: Handler<"external_partial"> = (state, action, ctx) => {
++	const answers = new Map(state.answers);
++	for (const i of action.clears) answers.delete(i);
++	for (const a of action.answers) answers.set(a.questionIndex, a);
++	const next: QuestionnaireState = { ...state, answers };
++	const missing = ctx.questions.findIndex((_, i) => !answers.has(i));
++	return switchTabResult(next, missing === -1 ? ctx.questions.length : missing, ctx);
++};
++
+ const notesEnterHandler: Handler<"notes_enter"> = (state, _action, _ctx) => {
+ 	const value = notesValueFor(state, state.currentTab);
+ 	return {
+@@ -331,6 +347,7 @@
+ 	confirm: confirmHandler,
+ 	toggle: toggleHandler,
+ 	multi_confirm: multiConfirmHandler,
++	external_partial: externalPartialHandler,
+ 	cancel: cancelHandler,
+ 	notes_enter: notesEnterHandler,
+ 	notes_exit: notesExitHandler,
+diff -ruN a/tool/external-answer.ts b/tool/external-answer.ts
+--- a/tool/external-answer.ts	2026-10-18 22:01:57
++++ b/tool/external-answer.ts	2026-10-18 22:03:41
+@@ -123,3 +123,58 @@
+ 	const withPreview = option.preview && option.preview.length > 0 ? { preview: option.preview } : {};
+ 	return { ok: true, answer: { ...base, kind: "option", answer: option.label, ...withPreview, ...withNote } };
+ }
++
++/** Outcome of a validated PARTIAL set (patch A2.13-0001): the entries to
++ *  register and the question indexes to clear, as per-question
++ *  `QuestionAnswer` shapes — never a `QuestionnaireResult`. */
++export interface PartialAnswerOutcome {
++	ok: true;
++	answers: QuestionAnswer[];
++	clears: number[];
++}
++
++/**
++ * Patch A2.13-0001: validate a PARTIAL external set for display-sync
++ * (`payload.partial === true`). Same per-entry validation as
++ * `resolveExternalAnswer`, with two relaxations: the set need not be
++ * complete, and an entry carrying neither `optionIndexes` (or an empty
++ * array) nor `text` is a CLEAR — it removes that question's registered
++ * answer (the tap-toggle-off of a mirroring host). Display-only: it never
++ * settles the wait; the authoritative result still arrives as a complete
++ * flagless set through `resolveExternalAnswer`.
++ */
++export function resolvePartialAnswer(
++	questions: readonly QuestionData[],
++	payload: Record<string, unknown>,
++): PartialAnswerOutcome | { ok: false; code: AskUserAnswerRejectCode; reason: string } {
++	const { answers, cancel } = payload;
++	if (cancel === true) return { ok: false, code: "invalid_payload", reason: "cancel takes no partial" };
++	if (!Array.isArray(answers)) return { ok: false, code: "invalid_payload", reason: "answers must be an array" };
++	const byQuestion = new Map<number, Record<string, unknown>>();
++	for (const entry of answers) {
++		if (!isRecord(entry)) return { ok: false, code: "invalid_payload", reason: "each answer must be an object" };
++		const index = entry.questionIndex;
++		if (!Number.isInteger(index)) return { ok: false, code: "invalid_payload", reason: "questionIndex must be an integer" };
++		const i = index as number;
++		if (i < 0 || i >= questions.length) {
++			return { ok: false, code: "invalid_answer", reason: `questionIndex ${i} out of range (0..${questions.length - 1})` };
++		}
++		if (byQuestion.has(i)) return { ok: false, code: "invalid_answer", reason: `question ${i} answered twice` };
++		byQuestion.set(i, entry);
++	}
++	const resolved: QuestionAnswer[] = [];
++	const clears: number[] = [];
++	for (const [i, entry] of byQuestion) {
++		const picked = entry.optionIndexes;
++		const empty =
++			(picked === undefined || (Array.isArray(picked) && picked.length === 0)) && entry.text === undefined;
++		if (empty) {
++			clears.push(i);
++			continue;
++		}
++		const outcome = resolveEntry(questions[i]!, i, entry);
++		if (!outcome.ok) return outcome;
++		resolved.push(outcome.answer);
++	}
++	return { ok: true, answers: resolved, clears };
++}
