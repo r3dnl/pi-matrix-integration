@@ -1,0 +1,27 @@
+{
+  // Pi executes the .ts sources through jiti; nothing here is emitted.
+  // moduleResolution "bundler" is what lets `matrix-js-sdk/lib/logger.js`
+  // style subpath imports resolve against the SDK's exports map without a
+  // NodeNext-extension dance (story 7's one-line record of that choice).
+  // allowImportingTsExtensions is for the .ts sources third parties ship
+  // (@juicesharp/* import by ".ts" path); legal here because noEmit.
+  // src/qr2025/ is excluded: vendored, read-only Matrix.org Pocode whose types
+  // target the UNPUBLISHED MSC4388 SDK (the KNOWN GAP in its header;
+  // tools/check-vendored.mjs is the tripwire). Its single importer types the
+  // dynamic import by hand — see the NOTE in src/login.ts.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "types": ["node"]
+  },
+  "include": ["index.ts", "src/**/*.ts", "types/**/*.d.ts"],
+  "exclude": ["node_modules", "src/qr2025"]
+}

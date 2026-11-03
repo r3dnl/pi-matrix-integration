@@ -109,15 +109,21 @@ export function extractMilestone(
 /**
  * Extract a TODO progress statement from a message.
  */
-export function extractTodoUpdate(
-  message: { content?: Array<{ type: string; text?: string }>; details?: unknown }
-): string | null {
-  if (!message.content) {
+export function extractTodoUpdate(message: object): string | null {
+  // AgentMessage is a union (BashExecutionMessage carries no content at
+  // all), so the fields are read through a guarded cast: only block arrays
+  // carry the todo markers (a plain string has no .filter — the guard is
+  // the type narrowing AND the runtime guard).
+  const content = (message as { content?: unknown }).content;
+  if (!Array.isArray(content)) {
     return null;
   }
 
-  const text = message.content
-    .filter((c) => c.type === "text" && c.text)
+  const text = content
+    .filter((c): c is { type: string; text: string } => {
+      const b = c as { type?: unknown; text?: unknown };
+      return b?.type === "text" && typeof b.text === "string" && b.text !== "";
+    })
     .map((c) => c.text)
     .join(" ");
 

@@ -109,7 +109,7 @@ interface IdRequest {
   error: unknown;
   onsuccess: ((this: unknown) => void) | null;
   onerror: ((this: unknown) => void) | null;
-  onupgradeneeded?: ((this: unknown) => void) | null;
+  onupgradeneeded?: ((this: unknown, ev?: unknown, req?: unknown) => void) | null;
   onblocked?: ((this: unknown) => void) | null;
   transaction: unknown;
   done: boolean;
@@ -169,7 +169,7 @@ function fail(req: IdRequest, error: unknown): void {
  * target the request, versionchange targets the request too — the database
  * is reachable via `event.target.result`).
  */
-function fire(handler: ((ev: unknown) => void) | null | undefined, target: unknown): void {
+function fire(handler: ((ev: unknown, target?: unknown) => void) | null | undefined, target: unknown): void {
   if (process.env.PI_IDB_DEBUG && handler) {
     console.error(`[idb-shim] fire target=${String((target as { name?: string })?.name ?? (target as { type?: string })?.type ?? target)}`);
   }
@@ -543,11 +543,12 @@ class IdCursor {
   }
 
   continue(): IdRequest {
-    this.req = makeRequest();
+    const req = makeRequest();
+    this.req = req;
     queueMicrotask(() => {
       this.pos += 1;
       this.applyPosition();
-      fulfill(this.req, null);
+      fulfill(req, null);
     });
     return this.req;
   }

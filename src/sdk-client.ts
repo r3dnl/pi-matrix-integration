@@ -54,7 +54,19 @@ type SdkModule = typeof import("matrix-js-sdk");
 type SdkMatrixClient = InstanceType<SdkModule["MatrixClient"]>;
 type SdkMatrixEvent = InstanceType<SdkModule["MatrixEvent"]>;
 type SdkRoom = InstanceType<SdkModule["Room"]>;
-type SdkSyncState = SdkModule["SyncState"];
+type SdkSyncState = SdkModule["SyncState"][keyof SdkModule["SyncState"]];
+type SdkHttpMethod = SdkModule["Method"][keyof SdkModule["Method"]];
+
+/** Emitter seam: matrix-js-sdk types `on`/`off` with per-event overloads,
+ *  and this module registers by string name + a typed listener. One cast
+ *  here instead of an `as never` per call site. */
+type SdkEmitter = {
+  on(event: string, listener: (...args: never[]) => void): unknown;
+  off(event: string, listener: (...args: never[]) => void): unknown;
+};
+function emitter(target: SdkMatrixClient | SdkMatrixEvent): SdkEmitter {
+  return target as unknown as SdkEmitter;
+}
 
 /** Marks a thread root. This package writes it and reads it back:
  *  `extractThreadMeta` (src/thread-meta.ts) sets `isThreadRoot` from its
@@ -353,16 +365,19 @@ export class SdkOutbox implements Outbox {
 
     await client.startClient({
       initialSyncLimit: DEFAULT_INITIAL_SYNC_LIMIT,
-      timeout: this.opts.syncTimeoutMs ?? DEFAULT_SYNC_TIMEOUT_MS,
+      // The v42 option name is `pollTimeout` (the pre-42 `timeout` is
+      // silently ignored — `syncTimeoutMs` only reached the sync loop once
+      // this name was fixed).
+      pollTimeout: this.opts.syncTimeoutMs ?? DEFAULT_SYNC_TIMEOUT_MS,
     });
     this.client = client;
     this.started = true;
 
     // The Sync state is the connection-degrade point (an error keeps
     // retrying internally; surface it to the footer/status).
-    const SyncState = sdk.SyncState as typeof SdkSyncState;
-    client.on(
-      "sync" as never,
+    const SyncState = sdk.SyncState;
+    emitter(client).on(
+      "sync",
       (state: SdkSyncState, data?: { error?: Error | null }) => {
         if (state === SyncState.Error) {
           const e = data?.error ?? new Error("sync error");
@@ -884,10 +899,9 @@ export class SdkOutbox implements Outbox {
       let fileExtra: Record<string, unknown> = {};
       let size = data.byteLength;
       if (encrypt) {
-        const mod: { encryptAttachment?: (b: ArrayBuffer) => Promise<{ data: ArrayBuffer; info: Record<string, unknown> }> } =
-          await import("matrix-encrypt-attachment");
+        const mod = await import("matrix-encrypt-attachment");
         const encryptAttachment =
-          mod.encryptAttachment ?? (mod as { default?: { encryptAttachment?: typeof mod.encryptAttachment } }).default?.encryptAttachment;
+          mod.encryptAttachment ?? (mod as unknown as { default?: typeof mod }).default?.encryptAttachment;
         if (!encryptAttachment) {
           return { success: false, error: "matrix-encrypt-attachment unavailable" };
         }
@@ -1061,8 +1075,8 @@ export class SdkOutbox implements Outbox {
       callbacks.onMessage(message);
     };
 
-    client.on(
-      sdk.RoomEvent.Timeline as never,
+    emitter(client).on(
+      sdk.RoomEvent.Timeline,
       (event: SdkMatrixEvent, room: SdkRoom | undefined, _toStart: boolean | undefined, removed: boolean, data?: { liveEvent?: boolean }) => {
         if (removed) return;
         // Room-scoped: the client re-emits timeline events for every room.
@@ -1086,7 +1100,7 @@ export class SdkOutbox implements Outbox {
         // live, and would otherwise be parsed encrypted + baselined).
         if (rawType === "m.room.encrypted") {
           const onDecrypted = (decrypted: SdkMatrixEvent, error?: unknown): void => {
-            event.off(sdk.MatrixEventEvent.Decrypted as never, onDecrypted);
+            emitter(event).off(sdk.MatrixEventEvent.Decrypted, onDecrypted);
             if (!this.deliveryStarted) return; // stopped while decryption was pending
             const dec = (decrypted ?? event).event as unknown as { event_id?: string; origin_server_ts?: number };
             // Recent backfill: sent while this client was down → emit
@@ -1110,7 +1124,7 @@ export class SdkOutbox implements Outbox {
             );
             handle(decrypted ?? event, isLive || recentBackfill);
           };
-          event.on(sdk.MatrixEventEvent.Decrypted as never, onDecrypted);
+          emitter(event).on(sdk.MatrixEventEvent.Decrypted, onDecrypted);
           return;
         }
         handle(event, isLive);
@@ -1178,12 +1192,14 @@ export class SdkOutbox implements Outbox {
     if (!this.available() || this.client === null || !this.resolvedRoomId) return [];
     try {
       const res = await this.client.http.authedRequest(
-        "GET",
+        "GET" as SdkHttpMethod,
         `/_matrix/client/v3/rooms/${encodeURIComponent(this.resolvedRoomId)}/messages`,
         { dir: "b", limit },
         undefined,
-        { prefix: "" },
-      );
+        // `priority` is the fetch RequestPriority hint, required by the
+        // SDK 42 request opts; "auto" is fetch's own default.
+        { prefix: "", priority: "auto" },
+      ) as { chunk?: unknown[] };
       return this.parseRawMessages(await this.readableEvents(res), limit);
     } catch (error) {
       this.logger.warn(`[matrix] sdk readMessages failed: ${error}`);
@@ -1202,12 +1218,12 @@ export class SdkOutbox implements Outbox {
     }
     try {
       const res = await this.client.http.authedRequest(
-        "GET",
+        "GET" as SdkHttpMethod,
         `/_matrix/client/v3/rooms/${encodeURIComponent(this.resolvedRoomId)}/messages`,
         { dir: "b", limit },
         undefined,
-        { prefix: "" },
-      );
+        { prefix: "", priority: "auto" },
+      ) as { chunk?: unknown[] };
       const messages = this.parseRawMessages(await this.readableEvents(res));
       return { success: true, messages };
     } catch (error) {

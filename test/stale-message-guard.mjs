@@ -48,7 +48,7 @@ function build(cfgOverrides) {
     messageHandler: {
       handleIncomingMessage: (m) => ({ type: "user", content: m.body, timestamp: 0 }),
       post: async (text, kind, opts) => {
-        posted.push({ text, kind, html: opts?.html });
+        posted.push({ text, kind, html: opts?.html, flat: opts?.flat });
         return { success: true };
       },
     },
@@ -81,7 +81,9 @@ check("stale: warn names the age and the limit", /200 min old \(limit 30 min\)/.
 await waitUntil(() => a.posted.length === 1, { timeoutMs: 6_000, label: "stale-drop notice" }).catch(() => {});
 check("report: exactly one room notice for the burst", a.posted.length === 1, JSON.stringify(a.posted));
 const notice = a.posted[0]?.text ?? "";
-check("report: notice is a status post", a.posted[0]?.kind === "status", a.posted[0]?.kind);
+check("report: notice is a flat room post (main line, not a thread)",
+  a.posted[0]?.kind === "other" && a.posted[0]?.flat === true,
+  JSON.stringify({ kind: a.posted[0]?.kind, flat: a.posted[0]?.flat }));
 check("report: counts both drops", /Dropped 2 message\(s\)/.test(notice), notice);
 check("report: quotes the age limit", /older than 30 min/.test(notice), notice);
 check("report: names the threaded drop with its thread root", notice.includes("(thread $root9)"), notice);

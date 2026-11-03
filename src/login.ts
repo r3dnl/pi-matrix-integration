@@ -140,13 +140,16 @@ export function hasLoadableCredentials(credentialsPath?: string): boolean {
  * free from `Input`.
  */
 export class MaskedInput extends Input {
+  /** The base class keeps `prompt` private; the masked render needs it. */
+  private readonly promptText: string;
   constructor(value = "", options?: { prompt?: string }) {
     super(options ?? {});
+    this.promptText = options?.prompt ?? "> ";
     this.setValue(value);
   }
 
   override render(width: number): string[] {
-    const prompt = this.prompt ?? "> ";
+    const prompt = this.promptText;
     const availableWidth = width - prompt.length;
     if (availableWidth <= 0) return [prompt];
     // ponytail: full mask, no cursor glyph or horizontal scroll — the base
@@ -705,7 +708,32 @@ export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
   // credentials falls through to the password path unchanged.
   if (deps.qr2025) {
     try {
-      const qr = await import("./qr2025/index.js");
+      // NOTE(strict): src/qr2025/ is vendored, read-only Matrix.org PoC code
+      // whose own types target the UNPUBLISHED MSC4388 SDK (the KNOWN GAP in
+      // its header; tools/check-vendored.mjs is the tripwire), so
+      // tsconfig.json excludes it from the typecheck program. The variable
+      // specifier keeps this import unanalyzed at compile time; jiti
+      // resolves the same string at runtime. Qr2025Module mirrors the two
+      // exports used here — the day check-vendored.mjs trips, delete the
+      // vendored copy and import from the SDK directly.
+      type Qr2025Module = {
+        isQr2025Available(
+          homeserver: string,
+          fetchImpl?: typeof fetch,
+          opts?: { cryptoChannel?: boolean },
+        ): Promise<{ ok: true } | { ok: false; reason: string }>;
+        runQr2025Login(deps: {
+          ui: LoginUi;
+          homeserver: string;
+          fetchImpl?: typeof fetch;
+          stateDir?: string;
+        }): Promise<
+          | { ok: true; user_id: string; device_id: string; access_token: string }
+          | { ok: false; cancelled: boolean; error?: string }
+        >;
+      };
+      const qrModule = "./qr2025/index.js";
+      const qr: Qr2025Module = await import(qrModule);
       const avail = await qr.isQr2025Available(homeserver, fetchImpl);
       if (avail.ok) {
         const choice = await ui.select("Login method", [

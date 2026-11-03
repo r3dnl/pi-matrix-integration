@@ -114,6 +114,9 @@ export class RoomUx {
       });
     };
     const uploadArtifact = (relPath: string) => {
+      // Every call site checks `outbox?.available()` first (the picker
+      // guards); the narrowing does not survive into this closure.
+      if (!outbox) return;
       let data: Buffer;
       try {
         data = readFileSync(join(process.cwd(), relPath));

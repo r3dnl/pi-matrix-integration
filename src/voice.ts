@@ -38,13 +38,34 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 // and tried against candidate roots: PI_RPIV_VOICE_PATH (explicit), the
 // store relative to this file (the layout both extensions ship in), and
 // ~/.pi/agent/npm (a different install location, e.g. a relocated home).
+// NOTE(strict): the four engine modules resolve at runtime from the pi npm
+// store by path (voiceRootCandidates), and the published package ships .ts
+// sources whose own types pull optional native deps — so the surface is
+// stated here from the call sites instead of `typeof import()`. If
+// rpiv-voice changes a signature, update these lines; the casts at the load
+// site below carry no compile-time check.
+interface VoiceModelPaths {
+  encoderPath: string;
+  decoderPath: string;
+  tokensPath: string;
+}
+interface VoiceSttEngine {
+  recognize(samples: Float32Array, sampleRate: number): Promise<string>;
+  release(): void;
+}
 type VoiceModules = {
-  stt: typeof import("@juicesharp/rpiv-voice/audio/stt-engine.js");
-  model: typeof import("@juicesharp/rpiv-voice/audio/model-download.js");
-  pcm: typeof import("@juicesharp/rpiv-voice/audio/pcm.js");
-  hal: typeof import("@juicesharp/rpiv-voice/audio/hallucination-filter.js");
+  stt: { createSttEngine(modelPaths: VoiceModelPaths): Promise<VoiceSttEngine> };
+  model: {
+    isModelDownloaded(): boolean;
+    getModelPaths(): VoiceModelPaths;
+    assertModelIntact(): void;
+    removeModelInstall(): void;
+    ensureModelDownloaded(onProgress: (progress: unknown) => void, signal?: AbortSignal): Promise<VoiceModelPaths>;
+  };
+  pcm: { bufferToFloat32(buf: Buffer): Float32Array };
+  hal: { isHallucination(text: string): boolean };
 };
-type SttEngine = VoiceModules["stt"]["SttEngine"];
+type SttEngine = VoiceSttEngine;
 
 const VOICE_PACKAGE = "@juicesharp/rpiv-voice";
 
@@ -210,15 +231,15 @@ export function createVoiceTranscriber(deps: VoiceTranscriberDeps): VoiceTranscr
 
   // ── MSC4125 in-event-key decrypt (Element "encrypted attachments") ───
   async function decryptMsc4125(data: Buffer, file: Record<string, unknown>): Promise<Buffer> {
-    const mod = (await import("matrix-encrypt-attachment")) as {
-      decryptAttachment?: (b: ArrayBuffer, info: Record<string, unknown>) => Promise<ArrayBuffer>;
-      default?: { decryptAttachment?: (b: ArrayBuffer, info: Record<string, unknown>) => Promise<ArrayBuffer> };
-    };
-    const decryptAttachment = mod.decryptAttachment ?? mod.default?.decryptAttachment;
+    const mod = await import("matrix-encrypt-attachment");
+    const decryptAttachment =
+      mod.decryptAttachment ?? (mod as unknown as { default?: typeof mod }).default?.decryptAttachment;
     if (!decryptAttachment) throw new Error("matrix-encrypt-attachment unavailable");
     // The Buffer may be a view over a pool — hand over an owned ArrayBuffer.
     const owned = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
-    return Buffer.from(await decryptAttachment(owned, file));
+    return Buffer.from(
+      await decryptAttachment(owned, file as unknown as Parameters<typeof decryptAttachment>[1]),
+    );
   }
 
   return {

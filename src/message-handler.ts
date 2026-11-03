@@ -471,7 +471,7 @@ export class MessageHandler {
    * test sites without a seam) → soft-fail, no write.
    */
   private async outboxSend(body: string, html?: string): Promise<MatrixSendResult> {
-    if (!this.outbox) return { success: false, error: "no outbox", timestamp: Date.now() };
+    if (!this.outbox) return { success: false, eventId: "", error: "no outbox", timestamp: Date.now() };
     const res = await this.outbox.postMessage(body, html);
     return { success: res.success, eventId: res.eventId ?? "", error: res.error, timestamp: Date.now() };
   }

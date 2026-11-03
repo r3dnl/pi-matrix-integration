@@ -258,7 +258,7 @@ export class Lifecycle {
         // link that opens the installed Matrix app on phones/tablets
         // (Universal/App Links), falling back to the web client.
         const roomUri = buildMatrixToLink(this.deps.cfg.roomId);
-        ctx.ui.notify(`Connected to Matrix!${roomUri}`, "success");
+        ctx.ui.notify(`Connected to Matrix!${roomUri}`, "info");
         // Startup encryption notice: tell the user the room's
         // REAL E2EE state with the same lock language as the footer. The
         // state rides the first sync, so poll briefly (non-blocking) rather
@@ -303,10 +303,11 @@ export class Lifecycle {
     for (let i = 0; i < 20; i++) {
       const enc = this.deps.outbox.isRoomEncrypted?.();
       if (enc !== undefined) {
-        // kind drives the line colour + prefix: green "Success" when encrypted,
-        // orange "Warning" when plaintext. (error was wrong severity — a
-        // plaintext room is a warning, not a failure.)
-        ctx.ui.notify(`Matrix ${this.matrixTarget()} · ${encryptionNotice(enc)}`, enc ? "success" : "warning");
+        // kind drives the line style: plain when encrypted, orange "Warning"
+        // when plaintext. ("error" was wrong severity — a plaintext room is a
+        // warning, not a failure. The host has no "success" kind; plain is
+        // the success style.)
+        ctx.ui.notify(`Matrix ${this.matrixTarget()} · ${encryptionNotice(enc)}`, enc ? "info" : "warning");
         // Repaint the footer the instant state is known: the footer only
         // re-renders on events, so without this the lock can stay hidden until
         // the next activity (the flaky "sometimes I see it" symptom).

@@ -22,7 +22,8 @@
     "test:docs": "node test/docs-consistency.mjs",
     "test:repro": "node test/repro.mjs",
     "test:logic": "node test/test-logic.mjs",
-    "test:live": "node test/live-check.mjs"
+    "test:live": "node test/live-check.mjs",
+    "typecheck": "tsc -p ."
   },
   "pi": {
     "extensions": [
@@ -35,10 +36,19 @@
     ]
   },
   "dependencies": {
+    "@matrix-org/matrix-sdk-crypto-wasm": "^18.9.0",
     "jsqr": "^1.4.0",
     "matrix-encrypt-attachment": "^1.0.3",
     "matrix-js-sdk": "^42.4.0",
-    "qrcode": "^1.5.4",
-    "@matrix-org/matrix-sdk-crypto-wasm": "^18.9.0"
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^1.5.0",
+    "@earendil-works/pi-tui": "^1.5.0",
+    "@juicesharp/rpiv-voice": "^2.15.0",
+    "@types/node": "^26.6.6",
+    "@types/qrcode": "^1.5.6",
+    "typebox": "^1.4.3",
+    "typescript": "^7.0.2"
   }
 }
