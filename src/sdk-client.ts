@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration — SDK transport (ADDENDUM-SDK-HTTP-TRANSPORT).
+ * Pi Matrix Integration — SDK transport .
  *
  * `SdkOutbox`: the `matrix-js-sdk` implementation of the Outbox seam
  * (src/outbox.ts) + the sync-based read pipeline that replaces the poll
@@ -13,7 +13,7 @@
  *   `parseMatrixEvent` (the same pipeline the poller feeds) —
  *   thread metadata, reactions, `isFromPi` marking — and the initial
  *   sync's backfill is the seed round (baselined, never emitted, the
- *   poller's R9 semantics).
+ *   poller's phase 9 semantics).
  * - **Attachments**: MSC4125 sender-side encryption (`matrix-encrypt-
  *   attachment`, AES-256-CTR v2) so VectorIM Element Web's
  *   `isEncrypted === !!content.file` bug no longer breaks `@@` opens.
@@ -57,7 +57,7 @@ type SdkMatrixEvent = InstanceType<SdkModule["MatrixEvent"]>;
 type SdkRoom = InstanceType<SdkModule["Room"]>;
 type SdkSyncState = SdkModule["SyncState"];
 
-/** MSC1767 thread marker (the shape the homeops server retained live —
+/** MSC1767 thread marker (the shape the homeserver retained live —
  *  same constant as the matrix-http client, so both transports emit
  *  identical event content). */
 const THREAD_MARKER = { "m.topological_ordering": 1, "m.message_count": 1 };
@@ -74,7 +74,7 @@ const MAX_SEEN_EVENT_IDS = 1000;
 
 /** Backfill (initial-sync) events newer than this are emitted instead of
  *  baselined — messages sent while this client was down still reach the
- *  session; older backfill stays baselined (R9 no-cutover-flood).
+ *  session; older backfill stays baselined (phase 9 no-cutover-flood).
  *  ponytail: time-window heuristic; a persisted last-delivered
  *  high-water mark would be the exact version. */
 const BACKFILL_GRACE_MS = 600_000;
@@ -89,7 +89,7 @@ const CRYPTO_DB_PREFIX = "pi";
 const DECRYPT_WAIT_MS = 5_000;
 
 export interface SdkOutboxOptions {
-  /** Homeserver host ("tst2-matrix.r3d.nl" or "https://…"). */
+  /** Homeserver host ("matrix.example.org" or "https://…"). */
   homeserver: string;
   /** `@user:domain` — the Phase-0 single identity (`isFromPi`). */
   userId: string;
@@ -156,7 +156,7 @@ export interface SdkDeliveryCallbacks {
 }
 
 /**
- * Resolve the device id for a connection (DESIGN-LOGIN-ONBOARDING §15).
+ * Resolve the device id for a connection .
  * The credentials file's own `device_id` wins (the token is device-bound —
  * the spike's 400 M_BAD_JSON root cause was a hardcoded id that didn't match
  * the device the token was minted for). The fresh-login default is
@@ -292,8 +292,8 @@ export class SdkOutbox implements Outbox {
     // globalThis.indexedDB before initRustCrypto — the SDK's own store
     // then persists to disk under cryptoStoreDir. The default sits
     // beside the credentials file: the account dir that already holds
-    // the bot's token, so tst2/prd2 stores are separated per account
-    // (ADDENDUM §5).
+    // the bot's token, so test and production stores are separated per account
+    // (transport-and-state.md).
     if ((this.opts.e2ee ?? "on") === "on") {
       const storeDir =
         this.opts.cryptoStoreDir ?? join(dirname(this.opts.credentialsPath), "store");
@@ -471,7 +471,7 @@ export class SdkOutbox implements Outbox {
         // Same pid = an in-process orphan: a prior SdkOutbox in THIS
         // process still holds the account (a side-chain sub-agent session
         // racing the owner, a re-register on /reload, a racing switch). NOT
-        // another pi session. DESIGN-SUBAGENT-TRACKING §4.1: wait for the
+        // another pi session. configuration-and-room-behaviour.md transport-and-state.md: wait for the
         // release (1 s × 30) instead of yielding permanently — the
         // structural fix removes the trigger, this closes the regression
         // window. A second Olm account over the same device is never
@@ -571,7 +571,7 @@ export class SdkOutbox implements Outbox {
     return mod;
   }
 
-  /** Alias → `!` room id (the S6.2 server quirk: aliases are rejected in
+  /** Alias → `!` room id (a Matrix server quirk: aliases are rejected in
    *  room-path positions, so sends target the resolved id). */
   private async resolveRoom(ref?: string): Promise<string | undefined> {
     const r = ref ?? this.opts.roomId;
@@ -915,7 +915,7 @@ export class SdkOutbox implements Outbox {
    * Start sync-based delivery: `Room.timeline` events for the configured
    * room, normalized through the shared `parseMatrixEvent` and fed to
    * the same callbacks the poll loop feeds. The initial sync's backfill
-   * is the seed round (baselined, never emitted — the poller's R9
+   * is the seed round (baselined, never emitted — the poller's phase 9
    * semantics); live events emit. Idempotent.
    */
   startDelivery(callbacks: SdkDeliveryCallbacks): void {
@@ -1305,7 +1305,7 @@ export class SdkOutbox implements Outbox {
 
 /**
  * Build an `SdkOutbox` for a `MatrixConfig`-shaped input. The config
- * fields (ADDENDUM §5): `e2ee`, `attachEncryption`, `cryptoStoreDir`,
+ * fields (transport-and-state.md): `e2ee`, `attachEncryption`, `cryptoStoreDir`,
  * `deviceId`, `syncTimeoutMs` + the identity/room fields every transport
  * needs.
  */

@@ -1,8 +1,7 @@
 /**
  * Pi Matrix Integration — minimal domain-event dispatcher
- * (TO-BE restructure, Slice 3).
  *
- * The full TO-BE §1.6 `DomainEvent` union (user/agent/milestone/
+ * The full transport-and-state.md `DomainEvent` union (user/agent/milestone/
  * session-thread-* families) is deferred — it ships with its first
  * real consumer (e.g. `thread-resume-requested`). This slice carries
  * only the events with a live consumer today (the "minimal funnel"

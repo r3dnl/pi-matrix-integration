@@ -1,14 +1,14 @@
 /**
- * Pi Matrix Integration — RoomUx (TO-BE restructure, Slice 4).
+ * Pi Matrix Integration — RoomUx .
  *
  * The room-facing auto-reply surface: the slash-relay suggestion reply
- * (item 9), the `@@` artifact-attach picker + uploads (R2), the `@`
- * file-attach picker (item 10), and the /matrix-help guide. Every room
+ * , the `@@` artifact-attach picker + uploads , the `@`
+ * file-attach picker , and the /matrix-help guide. Every room
  * auto-reply posts through the outgoing pipeline (`post` =
- * MessageHandler.post — TO-BE §1.5: MessageHandler is the only writer;
- * auto-replies ride the dedupe window, declared delta from Phase 2).
+ * MessageHandler.post — configuration-and-room-behaviour.md: MessageHandler is the only writer;
+ * auto-replies ride the dedupe window, declared delta from phase 2).
  *
- * Uses the injected PickerState (TO-BE §1.10: the two protocol pickers
+ * Uses the injected PickerState (configuration-and-room-behaviour.md: the two protocol pickers
  * are distinct tracker instances — the "never share a posted list"
  * invariant is a type-level fact). The instance is factory-scope in
  * index.ts, so picker memory survives /matrix-switch — the zero-delta
@@ -56,7 +56,7 @@ export interface RoomUxDeps {
    *  (`postThreadReply`/`sendFile`); absent (the legacy mtx profile) →
    *  the no-transport note path. */
   outbox?: Outbox;
-  /** The pipeline write surface (TO-BE §1.5): room auto-replies post
+  /** The pipeline write surface: room auto-replies post
    *  through the MessageHandler (`formatCommandSuggestion`, the picker
    *  lists, the help guide). */
   post: (text: string, kind?: SendKind) => Promise<MatrixSendResult>;
@@ -105,7 +105,7 @@ export class RoomUx {
     // ponytail: `http?.available()` vs the original `http.available()` —
     // the original threw a TypeError on the no-outbox (legacy mtx) path
     // before the note could display; the optional chain makes the guard
-    // live (declared micro-delta, Slice 4 manual criteria).
+    // live (declared micro-delta, phase 4 manual criteria).
     const note = (message: string) => {
       if (threadRoot && http?.available()) {
         http.postThreadReply(message, threadRoot).catch((error: unknown) => {
@@ -146,7 +146,7 @@ export class RoomUx {
         });
     };
     // A numbered or exact-path reply resolves against the LAST candidate
-    // list posted in this session (the R2 picker, separate from item 10).
+    // list posted in this session (the phase 2 picker, separate from).
     const picked = this.picker.artifact.resolveReply(aBody);
     if (picked) {
       if (!http?.available()) note("File attachments need a live Matrix connection (the transport is the sdk outbox; check the connection status / credentials).");

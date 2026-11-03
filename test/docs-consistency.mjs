@@ -88,14 +88,18 @@ for (const file of markdown) {
 }
 
 // --- 2. internal identifiers ---
-// Two scopes on purpose. docs/ is held to the rule today: it is written for
-// publication and has no excuse to name a maintainer's private environment.
-// README.md, QUICKSTART.md and src/ still carry historical references from
-// before this check existed; they are reported as warnings and join the hard
-// gate when the documentation rewrite and the source-comment scrub land, so
-// the gate is enforceable from the day it is committed instead of muted.
-const STRICT = walk('docs').filter(f => f.endsWith('.md'))
-const PENDING = [...markdown.filter(f => !f.startsWith('docs/')), ...walk('src'), ...walk('index.ts')]
+// docs/ and src/ are held to the rule today: docs are written for publication,
+// and the source-comment scrub removed every historical reference, so source has
+// no excuse either. README.md and QUICKSTART.md still carry references from
+// before this check existed; they are reported as warnings and join the hard gate
+// when the user-facing rewrite lands, which keeps the gate enforceable from the
+// day it was committed instead of muted.
+const STRICT = [
+  ...walk('docs').filter(f => f.endsWith('.md')),
+  ...walk('src').filter(f => /\.(ts|mjs)$/.test(f)),
+  ...walk('index.ts'),
+]
+const PENDING = [...markdown.filter(f => !f.startsWith('docs/'))]
   .filter(f => /\.(ts|mjs|md|json|jsonc)$/.test(f))
 
 function scanInternalNames (files) {

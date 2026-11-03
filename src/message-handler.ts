@@ -29,15 +29,15 @@ export interface MessageHandlerOptions {
   sendFormatted?: boolean;
   /** Send detected table blocks in separate `mtx` sends. Default false. */
   tablesInSeparateMessage?: boolean;
-  /** Thread router (DESIGN-ROOM-THREADING): when it has an active thread,
+  /** Thread router: when it has an active thread,
    * outgoing traffic rides the thread delegate instead of the flat
    * `outbox.postMessage` path. Absent/flat → the plain outbox send. */
   threadManager?: ThreadManager;
-  /** Outbox seam (TO-BE §1.5): the pipeline's write surface for
+  /** Outbox seam: the pipeline's write surface for
    *  thread-targeted posts + edits (`postInThread` / `editInThread`).
    *  Absent → thread writes soft-fail (`{ success: false }`, flat mode). */
   outbox?: Outbox;
-  /** Where warnings/debug lines go; defaults to the console (item 12). */
+  /** Where warnings/debug lines go; defaults to the console . */
   logger?: MatrixLogger;
   /** Icon for milestone messages. Default "🎯". */
   milestoneIcon?: string;
@@ -51,7 +51,7 @@ const DEFAULT_DEDUPE_WINDOW_MS = 600_000;
 // words the heuristics strip ("Milestone: ", "TODO progress: "). Stripping
 // them from the dedupe key makes "🎯 Milestone: X" (sent at message_end)
 // collide with the same line re-embedded in "💬 Pi: …" (final broadcast),
-// which is exactly the duplication pair item 2 fixes.
+// which is exactly the duplication pair the earlier feature fixes.
 const DEDUPE_PREFIXES = [
   '🎯 Milestone: ',
   '💬 Pi: ',
@@ -105,7 +105,7 @@ export function isPiMachineTraffic(body: string): boolean {
  * Message handler for Pi-Matrix integration
  */
 export class MessageHandler {
-  // Normalized outgoing body → last-send time (item 2). Expired entries are
+  // Normalized outgoing body → last-send time . Expired entries are
   // pruned lazily; cleared in cleanup().
   private recentSends: Map<string, number> = new Map();
   private dedupeWindowMs: number;
@@ -155,18 +155,18 @@ export class MessageHandler {
    * `post(text, "decision", { dedupe: false })` (a re-ask is intentional, so
    * it opts out of the content-key window explicitly).
    *
-   * Threading (DESIGN §1.4/§2.4): when the session is pending, the first
+   * Threading (threads-and-summaries.md): when the session is pending, the first
    * outgoing user message creates the thread root and is posted into it
    * (ordering invariant: root first, then the reply). With an active
    * thread, traffic routes into it via the matrix-http transport; on any thread
-   * failure the send falls back to the flat `mtx` path (§2.11).
+   * failure the send falls back to the flat `mtx` path .
    */
   async handleOutgoingMessage(piMessage: PiMessage): Promise<MatrixSendResult> {
     const kind: SendKind =
       piMessage.type === 'milestone' ? 'milestone' : piMessage.type === 'final' ? 'final' : piMessage.type === 'user' ? 'user' : 'other';
 
     // Format first (prefix + details), then the single outgoing pipeline
-    // (format → dedupe → write; TO-BE §1.5). `metadata.flat` skips thread
+    // (format → dedupe → write; threads-and-summaries.md). `metadata.flat` skips thread
     // routing entirely (the /new session-start announcement: it announces
     // a NEW session, so it must not soft-attach into the previous session's
     // thread under `threadPendingRoute: "latest"`).
@@ -174,7 +174,7 @@ export class MessageHandler {
   }
 
   /**
-   * The single outgoing pipeline (TO-BE §1.5): format → dedupe → write.
+   * The single outgoing pipeline: format → dedupe → write.
    * Every room write goes through here — consumers pass markdown (or a
    * pre-prefixed plain line); `kind` feeds the thread ledger; `dedupe: false`
    * explicitly opts out of the content-key window (decision re-issues — a
@@ -209,11 +209,11 @@ export class MessageHandler {
       }
     }
 
-    // Threading (DESIGN §1.4/§2.4): pending session + first user message
+    // Threading (threads-and-summaries.md): pending session + first user message
     // creates the thread root and posts into it (ordering invariant: root
     // first, then the reply); active threads route all traffic in-thread.
-    // On any thread failure the send falls back to the flat path (§2.11 —
-    // never drop the message). TO-BE §1.5: the manager computes route +
+    // On any thread failure the send falls back to the flat path (threads-and-summaries.md —
+    // never drop the message). transport-and-state.md: the manager computes route +
     // ledger and delegates the write back to this pipeline — html is no
     // longer pre-computed here, the write step formats.
     const tm = this.threadManager;
@@ -222,7 +222,7 @@ export class MessageHandler {
       // straight to the room. Dedupe above still applies.
     } else if (tm?.enabled()) {
       // Thread creation trigger: pending session + first message of certain kinds
-      // User messages and final messages both create the thread root (DESIGN §1.4)
+      // User messages and final messages both create the thread root (threads-and-summaries.md)
       const shouldCreateThread = tm.pending() && (kind === "user" || kind === "final");
       if (shouldCreateThread) {
         // For user messages, use the message text as topic; for final messages, no topic
@@ -263,13 +263,13 @@ export class MessageHandler {
       }
     }
 
-    // Flat send: the single outbox write surface (TO-BE Slice 6 — the
+    // Flat send: the single outbox write surface (transport-and-state.md phase 6 — the
     // facade pair is deleted; the PI_MATRIX_TEST_OUTBOX seam stands in
     // for the SdkOutbox in the spawned suites).
     let result: MatrixSendResult;
     if (html) {
-      // Caller-supplied formatted body (sub-agent color, DESIGN-SUBAGENT-
-      // TRACKING §4.3 C): ships as formatted_body with a tag-stripped
+      // Caller-supplied formatted body (sub-agent color, transport-and-state.md
+      // configuration-and-room-behaviour.md transport-and-state.md): ships as formatted_body with a tag-stripped
       // plain fallback, regardless of the sendFormatted gate.
       result = await this.outboxSend(stripHtmlTags(text), html);
     } else if (this.sendFormatted) {
@@ -288,13 +288,13 @@ export class MessageHandler {
   }
 
   /**
-   * Thread-targeted write step of the pipeline (TO-BE §1.5): the
+   * Thread-targeted write step of the pipeline: the
    * ThreadManager's injected write delegate lands here. Format at write
    * time (caller-supplied `html` wins; otherwise the `sendFormatted` gate
    * converts markdown via markdown.ts — the single formatter), then the
    * outbox seam. No routing, no dedupe — those live in `post()`.
    * `rootId` undefined posts a thread root (a marker, never deduped);
-   * `nestedRoot` marks sub-thread roots (DESIGN §1.5 emulated nesting).
+   * `nestedRoot` marks sub-thread roots (threads-and-summaries.md emulated nesting).
    */
   async postInThread(
     text: string,
@@ -311,11 +311,11 @@ export class MessageHandler {
   }
 
   /**
-   * Root edit via `m.replace` (DESIGN §2.5.4 + always-html rule): the edit
+   * Root edit via `m.replace` (transport-and-state.md + always-html rule): the edit
    * path skips dedupe structurally — `post()` is never on this path, so a
    * re-edited summary is never "deduped". `html` wins over the pipeline's
    * conversion (markdown.ts is the single formatter); `threadRoot: true`
-   * keeps the `m.thread` marker in the new content. The §2.5.4 fallback
+   * keeps the `m.thread` marker in the new content. The threads-and-summaries.md fallback
    * (rejected m.replace → a new in-thread summary message) stays in
    * ThreadManager.editSummary.
    */

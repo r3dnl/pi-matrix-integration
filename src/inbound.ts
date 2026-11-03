@@ -1,6 +1,5 @@
 /**
  * Pi Matrix Integration — the single room-event dispatch point
- * (TO-BE restructure, Slice 4).
  *
  * One funnel for every room event (replacing the index.ts onMessage +
  * onReaction bodies, 1:1): threading adoption → ask-user mirror
@@ -108,7 +107,7 @@ export function createInbound(deps: InboundDeps): Inbound {
       .catch(() => undefined);
   };
 
-  // The file-attach injection helper (item 10a): same normal-injection
+  // The file-attach injection helper: same normal-injection
   // path as the fallthrough below — keeps attribution, decision-response
   // detection, and the renderer.
   const injectExpanded = (matrixMessage: MatrixMessage, expanded: string) => {
@@ -169,13 +168,13 @@ export function createInbound(deps: InboundDeps): Inbound {
         staleFlush = setTimeout(flushStaleDrops, STALE_REPORT_DEBOUNCE_MS);
         return;
       }
-      // Threading adoption (DESIGN §1.4.5/§2.6): the user's reply carries a
+      // Threading adoption (threads-and-summaries.md): the user's reply carries a
       // thread root (it happened in a thread, e.g. in Element) → that thread
       // becomes this session's thread. Adoption is NOT gated on `pending()`:
       // a user reply in a thread different from the active one re-routes the
       // session there (follow the user, not just the first thread), so the
       // session stays with whichever thread the user is in. No effect when
-      // the message is already in the active thread (§2.4: one Pi session
+      // the message is already in the active thread (threads-and-summaries.md: one Pi session
       // per instance).
       if (
         threadManager.enabled() && !matrixMessage.isFromPi && matrixMessage.threadRoot &&
@@ -234,7 +233,7 @@ export function createInbound(deps: InboundDeps): Inbound {
         return;
       }
 
-      // Slash relay (item 9): a room-typed /command dispatches exactly as
+      // Slash relay: a room-typed /command dispatches exactly as
       // if typed in the composer. Unknown names with fuzzy candidates get
       // a plain-text suggestion reply in the room (A3 phase 1 — polls are
       // the phase-2 transport); names with no candidates fall through to
@@ -268,8 +267,8 @@ export function createInbound(deps: InboundDeps): Inbound {
         }
       }
 
-      // @@ artifact attach (R2) + @ file attach (item 10): the RoomUx
-      // aggregation owns the picker logic + auto-replies (TO-BE §1.10);
+      // @@ artifact attach  + @ file attach: the RoomUx
+      // aggregation owns the picker logic + auto-replies ;
       // a consumed message stops the funnel.
       if (roomUx.handleArtifactAttach(matrixMessage)) {
         return;

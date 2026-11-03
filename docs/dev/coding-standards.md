@@ -15,7 +15,7 @@ Every rule below names its gate: the command, test or review step that enforces 
 
 | Rule | Gate |
 |------|------|
-| No `console.log` in `src/`. Use the logger from `src/logger.ts` so output lands in the log file the user is told about | `grep -rn "console.log" src/` returns nothing |
+| No ad-hoc `console.log` in `src/`. Runtime diagnostics go through the logger from `src/logger.ts`, so output lands in the log file the user is told about. Two exceptions, both structural: the logger's own console sink, and the startup lines that run before a log file exists (config migration, profile restore) | `grep -rn "console.log" src/` returns only `logger.ts` and the `[matrix]` startup lines |
 | Never log an access token, password, passphrase, device id or room message body | code review + `test/security-boundary.mjs` |
 | A tool result must not echo credentials or raw room content either | `test/security-boundary.mjs` |
 | Transport and storage failures degrade: show it in the footer, log it, continue. Do not throw into Pi's event loop | review, against the soft-fail invariant |

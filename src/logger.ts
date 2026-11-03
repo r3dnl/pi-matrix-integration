@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration — error log file (item 12)
+ * Pi Matrix Integration — error log file 
  *
  * Recurring extension errors (poll/reconnect failures while the homeserver
  * is unreachable, failed sends) used to spam the Pi TUI console. They now

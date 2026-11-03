@@ -1,12 +1,12 @@
 /**
  * Shared thread metadata + event normalization
- * (DESIGN-TRANSPORT-AND-IDENTITY §3.3: "factor it into one shared
+ * (transport-and-state.md: "factor it into one shared
  * extractThreadMeta(event) helper ... so the mtx-branch and
  * matrix-http-branch of the poll loop can never diverge on what a
  * root/reply is").
  *
  * That divergence guard still holds trivially: the mtx and matrix-http
- * poll transports are gone (TO-BE §1.1) and the one remaining transport
+ * poll transports are gone  and the one remaining transport
  * — the SdkOutbox sync pipeline — normalizes every raw timeline event
  * through `parseMatrixEvent` (this file), so the whole inbound stream
  * (including `m.reaction`) shares one definition of root/reply/flat and
@@ -15,7 +15,7 @@
 
 import type { MatrixEvent, MatrixMessage } from './types.js';
 
-/** Thread grouping for one event (DESIGN-TRANSPORT-AND-IDENTITY §3.3):
+/** Thread grouping for one event :
  * - an event whose content carries the `m.thread` marker is a ROOT →
  *   its own conversation unit (`threadRoot` stays undefined; the root
  *   keys under its own event id in the unread model);
@@ -106,7 +106,7 @@ export function parseMatrixEvent(
     return null;
   }
 
-  // Thread metadata (DESIGN-ROOM-THREADING §2.2): shared extraction (§3.3).
+  // Thread metadata: shared extraction .
   const meta = extractThreadMeta(event.content);
 
   // Media fields (voice transcription, backlog #4): carried when present —

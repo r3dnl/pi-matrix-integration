@@ -1,15 +1,15 @@
 /**
- * Pi Matrix Integration — Login dialogue core (R3, DESIGN-LOGIN-ONBOARDING §3/§4/§7/§11).
+ * Pi Matrix Integration — Login dialogue core (configuration-and-room-behaviour.md).
  *
  * `saveCredentials`: the single writer of the accounts store
  * (`<credsDir>/<localpart>--<domain>/credentials.json`, dir 0700 / file 0600,
  * temp-file + rename). `probeLoginCapability` checks the homeserver's
  * `/_matrix/client/v3/login` flows. The QR method (2025 variant,
  * MSC4108/MSC4388) lives in src/qr2025 behind the `qr2025` toggle (default
- * off; design §16) and feeds this same dialogue tail.
+ * off; configuration-and-room-behaviour.md) and feeds this same dialogue tail.
  * `runLoginDialogue` is the plain state machine: probe → homeserver →
  * username → password → login → save + live config. Failure/cancel discipline
- * (§11): it never throws, and nothing is written before a successful login.
+ * : it never throws, and nothing is written before a successful login.
  *
  * Wiring (lifecycle / commands) is a later story — this module only exports
  * the four pieces.
@@ -22,7 +22,7 @@ import { domainOf, localpartOf } from "./classify.js";
 import type { ProjectRoomManifest } from "./types.js";
 import { encryptionNotice } from "./encryption-status.js";
 
-/** The four keys the credentials file carries — nothing else (§7 schema). */
+/** The four keys the credentials file carries — nothing else (transport-and-state.md schema). */
 export interface Credentials {
   user_id: string;
   homeserver: string;
@@ -62,7 +62,7 @@ function accountFromUserId(userId: string): { localpart: string; domain: string 
 }
 
 /**
- * Normalize a homeserver address for the login probe (R3.1): a bare domain
+ * Normalize a homeserver address for the login probe: a bare domain
  * gets `https://` — Node `fetch` requires a scheme, so a bare host throws
  * "Failed to parse URL" and reads as "Homeserver unreachable". An explicit
  * scheme (`https://` or `http://`) is kept as-is. Empty stays empty (the
@@ -75,7 +75,7 @@ export function normalizeHomeserver(input: string): string {
 }
 
 /**
- * R3.1: an explicit `http://` input raises a stern warning (credentials
+ * note: an explicit `http://` input raises a stern warning (credentials
  * travel in the clear) but the address is still tried — a test network's
  * homeserver may legitimately speak http. One line, no confirm.
  */
@@ -92,7 +92,7 @@ function warnIfHttp(ui: LoginUi, raw: string): void {
  * GET `{baseUrl}/_matrix/client/v3/login` and report capability:
  * `reachable` (the endpoint answered) + `password` (an `m.login.password`
  * flow exists). Network or parse errors → `{reachable: false, password: false}`
- * — never throws (§11).
+ * — never throws .
  */
 export async function probeLoginCapability(
   baseUrl: string,
@@ -120,7 +120,7 @@ export function errorText(err: unknown): string {
 }
 
 /**
- * First-run gate (design §2): loadable = the file exists, parses, and
+ * First-run gate (configuration-and-room-behaviour.md): loadable = the file exists, parses, and
  * carries a non-empty `access_token`. Anything else → the dialogue.
  */
 export function hasLoadableCredentials(credentialsPath?: string): boolean {
@@ -134,7 +134,7 @@ export function hasLoadableCredentials(credentialsPath?: string): boolean {
 }
 
 /**
- * Masked single-line input (design §4 step 3): `render()` shows one `•`
+ * Masked single-line input (configuration-and-room-behaviour.md step 3): `render()` shows one `•`
  * per character — the plaintext never appears in the rendered lines — while
  * `getValue()`/`setValue()` keep the real value and all key handling comes
  * free from `Input`.
@@ -158,7 +158,7 @@ export class MaskedInput extends Input {
 }
 
 /**
- * QR pane: static QR text + Esc cancels (design §6 v1 — the status overlay
+ * QR pane: static QR text + Esc cancels (configuration-and-room-behaviour.md v1 — the status overlay
  * is the upgrade path). pi TUI delivers keys via handleInput; bare Esc is
  * the escape byte.
  */
@@ -178,7 +178,7 @@ export interface LoginUi {
   /** Masked entry (the adapter renders a MaskedInput via ui.custom). */
   password(title: string): Promise<string | null>;
   /**
-   * A dismissable text pane (the QR code, design §6). Resolves null on
+   * A dismissable text pane (the QR code, configuration-and-room-behaviour.md). Resolves null on
    * close/cancel. Optional: a UI without one degrades to notify-only QR.
    */
   display?(text: string): Promise<string | null>;
@@ -196,7 +196,7 @@ export interface PiUi {
 }
 
 /**
- * Adapter: pi `ctx.ui` → `LoginUi` (design §4). A closed dialog (Esc) is
+ * Adapter: pi `ctx.ui` → `LoginUi` (configuration-and-room-behaviour.md). A closed dialog (Esc) is
  * `undefined` in pi's API and maps to `null` (cancel); `password` renders
  * a `MaskedInput` through `ui.custom`, so the plaintext never passes
  * through a pi API that echoes its arguments.
@@ -231,7 +231,7 @@ export interface LoginDeps {
   updateConfig: (patch: Record<string, unknown>) => void;
   fetchImpl?: typeof fetch;
   /** One client per homeserver: login + the room ops the room step runs
-   *  against the fresh token (design §8). */
+   *  against the fresh token (configuration-and-room-behaviour.md). */
   makeLoginClient: (homeserver: string) => LoginClient;
   /** A login client that starts with the given access token — the QR path
    *  completes the login outside this client, so the room step gets a
@@ -241,19 +241,19 @@ export interface LoginDeps {
   usernamePrefill?: string;
   /** The configured room (alias if one is set) — the room step's proposal. */
   configuredRoomId?: string;
-  /** e2ee toggle ("on"/"off"); room creation honours it (design §8/§9). */
+  /** e2ee toggle ("on"/"off"); room creation honours it (configuration-and-room-behaviour.md). */
   e2ee?: string;
-  /** QR login (2025 variant) method offer (design §16). Default off. */
+  /** QR login (2025 variant) method offer (configuration-and-room-behaviour.md). Default off. */
   qr2025?: boolean;
   /** The `state/` dir — the QR flow persists its registered client id there. */
   stateDir?: string;
-  /** Directory to save the project room manifest (backlog item 5). */
+  /** Directory to save the project room manifest . */
   manifestDir?: string;
   /** Current working directory for the project. */
   cwd?: string;
 }
 
-/** The js-sdk surface the login + room steps drive (design §4/§8). */
+/** The js-sdk surface the login + room steps drive (configuration-and-room-behaviour.md). */
 export interface LoginClient {
   loginWithPassword(user: string, password: string): Promise<any>;
   /** GET /directory/room/{alias} — resolves the alias; 404 when absent. */
@@ -276,14 +276,14 @@ export type LoginResult =
       user_id: string;
       device_id: string;
       roomId: string;
-      /** The user accepted the introduction tour (design §10). The caller runs it after connect. */
+      /** The user accepted the introduction tour (configuration-and-room-behaviour.md). The caller runs it after connect. */
       tour: boolean;
     }
   | { ok: false; cancelled: true }
   | { ok: false; cancelled: false; error: string };
 
 // ===========================================================================
-// Room selection (design §8 — propose + status + autocreate)
+// Room selection (configuration-and-room-behaviour.md — propose + status + autocreate)
 // ===========================================================================
 
 /**
@@ -296,7 +296,7 @@ export function homeserverDomain(homeserver: string): string {
 }
 
 /**
- * Propose the room alias (design §8 step 1): the configured room alias when
+ * Propose the room alias (configuration-and-room-behaviour.md step 1): the configured room alias when
  * one is set, else `#<project>:<domain>` (project = cwd basename — backlog
  * "default = pi project name"). A configured `!room_id` is not an alias,
  * so it falls back to the default.
@@ -310,7 +310,7 @@ export function proposeRoomAlias(
   return `#${basename(cwd) || "pi"}:${homeserverDomain(homeserver)}`;
 }
 
-/** Canonicalize user input to `#name:domain` (design §8 step 2). */
+/** Canonicalize user input to `#name:domain` (configuration-and-room-behaviour.md step 2). */
 export function normalizeRoomAlias(input: string, homeserver: string): string {
   let s = input.trim();
   if (!s) return `#${homeserverDomain(homeserver)}`;
@@ -348,9 +348,9 @@ export type InviteStepResult =
   | { ok: false; cancelled: false; error: string };
 
 /**
- * The room selection step (design §8): propose → check + status → autocreate
+ * The room selection step (configuration-and-room-behaviour.md): propose → check + status → autocreate
  * when absent. Enter re-runs the resolution after an edit; a creation failure
- * (403/429) notifies and asks again (§11). The alias is returned for the
+ * (403/429) notifies and asks again . The alias is returned for the
  * config `roomId` (persisted by the caller).
  */
 export async function runRoomStep(deps: RoomStepDeps): Promise<RoomStepResult> {
@@ -391,7 +391,7 @@ export async function runRoomStep(deps: RoomStepDeps): Promise<RoomStepResult> {
     if (encChoice == null) return { ok: false, cancelled: true };
     const isEncrypted = encChoice !== TOGGLE_E2EE_OFF;
     try {
-      // ponytail: no room-topic or preset wiring at creation (design §8 note);
+      // ponytail: no room-topic or preset wiring at creation (configuration-and-room-behaviour.md note);
       // the ThreadManager takes over from the normal connect.
       const { room_id } = await client.createRoom({
         // The room NAME is the alias local part (not the full alias).
@@ -413,7 +413,7 @@ export async function runRoomStep(deps: RoomStepDeps): Promise<RoomStepResult> {
 }
 
 /**
- * The invite step (backlog item 1): after room creation, allow inviting other users.
+ * The invite step: after room creation, allow inviting other users.
  * Only runs when a new room was created (not when joining an existing room).
  * Returns the list of user IDs that were successfully invited.
  */
@@ -460,7 +460,7 @@ export async function runInviteStep(
 }
 
 /**
- * Generate and save a project room manifest (backlog item 5).
+ * Generate and save a project room manifest .
  * Captures the room setup for the Pi agent project following a simplified
  * version of the matrix-accounts-py schema.
  */
@@ -477,7 +477,7 @@ export function saveProjectRoomManifest(
 }
 
 /**
- * Add .pi/ directories to .gitignore (backlog item 6).
+ * Add .pi/ directories to .gitignore .
  * Checks if .gitignore exists, and if not, creates it.
  * Adds the rules if not already present.
  * Returns true if changes were made.
@@ -509,7 +509,7 @@ export function addPiToGitignore(projectDir: string = process.cwd()): boolean {
 }
 
 /**
- * Ask user if they want to add .pi/ directories to .gitignore (backlog item 6).
+ * Ask user if they want to add .pi/ directories to .gitignore .
  * Returns true if the user agreed and the rules were added.
  */
 export async function promptAddPiToGitignore(
@@ -566,7 +566,7 @@ export function createProjectRoomManifest(
 }
 
 // ===========================================================================
-// Config toggles + onboarding tour (design §9/§10)
+// Config toggles + onboarding tour (configuration-and-room-behaviour.md)
 // ===========================================================================
 
 // Exactly the three toggles onboarding asks (backlog intent), each with the
@@ -592,7 +592,7 @@ export type ToggleStepsResult =
   | { ok: false; cancelled: true };
 
 /**
- * The two config toggles + the tour offer (design §9/§10). One select per
+ * The two config toggles + the tour offer (configuration-and-room-behaviour.md). One select per
  * toggle, default first and marked, then the tour offer. Esc/null at any
  * step cancels the whole dialogue (the caller writes nothing). Values are
  * returned for the caller to persist to the live config (existing keys).
@@ -616,7 +616,7 @@ export async function runToggleSteps(ui: LoginUi): Promise<ToggleStepsResult> {
 }
 
 /**
- * The onboarding tour prompt (design §10): one canned directive telling the
+ * The onboarding tour prompt (configuration-and-room-behaviour.md): one canned directive telling the
  * agent to walk the room through the feature tour, sourced from the
  * matrix-help text (the same content the room sees from /matrix-help). The
  * agent posts the tour with its normal tools — no new content store.
@@ -631,18 +631,18 @@ export function buildTourPrompt(helpContent: string): string {
 }
 
 /**
- * Run the credentials login dialogue (§3/§4). Esc/null at any step, or
+ * Run the credentials login dialogue . Esc/null at any step, or
  * "cancel" on the retry prompt, closes with `{ok:false, cancelled:true}` and
- * writes nothing. Login errors notify and re-ask the password only (§11).
+ * writes nothing. Login errors notify and re-ask the password only .
  */
 export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
   const { ui } = deps;
   const fetchImpl = deps.fetchImpl ?? fetch;
 
-  // §11: unreachable → one line; retry or cancel. Retry always offers the
+  // configuration-and-room-behaviour.md: unreachable → one line; retry or cancel. Retry always offers the
   // homeserver input (prefilled with the current value — Enter keeps it)
   // so a bad prefilled URL is fixable instead of re-probed forever.
-  // R3.1: the address is normalized (bare domain → https://) at every
+  // note: the address is normalized (bare domain → https://) at every
   // entry point, and an explicit http:// raises a stern warning. If nothing
   // is prefilled, the dialogue ASKS FIRST instead of probing the empty URL
   // (the probe can never succeed against "" — that was the phantom
@@ -698,7 +698,7 @@ export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
   let roomClient: LoginClient | undefined; // the room step's authenticated client
 
   // QR method (2025 variant, MSC4108/MSC4388) — feature toggle `qr2025`
-  // (default off, design §16). Any probe failure or the user picking
+  // (default off, configuration-and-room-behaviour.md). Any probe failure or the user picking
   // credentials falls through to the password path unchanged.
   if (deps.qr2025) {
     try {
@@ -723,7 +723,7 @@ export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
               ? deps.makeLoginClientWithToken(homeserver, r.access_token)
               : deps.makeLoginClient(homeserver);
           } else if (!r.cancelled) {
-            // A failed scan falls through to credentials (recoverable, §11);
+            // A failed scan falls through to credentials (recoverable, transport-and-state.md);
             // a cancel ends the dialogue.
             ui.notify("Falling back to credentials.", "info");
           } else {
@@ -745,13 +745,13 @@ export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
       ui.notify("No login method available on the homeserver.", "error");
       return { ok: false, cancelled: false, error: "No login method available on the homeserver" };
     }
-    // One client per homeserver (design §4) — created only when the
+    // One client per homeserver (configuration-and-room-behaviour.md) — created only when the
     // credentials path is actually taken (the QR path builds its own).
     const client = deps.makeLoginClient(homeserver);
     roomClient = client; // its loginWithPassword sets the token in place
     const username = await ui.input("Username", deps.usernamePrefill);
     if (username == null) return { ok: false, cancelled: true };
-    // §11: bad password / unknown user → notify the error, back to the password.
+    // configuration-and-room-behaviour.md: bad password / unknown user → notify the error, back to the password.
     for (;;) {
       const password = await ui.password("Password");
       if (password == null) return { ok: false, cancelled: true };
@@ -763,7 +763,7 @@ export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
       }
     }
   }
-  // Room selection (design §8) against the fresh token, before anything is
+  // Room selection (configuration-and-room-behaviour.md) against the fresh token, before anything is
   // written — a cancelled/failed room step discards the whole dialogue
   // (principle 2: nothing is written before the flow completes).
   const room = await runRoomStep({
@@ -775,7 +775,7 @@ export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
   });
   if (!room.ok) return room;
   
-  // Invite step (backlog item 1): only when a new room was created
+  // Invite step: only when a new room was created
   let invitedUsers: string[] = [];
   if (room.created) {
     const inviteResult = await runInviteStep(
@@ -787,10 +787,10 @@ export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
     invitedUsers = inviteResult.invited;
   }
   
-  // Config toggles + tour offer (design §9/§10) — after the room, before
+  // Config toggles + tour offer (configuration-and-room-behaviour.md) — after the room, before
   // anything is written. A cancel here discards the whole dialogue too
   // (principle 2). The e2ee value is persisted for the future; it does not
-  // rewrite the room just created (design: Story 4 must not rewrite an
+  // rewrite the room just created (note: issue 4 must not rewrite an
   // already-created room's encryption).
   const toggles = await runToggleSteps(ui);
   if (!toggles.ok) return toggles;
@@ -810,7 +810,7 @@ export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
     e2ee: room.e2ee,
   });
   
-  // Save project room manifest (backlog item 5) when a new room was created
+  // Save project room manifest  when a new room was created
   if (room.created && deps.manifestDir) {
     const manifest = createProjectRoomManifest(
       response.user_id,
@@ -824,7 +824,7 @@ export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
     saveProjectRoomManifest(deps.manifestDir, manifest);
   }
   
-  // Ask about .gitignore rules (backlog item 6)
+  // Ask about .gitignore rules 
   await promptAddPiToGitignore(ui, deps.cwd ?? process.cwd());
   
   ui.notify(

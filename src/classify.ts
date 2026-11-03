@@ -1,6 +1,6 @@
 /**
  * Pi Matrix Integration — pure classification helpers (extracted from
- * index.ts, TO-BE restructure Slice 1).
+ * index.ts, phase 1 of the planned restructure).
  *
  * Module-level pure functions per the "constants → module, state → class"
  * rule: message → milestone/TODO extraction, Pi message text joining +
@@ -28,7 +28,7 @@ export function domainOf(id: string): string | undefined {
 }
 
 // ===========================================================================
-// Sub-agent detection (DESIGN §2.8 layer 1 — S4 event-based verdict)
+// Sub-agent detection (threads-and-summaries.md layer 1 — review round 4 event-based verdict)
 // ===========================================================================
 
 type SubagentTaskInput = { agent?: unknown; task?: unknown; cwd?: unknown };
@@ -40,7 +40,7 @@ type SubagentInput = {
 
 /**
  * Extract the sub-agent names from a `subagent` tool call. The shipped
- * extension's spawn tool takes one of three shapes (DESIGN S4): a single
+ * extension's spawn tool takes one of three shapes (review round 4): a single
  * `{ agent, task, cwd? }`, a parallel `{ tasks: [...] }` (≤8, 4
  * concurrent), or a chain `{ chain: [...] }` — one call spawns 1..N
  * sub-agents, each of which becomes a sub-thread under the active root.
@@ -57,7 +57,7 @@ export function subagentNames(input: unknown): string[] {
 }
 
 /**
- * Role from the sub-agent name (DESIGN §1.6 / S4): explicit role if the
+ * Role from the sub-agent name (threads-and-summaries.md / review round 4): explicit role if the
  * spawn payload had one, else a heuristic on the agent label, else
  * `unknown`. The agent name is the frontmatter `name` of
  * `~/.pi/agent/agents/*.md`.
@@ -160,7 +160,7 @@ export function messageText(
 
 /**
  * Truncate a final message so it stays readable on mobile clients.
- * The cutoff is `config.finalMessageMaxLength` (default 2000, item 5).
+ * The cutoff is `config.finalMessageMaxLength` (default 2000).
  * Exported for API parity with the pre-restructure index.ts.
  */
 export function truncateFinalMessage(text: string, maxLength: number = DEFAULT_FINAL_MESSAGE_MAX_LENGTH): string {
@@ -172,7 +172,7 @@ export function truncateFinalMessage(text: string, maxLength: number = DEFAULT_F
 }
 
 // ===========================================================================
-// Summarizer completion-notice detection (INCIDENT-2026-10-22-SUMMARY-LOOP)
+// Summarizer completion-notice detection (the 2026-10 summary-loop incident)
 // ===========================================================================
 
 /** The agent type the cadence spawns for thread summaries (the one source of
@@ -225,7 +225,7 @@ export const SUMMARIZE_DIRECTIVE_KIND = "summarize";
 
 /**
  * True when a run was started by the extension's own in-session
- * thread-summary directive (Engine A of INCIDENT-2026-10-22-SUMMARY-LOOP:
+ * thread-summary directive (Engine A of the 2026-10 summary-loop incident:
  * the subagent-unavailable fallback injects the directive into the main
  * session; its "Pass done" report-out is the message that re-armed the
  * cadence). Same mute contract as `isSummarizerWakeNotice`: the summary

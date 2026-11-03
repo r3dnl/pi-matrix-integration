@@ -1,12 +1,12 @@
 /**
  * MSC4108 (2025 variant, MSC4388) QR login — feature toggle `qr2025`
- * (default off). DESIGN-LOGIN-ONBOARDING.md §5–§6/§16.
+ * (default off). configuration-and-room-behaviour.md–configuration-and-room-behaviour.md
  *
  * ISOLATION: this module is only imported dynamically by src/login.ts when
  * the toggle is on. The three vendored files (src/qr2025/*.ts, js-sdk PoC
  * PR 5219) are its only new code; no other extension file changed.
  *
- * Prerequisites (all checked at probe time, §16):
+ * Prerequisites (all checked at probe time, configuration-and-room-behaviour.md):
  *   - Synapse `experimental_features.msc4388_mode: open` (our terminal is
  *     the NEW device creating the rendezvous; `authenticated` mode refuses
  *     unauthenticated creation).
@@ -19,7 +19,7 @@
  * ponytail: v1 is QR generation only (the new-device role — no scanning),
  * a static QR pane (Esc cancels), and the secrets bundle is NOT imported
  * (login + E2EE for new rooms work; old-message history stays locked until
- * a secrets import lands). Upgrade paths: overlay status component (§6),
+ * a secrets import lands). Upgrade paths: overlay status component ,
  * secrets import, drop the vendored copy once js-sdk ships MSC4388.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -69,7 +69,7 @@ function makeClient(homeserver: string, fetchImpl: typeof fetch): MatrixClient {
 }
 
 /**
- * §5.2 capability probe (order: MAS metadata → MSC4388 discovery → local
+ * configuration-and-room-behaviour.md capability probe (order: MAS metadata → MSC4388 discovery → local
  * crypto). Each failure returns an actionable reason, not an error.
  */
 export async function isQr2025Available(
@@ -84,7 +84,7 @@ export async function isQr2025Available(
     return {
       ok: false,
       reason:
-        "crypto-wasm lacks the MSC4388 HPKE bindings (HpkeRecipientChannel) — blocked on @matrix-org/matrix-sdk-crypto-wasm publishing them (design §16); credentials login is unaffected",
+        "crypto-wasm lacks the MSC4388 HPKE bindings (HpkeRecipientChannel) — blocked on @matrix-org/matrix-sdk-crypto-wasm publishing them; credentials login is unaffected",
     };
   }
   const client = makeClient(homeserver, fetchFn);
@@ -115,7 +115,7 @@ export async function isQr2025Available(
         return {
           ok: false,
           reason:
-            "MSC4388 rendezvous disabled on the server — set experimental_features.msc4388_mode: open (design §16)",
+            "MSC4388 rendezvous disabled on the server — set experimental_features.msc4388_mode: open",
         };
       }
       if (e instanceof MatrixError && e.httpStatus === 401) {
@@ -137,10 +137,10 @@ export async function isQr2025Available(
 }
 
 // ===========================================================================
-// QR rendering (§6) + DAG plumbing (§5.3)
+// QR rendering  + DAG plumbing 
 // ===========================================================================
 
-/** Binary payload → terminal half-blocks (error correction Q, §16 payload).
+/** Binary payload → terminal half-blocks (error correction Q, configuration-and-room-behaviour.md payload).
  *  qrcode 1.5.x has no sync terminal renderer (toString is async), so the
  *  half-blocks are rendered from the module matrix (QRCode.create). One
  *  module = one pixel; quiet zone 4 modules; rows padded to an even count
@@ -183,8 +183,8 @@ export function renderQr2025(code: Uint8Array): string {
   return out;
 }
 
-/** RFC 7591 dynamic client registration against the MAS (§5.3, verified live
- *  on tst2). The client id is persisted under `state/oauth-client-id` so a
+/** RFC 7591 dynamic client registration against the MAS (configuration-and-room-behaviour.md, verified live
+ *  on a MAS-enabled server). The client id is persisted under `state/oauth-client-id` so a
  *  re-login reuses it (arbitrary client ids are rejected by the MAS). */
 export async function getOrRegisterClientId(
   masBaseUrl: string,
@@ -229,7 +229,7 @@ export function makeDeviceId(): string {
   return Array.from(bytes, (b) => chars[b % chars.length]).join("");
 }
 
-/** The token response carries no user_id (§5.3) — ask the homeserver. */
+/** The token response carries no user_id  — ask the homeserver. */
 async function whoami(
   homeserver: string,
   token: string,
@@ -254,7 +254,7 @@ export interface Qr2025LoginDeps {
   ui: LoginUi;
   homeserver: string;
   fetchImpl?: typeof fetch;
-  /** The `state/` dir for the registered client id (design §12). */
+  /** The `state/` dir for the registered client id (configuration-and-room-behaviour.md). */
   stateDir?: string;
 }
 

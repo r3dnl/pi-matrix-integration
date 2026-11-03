@@ -1,7 +1,7 @@
 /**
- * Pi Matrix Integration — ToolWatchers (TO-BE restructure, Slice 3).
+ * Pi Matrix Integration — ToolWatchers .
  *
- * The sub-agent sub-thread markers (DESIGN §1.5/§2.8, S4 verdict:
+ * The sub-agent sub-thread markers (threads-and-summaries.md, review round 4 verdict:
  * event-based), extracted verbatim from index.ts: the shipped
  * `subagent` extension registers a tool (configurable via
  * `subagentToolName`); one call spawns 1..N sub-agents → N sub-thread
@@ -10,10 +10,10 @@
  * `threads`); with no subagent extension present, nothing fires and
  * threading is unaffected.
  *
- * The core `Agent` / `SubagentWorkflow` tools (DESIGN-SUBAGENT-TRACKING
- * §4.5): their spawns are routed to the sub-agent bus via the `coreAgent`
+ * The core `Agent` / `SubagentWorkflow` tools (configuration-and-room-behaviour.md
+ * configuration-and-room-behaviour.md): their spawns are routed to the sub-agent bus via the `coreAgent`
  * delegate — the OWNER instance registers spawns (spawn line / anchor),
- * a SIDE-CHAIN instance registers nested spawns (milestone lines, §4.6).
+ * a SIDE-CHAIN instance registers nested spawns (milestone lines, configuration-and-room-behaviour.md).
  * Detection is always on; the delegate decides what gets reported.
  *
  * The instance is rebuilt with the stack on /matrix-switch (the
@@ -29,7 +29,7 @@ import type { AgentSpawnInput } from "./subagent-bus.js";
 import type { SpawnWatch } from "./subagent-provider.js";
 
 /** The core Agent-tool delegate (wired by the composition root). Inputs are
- *  provider-normalized by the watcher (DESIGN-SUBAGENT-PROVIDER §5) — the
+ *  provider-normalized by the watcher  — the
  *  delegate only ever sees the bus's `AgentSpawnInput` shape. */
 export interface CoreAgentDelegate {
   /** An agent-spawn tool_call in THIS session (owner spawn or nested spawn). */
@@ -37,13 +37,13 @@ export interface CoreAgentDelegate {
   /** A workflow-spawn tool_call in THIS session (container spawn). */
   onWorkflowTool(input: AgentSpawnInput): void;
   /** The spawn tool_result of a detached child: attach the provider run
-   *  id to the running record (DESIGN-SUBAGENT-PROVIDER §6 — the join
+   *  id to the running record (configuration-and-room-behaviour.md — the join
    *  key for the completion-channel settle). */
   onAgentRunId?(prompt: string, runId: string): void;
 }
 
 /** Full default watch for stacks built without a resolved provider
- *  (DESIGN-SUBAGENT-PROVIDER §5): today's tintinweb tool names + today's
+ *  : today's tintinweb tool names + today's
  *  input passthrough, so the pre-contract behavior is the fallback. */
 const DEFAULT_SPAWN_WATCH: SpawnWatch = {
   agentToolNames: ["Agent"],
@@ -63,9 +63,9 @@ export interface ToolWatchersDeps {
   /** Optional: the core Agent-tool delegate (undefined in stacks built
    *  before sub-agent tracking — nothing fires). */
   coreAgent?: CoreAgentDelegate;
-  /** Live spawn-name source (DESIGN-SUBAGENT-PROVIDER §5): the resolved
+  /** Live spawn-name source: the resolved
    *  provider's `spawnWatch`, consulted per call so an `auto` re-probe
-   *  (§4) can re-bind without rebuilding the watcher. Absent → today's
+   *   can re-bind without rebuilding the watcher. Absent → today's
    *  tintinweb tool names (pre-contract fallback). */
   getSpawnWatch?: () => SpawnWatch;
   /** Temporary spawn-diagnostics sink (debug level) — see `onToolCall`. */
@@ -114,7 +114,7 @@ export class ToolWatchers {
   }
 
   /** The `subagent` tool_result → the completion marker per agent name;
-   *  also the run-id attach point for detached children (§6). */
+   *  also the run-id attach point for detached children . */
   async onToolResult(event: ToolResultEvent): Promise<void> {
     const cfg = this.deps.cfg;
     const spawnWatch = this.deps.getSpawnWatch?.() ?? DEFAULT_SPAWN_WATCH;

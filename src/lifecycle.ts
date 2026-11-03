@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration — Lifecycle (TO-BE restructure, Slice 3).
+ * Pi Matrix Integration — Lifecycle .
  *
  * The session/connect state the entry point used to hold in closures
  * (index.ts): the `enabled` flag, the shared connect + start sequence,
@@ -9,11 +9,11 @@
  * index.ts:300 — nothing re-registers or deregisters on /matrix-switch;
  * the registrations dispatch through the current stack at call time).
  *
- * `ConnectionStatus` ownership (TO-BE §1.2): this class owns the
+ * `ConnectionStatus` ownership: this class owns the
  * snapshot — fed by the connect() outcomes and the sdk transport's
  * `onSyncError` delivery callback. The footer's `() => ConnectionStatus` callback
  * reads this snapshot via the session-integration provider (the
- * transport deletion landed in Slice 6).
+ * transport deletion landed in phase 6).
  */
 
 import type {
@@ -68,7 +68,7 @@ export function hasAskUserCall(message: { content?: unknown }): boolean {
   );
 }
 
-/** A side-chain session's own identity (DESIGN-SUBAGENT-TRACKING §4). */
+/** A side-chain session's own identity . */
 interface SubagentSelf {
   sessionId: string;
   sessionName: string;
@@ -77,7 +77,7 @@ interface SubagentSelf {
 }
 
 /**
- * Side-chain (sub-agent) session detection (DESIGN-SUBAGENT-TRACKING §4.1):
+ * Side-chain (sub-agent) session detection :
  * the session header carries `parentSession` for fork/branch/sub-agent
  * lineages; `fork`/`resume` are MAIN-line replacements, so only the other
  * reasons with a parent header are side chains.
@@ -102,7 +102,7 @@ export function isSidechainSession(
  * own doctor reads the same marker), so this extension's copies inside
  * runner children detect themselves without provider cooperation.
  *
- * Runner posture (DESIGN-SUBAGENT-PROVIDER §6): inside a child process,
+ * Runner posture: inside a child process,
  * EVERY session is treated as a side chain — a background child must
  * never open a second Matrix client, even if the `parentSession` header
  * convention breaks, and this extension's shutdown paths must never act
@@ -126,7 +126,7 @@ export interface LifecycleDeps {
   /** Call-time owner-bus lookup (the globalThis publish; undefined → the
    *  stack has no sub-agent reporting wiring). */
   subagentBus?: () => SubagentBusImpl | null;
-  /** First-run login (R3, DESIGN-LOGIN-ONBOARDING §2): runs the dialogue
+  /** First-run login (configuration-and-room-behaviour.md transport-and-state.md): runs the dialogue
    *  when no loadable credentials exist; returns true when it handled the
    *  connect itself (the caller must not run connectAndStart). */
   onFirstRun?: (
@@ -161,7 +161,7 @@ export class Lifecycle {
   /** The turn currently running is a thread-summary pass — started by a
    *  summarizer completion notice (Engine B) or the in-session summarize
    *  directive (Engine A); its report-out stays out of the room (see
-   *  `onBeforeAgentStart` + INCIDENT-2026-10-22-SUMMARY-LOOP). */
+   *  `onBeforeAgentStart` + the 2026-10 summary-loop incident). */
   private summaryPassTurn = false;
   /** A summarizer wake notice was absorbed into the run currently live (see
    *  `onMessageEnd`). Its report-out must still reach the room, but it must
@@ -195,7 +195,7 @@ export class Lifecycle {
   }
 
   // ==========================================================================
-  // ConnectionStatus snapshot (TO-BE §1.2 ownership)
+  // ConnectionStatus snapshot (transport-and-state.md ownership)
   // ==========================================================================
 
   /** A copy of the current snapshot (the footer's `() => ConnectionStatus`
@@ -339,7 +339,7 @@ export class Lifecycle {
     void this.deps.outbox.disconnect();
     this.deps.messageHandler.cleanup();
     // Final summary into the active thread root + optional topic update
-    // (DESIGN §1.4.5) — fire-and-forget; a failed outbox call never holds
+    // (transport-and-state.md) — fire-and-forget; a failed outbox call never holds
     // shutdown up.
     void this.deps.threadManager.shutdown();
     this.enabled = false;
@@ -350,7 +350,7 @@ export class Lifecycle {
   // ==========================================================================
 
   /**
-   * session_start (DESIGN §1.4/§2.6): `new` and `startup` mark the
+   * session_start (transport-and-state.md): `new` and `startup` mark the
    * session pending (no Matrix traffic until the first user message opens
    * the thread — the "Pi session started" milestone lands flat in the
    * room); `resume`/`fork` re-attach to their thread from the state map
@@ -358,9 +358,9 @@ export class Lifecycle {
    * re-attaches to the most recent root. No-op when `threads` is off.
    */
   async onSessionStart(event: SessionStartEvent, ctx: ExtensionContext): Promise<void> {
-    // Side-chain session (DESIGN-SUBAGENT-TRACKING §4.1): no connect, no
+    // Side-chain session: no connect, no
     // thread root, no milestones — the owner instance owns all of that.
-    // The runner guard joins the test (DESIGN-SUBAGENT-PROVIDER §6): a
+    // The runner guard joins the test: a
     // header-less background child inside the runner still never claims
     // main line.
     if (
@@ -381,7 +381,7 @@ export class Lifecycle {
     }
     this.deps.threadManager.beginSession(event.reason, ctx.sessionManager?.getSessionId?.());
     if (this.deps.cfg.autoConnect) {
-      // Default: connect at session start (item 3). Opt out with
+      // Default: connect at session start . Opt out with
       // autoConnect: false and use /matrix-connect manually.
       //
       // When the `sendSessionStartStopMilestones` toggle is on, push a short
@@ -409,7 +409,7 @@ export class Lifecycle {
             break;
         }
       }
-      // First run (R3, DESIGN-LOGIN-ONBOARDING §2): no loadable
+      // First run (configuration-and-room-behaviour.md transport-and-state.md): no loadable
       // credentials → the login dialogue before the connect attempt.
       // Cancel/decline falls through to today's warn-and-degrade; the
       // hook owns the connect on success.
@@ -425,7 +425,6 @@ export class Lifecycle {
   onSessionShutdown(_event: SessionShutdownEvent): void {
     if (this.subagent) {
       // Side chain: the OWNER keeps the connection — no teardown here
-      // (DESIGN-SUBAGENT-TRACKING §4.1).
       this.subagent = null;
       return;
     }
@@ -528,7 +527,7 @@ export class Lifecycle {
   async onMessageEnd(event: MessageEndEvent): Promise<void> {
     if (this.subagent) return this.onSubagentMessageEnd(event);
     if (!this.isEnabled()) return;
-    // Busy-parent observability (INCIDENT-2026-10-22-SUMMARY-LOOP item 5):
+    // Busy-parent observability (the 2026-10 summary-loop incident):
     // a wake notice / summarize directive delivered WHILE a run is live is
     // queued INTO that run — before_agent_start never fires for it, so it
     // cannot be muted. Muting is also wrong here: the run's report answers
@@ -734,7 +733,7 @@ export class Lifecycle {
   }
 
   // ==========================================================================
-  // Side-chain (sub-agent) session hooks (DESIGN-SUBAGENT-TRACKING §4.3/§4.4)
+  // Side-chain (sub-agent) session hooks 
   // ==========================================================================
 
   /** The first `input` of a side-chain session is the spawn prompt — bind
@@ -781,7 +780,7 @@ export class Lifecycle {
     bus.post(sa.sessionId, truncateFinalMessage(text, this.deps.cfg.maxFinalMessageLength), "turn");
   }
 
-  /** agent_settled — the single settle source (DESIGN §9 Q4, PO: agreed). */
+  /** agent_settled — the single settle source (transport-and-state.md Q4, PO: agreed). */
   onAgentSettled(): void {
     const sa = this.subagent;
     if (!sa || !sa.bound) return;

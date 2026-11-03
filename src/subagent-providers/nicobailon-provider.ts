@@ -16,12 +16,12 @@
  * bus event is the only correlate available here.
  *
  * Runner posture lives in lifecycle.ts `isSubagentRunner()` (the package's
- * `PI_SUBAGENT_CHILD=1` marker; DESIGN-SUBAGENT-PROVIDER §6).
+ * `PI_SUBAGENT_CHILD=1` marker; configuration-and-room-behaviour.md).
  *
  * References:
  *   package docs/api.md — envelope, ping/spawn methods, reply channels
  *   package docs/background-work.md — runner env + provider seams
- *   DESIGN-SUBAGENT-PROVIDER §3.2 (this adapter), §5 (watch names)
+ *   configuration-and-room-behaviour.md (this adapter), configuration-and-room-behaviour.md (watch names)
  */
 import type { AgentSpawnInput } from "../subagent-bus.js";
 import {
@@ -200,7 +200,6 @@ export function createNicobailonProvider(deps: SubagentProviderDeps): SubagentPr
 
   // This dialect's spawn tools: the `subagent` tool (its `Agent` sibling
   // when the core tool is also loaded) and `workflow` containers
-  // (DESIGN-SUBAGENT-PROVIDER §5).
   const spawnWatch: SpawnWatch = {
     agentToolNames: ["subagent", "Agent"],
     workflowToolNames: ["workflow"],

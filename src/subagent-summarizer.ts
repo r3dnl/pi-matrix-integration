@@ -1,7 +1,7 @@
 /**
- * Pi Matrix Integration — Subagent summarizer driver (DESIGN-ROOM-SUMMARIZER §5/§6)
+ * Pi Matrix Integration — Subagent summarizer driver 
  *
- * Thin driver over a `SubagentProvider` (DESIGN-SUBAGENT-PROVIDER §3): the
+ * Thin driver over a `SubagentProvider`: the
  * dialect knowledge (RPC event names, spawn payload, completion correlation,
  * result consumption) lives in `src/subagent-providers/<dialect>-provider.ts`. This
  * file keeps the public surface the cadence codes against —
@@ -9,7 +9,7 @@
  * directive"; `run(prompt)` resolves the new summary body or null (never
  * clobber the root).
  *
- * R1 of DESIGN-SUBAGENT-PROVIDER: the default provider is the tintinweb
+ * phase 1 of configuration-and-room-behaviour.md: the default provider is the tintinweb
  * adapter holding the original bodies verbatim; the existing fake-bus tests
  * replay unchanged (the refactor's correctness gate, G2).
  */
@@ -36,7 +36,7 @@ export interface SubagentSummarizerOptions {
   spawnTimeoutMs?: number;
   logger?: MatrixLogger;
   /**
-   * Resolved provider (DESIGN-SUBAGENT-PROVIDER §4). Omit → the tintinweb
+   * Resolved provider . Omit → the tintinweb
    * adapter, preserving today's behavior for every existing caller.
    */
   provider?: SubagentProvider;

@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration — slash-command relay (item 9)
+ * Pi Matrix Integration — slash-command relay 
  *
  * Room-typed `/command` messages are dispatched exactly as if typed in the
  * Pi composer (`pi.sendUserMessage` + `expandPromptTemplates: true` — that
@@ -69,7 +69,7 @@ export function fuzzyCommandCandidates(
 
 /**
  * The plain-text reply shown when an unknown `/name` has fuzzy candidates
- * (A3 phase 1). Phase 2 replaces the transport with a Matrix poll.
+ * (A3 phase 1). phase 2 replaces the transport with a Matrix poll.
  */
 export function formatCommandSuggestion(name: string, candidates: string[]): string {
   const list = candidates.map((c) => `/${c}`).join(' ');

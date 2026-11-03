@@ -1,19 +1,18 @@
 /**
  * Pi Matrix Integration — tintinweb provider adapter
- * (DESIGN-SUBAGENT-PROVIDER §3.1).
  *
  * The `@tintinweb/pi-subagents` 0.19–0.22 RPC dialect, moved verbatim from
- * subagent-summarizer.ts (R1): ping `subagents:rpc:ping` →
+ * subagent-summarizer.ts: ping `subagents:rpc:ping` →
  * `subagents:rpc:ping:reply:<id>`; spawn `subagents:rpc:spawn` (isolated →
  * the child loads no extensions, so no stray thread root / 2nd Matrix
- * connection, DESIGN-ROOM-SUMMARIZER §6.1) → agent id; completion
+ * connection, threads-and-summaries.md) → agent id; completion
  * `subagents:completed` / failure `subagents:failed` matched by id; result
  * consumed via `subagents:rpc:consume` (a synchronous consume inside the
- * completed handler is the clean path, DESIGN §6.2 / rpc.md).
+ * completed handler is the clean path, configuration-and-room-behaviour.md / rpc.md).
  *
  * A programmatic spawn (this path) is NOT a main-session `subagent` tool
  * call, so the matrix extension's `tool_call`/`tool_result` sub-thread
- * watchers never see it — no stray "pi-matrix-integration-thread-summarizer" sub-thread (§6.3).
+ * watchers never see it — no stray "pi-matrix-integration-thread-summarizer" sub-thread .
  *
  * This adapter is the test oracle: the existing fake-bus tests replay
  * against it unchanged (the refactor's correctness gate, G2).
@@ -107,7 +106,7 @@ export function createTintinwebProvider(deps: SubagentProviderDeps): SubagentPro
           const body = typeof payload.result === "string" ? payload.result.trim() : "";
           if (body) {
             // Suppress the completion notification: a synchronous consume inside
-            // the completed handler is the clean path (DESIGN §6.2 / rpc.md).
+            // the completed handler is the clean path (configuration-and-room-behaviour.md / rpc.md).
             events.emit("subagents:rpc:consume", { requestId: newRequestId(), agentId });
             finish(body);
           } else {
@@ -129,7 +128,7 @@ export function createTintinwebProvider(deps: SubagentProviderDeps): SubagentPro
   }
 
   // The core `Agent` / `SubagentWorkflow` tools of this dialect; input
-  // passthrough made explicit (DESIGN-SUBAGENT-TRACKING §4.5 today reads
+  // passthrough made explicit (configuration-and-room-behaviour.md today reads
   // the tool input straight as AgentSpawnInput).
   const spawnWatch: SpawnWatch = {
     agentToolNames: ["Agent"],

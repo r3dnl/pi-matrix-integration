@@ -1,14 +1,14 @@
 /**
- * Pi Matrix Integration — sub-agent bus (DESIGN-SUBAGENT-TRACKING §4).
+ * Pi Matrix Integration — sub-agent bus .
  *
  * Side-chain (sub-agent) sessions each run their OWN extension instance in
  * the same process; only the main session's instance owns the single Matrix
  * connection. The owner publishes this bus on `globalThis`; side-chain
  * instances look it up at call time and post through the owner (one
- * connection per process, DESIGN §4.1).
+ * connection per process, configuration-and-room-behaviour.md).
  *
  * Owner state is in-memory only: colors are deterministic per agent TYPE
- * (palette hash, DESIGN §4.2), so nothing is persisted.
+ * (palette hash, configuration-and-room-behaviour.md), so nothing is persisted.
  */
 
 import { convertMarkdown } from "./markdown.js";
@@ -31,7 +31,6 @@ export interface SubagentSpawnRecord {
   sessionName?: string;
   /** The provider's run id (attached from the spawn's tool_result); the
    *  join key for detached-child completions on the completion channel
-   *  (DESIGN-SUBAGENT-PROVIDER §6). */
   runId?: string;
   spawnAnchorEventId?: string;
   status: "running" | "settled";
@@ -103,7 +102,7 @@ export function fnv1a(s: string): number {
   return h >>> 0;
 }
 
-/** The type-based color (DESIGN §4.2): user pin first, palette hash second. */
+/** The type-based color (configuration-and-room-behaviour.md): user pin first, palette hash second. */
 export function colorForType(type: string, settings: SubagentSettings): string {
   const palette =
     settings.colorPalette && settings.colorPalette.length > 0
@@ -170,12 +169,12 @@ export function firstLine(s: string, max = 200): string {
 }
 
 /** Fixed tint for the `⚡ Agent result:` label — distinct from the agent's
- *  type color so a result reads as "done" against the spawn line (DESIGN
- *  §4.3 C, feedback round 1, 2026-10-08). */
+ *  type color so a result reads as "done" against the spawn line (the design doc
+ *  configuration-and-room-behaviour.md, feedback round 1, 2026-10-08). */
 export const RESULT_LINE_COLOR = "#2E7D32";
 
 /**
- * The colored/plain rendering of a line (DESIGN §4.3 C). `tint` is the
+ * The colored/plain rendering of a line (configuration-and-room-behaviour.md). `tint` is the
  * actor label; the rest of the line stays plain (html: the label wrapped in
  * a `<font>` span, the remainder escaped).
  */
@@ -199,7 +198,7 @@ export function spawnLine(
   sendFormatted: boolean,
 ): { text: string; html?: string } {
   const marker = settings.plainMarker ?? "⚡";
-  // Explicit meta (DESIGN §4.3, feedback round 1, 2026-10-08): type, model
+  // Explicit meta (configuration-and-room-behaviour.md, feedback round 1, 2026-10-08): type, model
   // and thinking always show; unknown thinking renders as `default`.
   const meta = [rec.type, rec.model, rec.thinking ? `thinking=${rec.thinking}` : "thinking=default"]
     .filter(Boolean)
@@ -231,7 +230,7 @@ export function settleLine(
 }
 
 /** Post-mode traffic line (a bound session's turn-final / assistant message).
- *  The `Agent result` label carries the fixed result tint (DESIGN §4.3 C). */
+ *  The `Agent result` label carries the fixed result tint (configuration-and-room-behaviour.md). */
 export function trafficLine(
   name: string,
   text: string,
@@ -287,7 +286,7 @@ export function createSubagentBus(
     parentName?: string,
   ): SubagentSpawnRecord => {
     const meta = agentSpawnMeta(input);
-    // Explicit meta (DESIGN §4.3): resolve the session's current model /
+    // Explicit meta (configuration-and-room-behaviour.md): resolve the session's current model /
     // thinking when the spawn carries no override.
     const sm = sessionMeta?.();
     if (meta.model === "(session model)" && sm?.model) meta.model = sm.model;
@@ -348,7 +347,7 @@ export function createSubagentBus(
     if (!s.enabled) return;
     const line = settleLine(rec, s, sendFormatted());
     if (rec.depth === 2) {
-      // Nested: milestone only — one settle line, no anchor (DESIGN §4.6).
+      // Nested: milestone only — one settle line, no anchor (configuration-and-room-behaviour.md).
       void post.send(line.text, line.html).catch((err) => log?.(`[matrix] subagent nested settle failed: ${err}`));
       return;
     }
@@ -413,7 +412,7 @@ export function createSubagentBus(
       if (!rec || rec.status === "settled") return;
       const s = settings();
       if (!s.enabled) return;
-      if (rec.depth === 2) return; // v1: nested agents are milestone-only (DESIGN §4.6)
+      if (rec.depth === 2) return; // v1: nested agents are milestone-only
       if (s.postMode === "turn-end" && kind === "message") return; // only the turn-final
       const line = trafficLine(rec.name, text, s.plainMarker ?? "⚡", sendFormatted());
       void post

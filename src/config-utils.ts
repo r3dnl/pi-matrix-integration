@@ -302,7 +302,7 @@ function warnUnreadV2Keys(v2: Record<string, unknown>, read: Set<string>): void 
 //   resolves aliases to room ids.
 // - Placeholder values use {brackets} to indicate what should be replaced.
 export const DEFAULT_CONFIG: MatrixConfig = {
-  // userId + homeserver are intentionally ABSENT (Phase 0, R3):
+  // userId + homeserver are intentionally ABSENT (phase 0, phase 3):
   // the account store's credentials file is the single source of truth for
   // user_id + homeserver. loadConfig derives them from the credentials file
   // when the config/env value is absent; a present-but-mismatched userId is
@@ -369,12 +369,12 @@ export const DEFAULT_CONFIG: MatrixConfig = {
   // Keep `false` only as a debug escape hatch (plain-mode invariant: no
   // HTML is ever posted).
   sendFormatted: true,
-  // Only if mobile chokes on inline tables (item 8 live check).
+  // Only if mobile chokes on inline tables .
   tablesInSeparateMessage: false,
   // Recurring extension errors (reconnect loops, failed sends) append here
-  // instead of the TUI console (item 12).
+  // instead of the TUI console .
   logPath: '.pi/matrix/logs/pi-matrix.log',
-  // Relay room-typed /commands into Pi as composer input (item 9).
+  // Relay room-typed /commands into Pi as composer input .
   slashRelay: true,
   // Dual-surface RPIV decisions: mirror `ask_user_question` questionnaires
   // into the room so a phone reply can proceed a RPIV decision (terminal
@@ -386,7 +386,7 @@ export const DEFAULT_CONFIG: MatrixConfig = {
   // Multi-select questions and custom answers stay on the text grammar.
   // No-op when mirrorAskUser is false. Opt out with false.
   mirrorAskUserPolls: true,
-  // `@` file attach (item 10): @token pre-expansion (10a) + picker
+  // `@` file attach: @token pre-expansion (10a) + picker
   // auto-replies (10b). Off by default.
   remoteFilePicker: false,
   // Voice-message transcription (backlog #4): an m.audio/m.voice room
@@ -394,7 +394,7 @@ export const DEFAULT_CONFIG: MatrixConfig = {
   // Whisper, the dictate-local chain), then injected as the sender's
   // text. On by default (opt out with false / PI_MATRIX_VOICE_TRANSCRIPTION).
   voiceTranscription: true,
-  // `@@` outbound attach (R2): a lone @@fragment uploads a work artifact or a
+  // `@@` outbound attach: a lone @@fragment uploads a work artifact or a
   // media file (image/audio/video) as a Matrix file attachment. One cap for
   // both — `maxBytesUpload` — because media is the binding case. Requires a
   // matrix-http transport (the mtx CLI has no media verb). Off by default.
@@ -404,17 +404,17 @@ export const DEFAULT_CONFIG: MatrixConfig = {
   // ranking, soft-falls-back to builtin when the binary is missing).
   fileSearchMethod: "builtin",
   // Cap for inlined @-attached file content (bytes); bigger files get a
-  // one-line note instead of content (item 10a).
+  // one-line note instead of content .
   attachMaxBytes: 200_000,
   // Candidate list length for both pickers: the numbered list shows at most
   // this many matches (closest path first) and says how many it hid.
   pickerLimit: 10,
-  // Threading (DESIGN-ROOM-THREADING.md §2.10): session→thread mapping with
+  // Threading: session→thread mapping with
   // lazy root creation. Thread writes ride the outbox write surface
   // (the SdkOutbox thread delegate; the `mtx` CLI has no thread verbs).
   // Default true.
   threads: true,
-  // QR login (2025 variant, MSC4108/MSC4388) method offer (design §16).
+  // QR login (2025 variant, MSC4108/MSC4388) method offer (configuration-and-room-behaviour.md).
   // Off by default; the probe re-checks the server + crypto at login time.
   qr2025: false,
   threadIcon: "🧵",
@@ -435,7 +435,7 @@ export const DEFAULT_CONFIG: MatrixConfig = {
   subThreads: false,
   rolePrefixes: true,
   subagentToolName: "subagent",
-  // Side-chain sub-agent tracking (DESIGN-SUBAGENT-TRACKING §5): detection +
+  // Side-chain sub-agent tracking: detection +
   // routing are always on; these gate the reporting only.
   subagents: {
     enabled: true,
@@ -450,7 +450,7 @@ export const DEFAULT_CONFIG: MatrixConfig = {
   // Thread-summary prompt delta cap (most-recent thread messages kept in the
   // summarizer prompt). Default 40.
   threadSummarizeLimit: 40,
-  // Fir-tree summary caps (DESIGN-THREADING-SUMMARIZE §3): ## Milestones max
+  // Fir-tree summary caps: ## Milestones max
   // lines, ## Recent activity max bullets, hard total-line cap on the posted
   // body (line-boundary truncate + warn as backstop; the prompt carries the
   // same cap as primary control).
@@ -470,22 +470,22 @@ export const DEFAULT_CONFIG: MatrixConfig = {
   // legacy in-session re-prompt). Default "room".
   threadSummarizeSource: "room" as "room" | "session",
   // Where non-user sends from a pending session (no thread root yet) go:
-  // "flat" = fall through to the main conversation (today's §1.4 behavior);
+  // "flat" = fall through to the main conversation (today's configuration-and-room-behaviour.md behavior);
   // "latest" = soft-attach them to the most recent thread root. Headless and
   // sub-agent sessions never deliver a user message, so without "latest" they
   // post their session-start milestone and work milestones flat forever.
   threadPendingRoute: "flat" as "flat" | "latest",
-  // ADDENDUM-SDK-HTTP-TRANSPORT §3/§5 (matrix-js-sdk transport):
+  // transport-and-state.md (matrix-js-sdk transport):
   // MSC4125 sender-side attachment encryption — the VectorIM Element Web
   // `isEncrypted === !!content.file` fix. On by default; "off" for
   // plaintext-only setups (those clients then see the VectorIM bug).
   attachEncryption: "on",
   // E2EE (the bundled Rust crypto WASM + file-backed store under
   // cryptoStoreDir). On by default: the homeserver defaults new rooms to
-  // encrypted, and the pi room's E2EE toggle (ADDENDUM §4) rides on it.
+  // encrypted, and the pi room's E2EE toggle (transport-and-state.md configuration-and-room-behaviour.md) rides on it.
   e2ee: "on",
   // Crypto-store root; undefined → `<dirname(credentialsPath)>/store`
-  // (the account dir that holds credentials.json, ADDENDUM §5).
+  // (the account dir that holds credentials.json, transport-and-state.md).
   cryptoStoreDir: undefined as string | undefined,
   // At-rest encryption for the crypto store (the WASM's `storagePassword`):
   // when set, the on-disk key material is unreadable without the passphrase.
@@ -534,7 +534,7 @@ export function isActiveConfigProjectLocal(active: string | undefined): boolean 
 /**
  * The per-project key for the credentials store: the sanitized name of the
  * directory Pi starts in (Pi runs with the project root as cwd). Slug rules:
- * lowercase, non-alphanumeric runs → '-', trimmed (r3d.nl→r3d-nl,
+ * lowercase, non-alphanumeric runs → '-', trimmed (matrix.example.org→matrix-example-org,
  * Strata→strata). PI_MATRIX_PROJECT overrides it — for hand-named projects
  * that do not map from the cwd (the existing `tennisplanner` dir, whose repo
  * is `tennisplanner_2026`).
@@ -640,8 +640,8 @@ function expandHome(value: string): string {
 }
 
 /**
- * Identity read from the credentials file (Phase 0, DESIGN-TRANSPORT-AND-
- * IDENTITY §2.1/§2.3): the account store file is the single source of
+ * Identity read from the credentials file (phase 0, transport-and-state.md-AND-
+ * transport-and-state.md): the account store file is the single source of
  * truth for `user_id` + `homeserver`.
  *
  * - `owner`: the file's `user_id` field; falls back to the account-store
@@ -649,7 +649,7 @@ function expandHome(value: string): string {
  *   convention the matrix-accounts tooling writes) when the field is absent.
  * - `homeserver`: the file's `homeserver`/`server` field, scheme stripped.
  *
- * Returns undefined when the path is missing/unreadable (R4: the caller
+ * Returns undefined when the path is missing/unreadable (note: the caller
  * decides — explicit config values + warn, or error).
  */
 export function readCredentialsIdentity(
@@ -838,7 +838,7 @@ export function loadConfig(configPath?: string): MatrixConfig {
     slot[configKey] = coerce(configKey, envValue);
   }
 
-  // Nested-key env alias (DESIGN-SUBAGENT-PROVIDER §4): ENV_MAPPINGS only
+  // Nested-key env alias: ENV_MAPPINGS only
   // covers the flat keys, so `subagents.provider` gets its own line; the
   // value lands untyped and validateConfig rejects a bad id.
   const providerEnv = process.env.PI_MATRIX_SUBAGENT_PROVIDER;
@@ -870,8 +870,8 @@ export function loadConfig(configPath?: string): MatrixConfig {
     merged.logPath = join(getStateDir(), 'pi-matrix.log');
   }
 
-  // Phase 0 identity derivation (DESIGN-TRANSPORT-AND-IDENTITY §2.1/§2.3,
-  // R3): with userId/homeserver stripped from DEFAULT_CONFIG, "absent" is a
+  // phase 0 identity derivation (transport-and-state.md,
+  // phase 3): with userId/homeserver stripped from DEFAULT_CONFIG, "absent" is a
   // real state — derive from the credentials file (account store SSoT).
   // Explicit config/env values are kept and enforced against the owner by
   // validateConfig; only the fallback order inverts (credentials → explicit
@@ -900,7 +900,7 @@ export function saveConfig(config: MatrixConfig | ConfigV2, configPath?: string)
   // v2 configs are written with the .jsonc extension (the name advertises the
   // schema and the loader parses comments on read). NB: the write below is
   // plain JSON.stringify, so it drops any comments the user added — see
-  // docs/designs/DESIGN-CONFIG-SCHEMA-V2.md §7. Keeping annotations in the
+  // docs/designs/configuration-and-room-behaviour.md Keeping annotations in the
   // live file is therefore not supported; docs carry the annotated reference.
   const isV2 = (config as { configVersion?: string }).configVersion === "2.0";
   const finalPath = isV2 ? path.replace(/\.json$/, '.jsonc') : path;
@@ -911,7 +911,7 @@ export function saveConfig(config: MatrixConfig | ConfigV2, configPath?: string)
 /**
  * Validate configuration
  *
- * Phase 0 (DESIGN-TRANSPORT-AND-IDENTITY §2): the identity invariant —
+ * phase 0: the identity invariant —
  * the credentials file's owner must equal `userId` (or `userId` is derived
  * from it by loadConfig). A mismatch is an error, not a warning: this is
  * the invariant that kills the two-sender echo-bug class.
@@ -921,7 +921,7 @@ export function validateConfig(config: MatrixConfig): { valid: boolean; errors: 
 
   // Unknown-key guard: warn (not fail) on keys the schema doesn't know —
   // catches typos in the JSON config file at load time. userId/homeserver
-  // are identity keys stripped from DEFAULT_CONFIG (R3) but still schema
+  // are identity keys stripped from DEFAULT_CONFIG  but still schema
   // keys, so the guard covers them too. `environment` is deprecated
   // (removed 2026-10-13 — the homeserver domain replaced it): still
   // accepted, ignored, so pre-existing config files load clean.
@@ -931,7 +931,7 @@ export function validateConfig(config: MatrixConfig): { valid: boolean; errors: 
     console.warn(`[matrix] config: ignoring unknown key(s): ${unknownKeys.join(', ')}`);
   }
 
-  // Identity invariant (Phase 0 §2.1): one account, two plumbings — never
+  // Identity invariant (phase 0 transport-and-state.md): one account, two plumbings — never
   // two accounts, two plumbings. Read the credentials file's owner.
   const identity = readCredentialsIdentity(config.credentialsPath);
   if (config.userId && identity?.owner && identity.owner !== config.userId) {
@@ -943,13 +943,13 @@ export function validateConfig(config: MatrixConfig): { valid: boolean; errors: 
 
   if (!config.homeserver) {
     // Derivable from the credentials file in loadConfig; no default
-    // fallback anymore (R3).
+    // fallback anymore .
     errors.push('homeserver is required (set in config/env or the credentials file)');
   }
 
   if (!config.userId) {
     // loadConfig derives userId from the credentials owner when absent;
-    // reaching this means neither the file nor config/env had it (R4).
+    // reaching this means neither the file nor config/env had it .
     errors.push(
       identity?.owner
         ? `userId is required: it should have been derived from the credentials owner (${identity.owner})`
@@ -958,7 +958,7 @@ export function validateConfig(config: MatrixConfig): { valid: boolean; errors: 
   } else if (!config.userId.startsWith('@')) {
     errors.push('userId must start with @');
   } else if (!identity) {
-    // R4 (settled option A): missing file + explicit values → warn, allow.
+    // phase 4 (settled option A): missing file + explicit values → warn, allow.
     console.warn(
       '[matrix] config: credentials file missing or unreadable — identity invariant unverifiable (explicit userId allowed)',
     );
@@ -983,13 +983,13 @@ export function validateConfig(config: MatrixConfig): { valid: boolean; errors: 
     }
   }
 
-  // Sub-agent reporting block (DESIGN-SUBAGENT-TRACKING §5).
+  // Sub-agent reporting block .
   const sa = config.subagents;
   if (sa !== undefined) {
     if (sa.postMode !== undefined && sa.postMode !== 'turn-end' && sa.postMode !== 'all') {
       errors.push(`subagents.postMode must be "turn-end" or "all" (got ${JSON.stringify(sa.postMode)})`);
     }
-    // Provider dialect binding (DESIGN-SUBAGENT-PROVIDER §4) — an env
+    // Provider dialect binding  — an env
     // alias arrives untyped, so this is its only gate.
     if (
       sa.provider !== undefined &&
@@ -1127,7 +1127,7 @@ export function getCredentialsPath(config: MatrixConfig): string {
 }
 
 // ============================================================================
-// Profile loading (/matrix-switch, DESIGN-ROOM-THREADING §1.7)
+// Profile loading (/matrix-switch, threads-and-summaries.md)
 // ============================================================================
 
 /**
