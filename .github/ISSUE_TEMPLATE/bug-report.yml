@@ -1,0 +1,38 @@
+name: Bug report
+description: Report something that does not work as documented
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: The command or room action, what you expected, what you saw in the room and in Pi.
+    validations:
+      required: true
+  - type: input
+    id: pi-version
+    attributes:
+      label: Pi version
+      placeholder: "1.5.0"
+    validations:
+      required: true
+  - type: input
+    id: package-version
+    attributes:
+      label: pi-matrix-integration version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: homeserver
+    attributes:
+      label: Homeserver software
+      description: Software and version (for example Synapse 1.x, Conduit, conduwuit), not the URL of a private server.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log excerpt
+      description: Pi's matrix log or the relevant output. Strip tokens, passwords and room addresses before posting.
+      render: shell
