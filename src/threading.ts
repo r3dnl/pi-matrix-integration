@@ -635,9 +635,13 @@ export class ThreadManager {
    * Dispatch one LLM summary pass through the injected dispatcher, holding
    * the single-flight flag for the dispatch's lifetime. The dispatcher
    * contract is never-reject; a synchronous throw still releases the flag.
-   * The guard covers the DISPATCH phase (the expensive part: subagent spawn
-   * + post). The in-session fallback's agent turn lands after injection and
-   * is not covered — a duplicate there is a cheap directive re-run, accepted.
+   * What the flag spans depends on the dispatcher's path. The subagent path
+   * returns a promise that settles only after the subagent's result AND the
+   * root edit land, so the guard covers that whole run. The two
+   * directive-injection paths — session-sourced delta, and room-sourced with
+   * no subagent provider — settle as the directive is injected, so the agent
+   * turn that follows is not covered; a duplicate there is a cheap directive
+   * re-run, accepted.
    */
   private fireLlmRun(root: ThreadRootState): boolean {
     if (!this.opts.onSummarizeRequest) return false;
