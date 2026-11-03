@@ -640,8 +640,9 @@ export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
   const fetchImpl = deps.fetchImpl ?? fetch;
 
   // configuration-and-room-behaviour.md: unreachable → one line; retry or cancel. Retry always offers the
-  // homeserver input (prefilled with the current value — Enter keeps it)
-  // so a bad prefilled URL is fixable instead of re-probed forever.
+  // homeserver input again, with the current value as its placeholder; an
+  // empty submit (or Esc) cancels the dialogue, so a bad prefilled URL is
+  // fixable instead of being re-probed forever.
   // note: the address is normalized (bare domain → https://) at every
   // entry point, and an explicit http:// raises a stern warning. If nothing
   // is prefilled, the dialogue ASKS FIRST instead of probing the empty URL
