@@ -863,8 +863,8 @@ export function loadConfig(configPath?: string): MatrixConfig {
   // Project-local log file: when the ACTIVE config is the project-local
   // .pi/matrix one and neither the file nor PI_MATRIX_LOG_PATH pinned
   // logPath, the log co-locates with the project's state —
-  // <project>/.pi/matrix/logs/pi-matrix.log — instead of the global
-  // ~/.pi/logs shared by every project.
+  // <project>/.pi/matrix/state/pi-matrix.log — instead of the default
+  // .pi/matrix/logs path shared by every project.
   const activeIsProject = isActiveConfigProjectLocal(resolveConfigPath(configPath));
   if (activeIsProject && !('logPath' in fileConfig) && process.env.PI_MATRIX_LOG_PATH === undefined) {
     merged.logPath = join(getStateDir(), 'pi-matrix.log');

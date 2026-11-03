@@ -119,7 +119,7 @@ export interface SdkOutboxOptions {
   syncTimeoutMs?: number;
   /** Main extension log file (home-expanded). The sdk transport's log
    *  (`pi-matrix-http-sdk.log`) sits in the same directory; default is
-   *  the directory of `~/.pi/logs/pi-matrix.log`. */
+   *  the directory of `.pi/matrix/logs/pi-matrix.log`. */
   logPath?: string;
   /** Persist the bounded seen-event-id set here (JSON string array) so a
    *  reconnect (new pi session) does not re-emit the previous session's

@@ -4,7 +4,9 @@
  * Recurring extension errors (poll/reconnect failures while the homeserver
  * is unreachable, failed sends) used to spam the Pi TUI console. They now
  * append to a file the extension owns (`config.logPath`, default
- * `~/.pi/logs/pi-matrix.log`). One-level rotation keeps the file bounded:
+ * `.pi/matrix/logs/pi-matrix.log` — a relative path, so it lands under the
+ * working directory unless the configured value is absolute or starts with
+ * `~/`). One-level rotation keeps the file bounded:
  * past 1 MB the current file is moved to `<path>.old` and a fresh one is
  * started (one generation kept, no log-daemon complexity).
  *

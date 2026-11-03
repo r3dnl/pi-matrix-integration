@@ -89,7 +89,8 @@ export interface MatrixConfig {
   // send instead of inlining them in the same message. Default false.
   tablesInSeparateMessage?: boolean;
   // Error log file owned by the extension (recurring errors land here
-  // instead of the TUI console). Default `~/.pi/logs/pi-matrix.log`.
+  // instead of the TUI console). Default `.pi/matrix/logs/pi-matrix.log`,
+  // relative to the working directory; a leading `~/` is expanded.
   logPath?: string;
   // Relay room-typed `/command` messages into Pi as composer input.
   // Unknown names get a plain-text fuzzy-suggestion reply. Default true.
