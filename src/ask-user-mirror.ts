@@ -16,6 +16,18 @@ import { escapeHtml } from "./markdown.js";
  * usable throughout (a room answer no longer moves the terminal's tab —
  * the upstream channel bypasses the TUI).
  *
+ * Two behaviours here need a PATCHED dependency and are absent from the
+ * published `@juicesharp/rpiv-ask-user-question` 2.13.9: the `partial` field
+ * on the answer payload (the partial-answer patch) and the
+ * `rpiv:ask-user:answers-state` broadcast (the answers-state patch). Against
+ * a stock install the room flow still completes — each buffered reply is
+ * refused as an incomplete set with an `invalid_answer` verdict, which is
+ * upstream's intended refusal, and the complete set emitted on confirm
+ * settles the wait — but the terminal dialog does not follow the room
+ * question by question, and answers typed in the terminal are never mirrored
+ * to the room. Nothing resolves early: the published validator walks every
+ * question and rejects a set that leaves one unanswered.
+ *
  * Reply grammar (documented in the posted questionnaire):
  * - "2"              → option 2 for the first unanswered question
  * - "Q2: 3"          → option 3 for question 2 (1-based `Q` prefix optional:
@@ -64,7 +76,8 @@ import { escapeHtml } from "./markdown.js";
  * Emissions are per-questionnaire for the MODEL, per-reply for the
  * TERMINAL DISPLAY: the mirror buffers every parsed room reply locally
  * (acks 📝 N/M are room-side progress) and ships each buffer change to the
- * mounted terminal as a display-only PARTIAL set (patch A2.13-0001, requestId
+ * mounted terminal as a display-only PARTIAL set (the partial-answer patch,
+ * requestId
  * `matrix-partial-*`) so the TUI tab follows the room question by question.
  * Nothing reaches the model until confirm emits the ONE complete set — the
  * upstream channel is all-or-nothing for real answers. Emissions after the
@@ -121,7 +134,7 @@ export interface MirrorAnswerPayload {
   answers?: UpstreamAnswerEntry[];
   /** Decline the questionnaire, as Esc does in the TUI. */
   cancel?: boolean;
-  /** Patch A2.13-0001: display-only — registers into the mounted terminal
+  /** Display-sync patch: display-only — registers into the mounted terminal
    *  dialog (tab follows the room) without resolving the wait. Emitted per
    *  room reply; the authoritative answer is the complete flagless set on
    *  confirm. */
@@ -148,7 +161,7 @@ export interface MirrorAnswersStateEntry {
   selected?: string[];
 }
 
-/** `rpiv:ask-user:answers-state` payload (patch A2.13-0002, loosely typed). */
+/** `rpiv:ask-user:answers-state` payload (answers-state patch, loosely typed). */
 export interface MirrorAnswersStatePayload {
   toolCallId?: string;
   answers?: readonly MirrorAnswersStateEntry[];
@@ -170,7 +183,7 @@ export interface AskUserMirrorDeps {
   /** Matrix connection live (isEnabled). Prompt mirrors only when true. */
   isEnabled: () => boolean;
   /** Emit one answer payload onto the shared bus (`rpiv:ask-user:answer`,
-   *  upstream 2.13+ contract + patch A2.13-0001): a display-sync partial set
+   *  upstream 2.13+ contract + the partial-answer patch): a display-sync set
    *  per room reply (`partial: true`, terminal tab follows), ONE complete
    *  answer set on confirm, or `cancel: true` on a review-step decline. The
    *  package validates and answers every attempt on `answer-result`. */
@@ -219,7 +232,7 @@ export interface AskUserMirror {
    *  (ok → blocked(false) closes the mirror; not_found → the terminal
    *  surface already resolved the wait). */
   onAnswerResult(verdict: MirrorAnswerVerdict): void;
-  /** `rpiv:ask-user:answers-state` handler (patch A2.13-0002): merge the
+  /** `rpiv:ask-user:answers-state` handler (answers-state patch): merge the
    *  dialog's registered answers — terminal keystrokes AND echoes of the
    *  mirror's own partials — into the room buffer, so a terminal-side
    *  answer ARMS the room review instead of silently completing the set.
@@ -368,7 +381,7 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
   }
 
   function onAnswerResult(verdict: MirrorAnswerVerdict): void {
-    // Display-sync verdicts (patch A2.13-0001) carry no consequence: a
+    // Display-sync verdicts (partial-answer patch) carry no consequence: a
     // refused partial is a cosmetic desync, the complete set is the gate.
     if (typeof verdict.requestId === "string" && verdict.requestId.startsWith("matrix-partial-")) return;
     // After the wait ends the mirror closes via blocked(false); verdicts for
@@ -474,7 +487,7 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
     return true;
   }
 
-  /** Patch A2.13-0001: push the current buffer onto the answer channel as a
+  /** Partial-answer patch: push the current buffer onto the answer channel as a
    *  DISPLAY-ONLY partial set — the mounted terminal dialog registers it and
    *  its tab follows the room (next unanswered question; review tab when
    *  complete). Never resolves the wait. Best effort: no tool-call id, an
