@@ -30,7 +30,7 @@ export interface SubagentSpawnRecord {
   sessionId?: string;
   sessionName?: string;
   /** The provider's run id (attached from the spawn's tool_result); the
-   *  join key for detached-child completions on the completion channel
+   *  join key for detached-child completions on the completion channel. */
   runId?: string;
   spawnAnchorEventId?: string;
   status: "running" | "settled";

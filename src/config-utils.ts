@@ -977,7 +977,7 @@ export function validateConfig(config: MatrixConfig): { valid: boolean; errors: 
 
 
   for (const key of ['attachEncryption', 'e2ee'] as const) {
-    const value = (config as Record<string, unknown>)[key];
+    const value = (config as unknown as Record<string, unknown>)[key];
     if (value !== undefined && value !== 'on' && value !== 'off') {
       errors.push(`${key} must be "on" or "off" (got ${JSON.stringify(value)})`);
     }

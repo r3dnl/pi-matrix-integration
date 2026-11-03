@@ -102,7 +102,7 @@ export function createInbound(deps: InboundDeps): Inbound {
     const more = dropped.length > listed.length ? ` +${dropped.length - listed.length} more` : "";
     const header = `⚠️ Dropped ${dropped.length} message(s) that were pending in this room but older than ${Math.round(staleAgeMs / 60_000)} min${more}. They were never delivered to Pi — resend if they still matter:`;
     void messageHandler
-      .post(`${header} ${plain}`, "status", { html: `${header}<br>${html}` })
+      .post(`${header} ${plain}`, "other", { html: `${header}<br>${html}`, flat: true })
       .catch(() => undefined);
   };
 
@@ -205,7 +205,8 @@ export function createInbound(deps: InboundDeps): Inbound {
               void messageHandler
                 .post(
                   "⚠️ Voice message received, but this device cannot decrypt its media (E2EE SSS). Send it from a non-E2EE room, or enable encrypted attachments (MSC4125) in the sending client.",
-                  "status",
+                  "other",
+                  { flat: true },
                 )
                 .catch(() => undefined);
               return;

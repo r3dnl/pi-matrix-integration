@@ -10,7 +10,7 @@
  * read the CURRENT stack through the integration at call time.
  */
 
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { AgentToolResult, ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { localpartOf } from "./classify.js";
 import { encryptionNotice } from "./encryption-status.js";
@@ -110,7 +110,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
         if (success) {
           stack.outbox.startDelivery(stack.deliveryCallbacks);
           stack.lifecycle.setEnabled(true);
-          ctx.ui.notify("Matrix integration enabled", "success");
+          ctx.ui.notify("Matrix integration enabled", "info");
         } else {
           ctx.ui.notify("Failed to enable Matrix integration (see /matrix-status)", "error");
         }
@@ -220,7 +220,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
           result.deduped
             ? "Deduped — an identical message already sent within the window"
             : "Message sent to Matrix",
-          "success",
+          "info",
         );
       } else {
         ctx.ui.notify(`Failed to send message: ${result.error || "not connected"}`, "error");
@@ -282,7 +282,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
   // room-facing name). Both share one handler, so either dispatches it.
   const matrixHelpCommand = {
     description: "Send a concise end-user guide of this integration to the room",
-    handler: async (_args, ctx) => {
+    handler: async (_args: string, ctx: ExtensionCommandContext) => {
       trackCtx(ctx);
       await integration.stack.roomUx.postHelp();
       integration.stack.sessionIntegrator.updateFooterStatus(ctx);
@@ -294,7 +294,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
   // Thread-summary run on demand (threads-and-summaries.md) — alias pair, same handler.
   const matrixThreadSummarizeCommand = {
     description: "Run a thread-summary pass now: the agent rewrites the thread root summary",
-    handler: async (_args, ctx) => {
+    handler: async (_args: string, ctx: ExtensionCommandContext) => {
       trackCtx(ctx);
       const ok = await integration.stack.threadManager.requestSummarizeNow();
       ctx.ui.notify(
@@ -329,7 +329,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
       parameters: Type.Object({
         summary: Type.String({ description: "Markdown summary body for the thread root (no 🧵 line)" }),
       }),
-      async execute(toolCallId, params) {
+      async execute(toolCallId, params): Promise<AgentToolResult<{ success: boolean; error?: string }>> {
         if (!integration.stack.lifecycle.isEnabled()) {
           return {
             content: [{ type: "text", text: "Matrix not connected (use /matrix-connect first)" }],
