@@ -54,7 +54,7 @@ export function extractThreadMeta(content: MatrixEvent['content']): ThreadMeta {
  * - `m.room.message` → the ordinary message shape + thread meta;
  * - everything else (state, membership, ...) → null.
  *
- * `selfUserId` marks the single Phase-0 identity (`isFromPi`);
+ * `selfUserId` marks the single identity this extension logs in as (`isFromPi`);
  * `defaultRoomId` fills `roomId` when the event lacks one.
  */
 export function parseMatrixEvent(

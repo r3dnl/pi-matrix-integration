@@ -302,7 +302,7 @@ function warnUnreadV2Keys(v2: Record<string, unknown>, read: Set<string>): void 
 //   server resolves aliases to room ids.
 // - Placeholder values use {brackets} to indicate what should be replaced.
 export const DEFAULT_CONFIG: MatrixConfig = {
-  // userId + homeserver are intentionally ABSENT (phase 0, phase 3):
+  // userId + homeserver are intentionally ABSENT:
   // the account store's credentials file is the single source of truth for
   // user_id + homeserver. loadConfig derives them from the credentials file
   // when the config/env value is absent; a present-but-mismatched userId is
@@ -640,8 +640,8 @@ function expandHome(value: string): string {
 }
 
 /**
- * Identity read from the credentials file (phase 0, transport-and-state.md-AND-
- * transport-and-state.md): the account store file is the single source of
+ * Identity read from the credentials file (transport-and-state.md): the account
+ * store file is the single source of
  * truth for `user_id` + `homeserver`.
  *
  * - `owner`: the file's `user_id` field; falls back to the account-store
@@ -870,8 +870,8 @@ export function loadConfig(configPath?: string): MatrixConfig {
     merged.logPath = join(getStateDir(), 'pi-matrix.log');
   }
 
-  // phase 0 identity derivation (transport-and-state.md,
-  // phase 3): with userId/homeserver stripped from DEFAULT_CONFIG, "absent" is a
+  // Identity derivation (transport-and-state.md):
+  // with userId/homeserver stripped from DEFAULT_CONFIG, "absent" is a
   // real state — derive from the credentials file (account store SSoT).
   // Explicit config/env values are kept and enforced against the owner by
   // validateConfig; only the fallback order inverts (credentials → explicit
@@ -911,7 +911,7 @@ export function saveConfig(config: MatrixConfig | ConfigV2, configPath?: string)
 /**
  * Validate configuration
  *
- * phase 0: the identity invariant —
+ * The identity invariant —
  * the credentials file's owner must equal `userId` (or `userId` is derived
  * from it by loadConfig). A mismatch is an error, not a warning: this is
  * the invariant that kills the two-sender echo-bug class.
@@ -931,7 +931,7 @@ export function validateConfig(config: MatrixConfig): { valid: boolean; errors: 
     console.warn(`[matrix] config: ignoring unknown key(s): ${unknownKeys.join(', ')}`);
   }
 
-  // Identity invariant (phase 0 transport-and-state.md): one account, two plumbings — never
+  // Identity invariant (transport-and-state.md): one account, two plumbings — never
   // two accounts, two plumbings. Read the credentials file's owner.
   const identity = readCredentialsIdentity(config.credentialsPath);
   if (config.userId && identity?.owner && identity.owner !== config.userId) {
@@ -958,7 +958,7 @@ export function validateConfig(config: MatrixConfig): { valid: boolean; errors: 
   } else if (!config.userId.startsWith('@')) {
     errors.push('userId must start with @');
   } else if (!identity) {
-    // phase 4 (settled option A): missing file + explicit values → warn, allow.
+    // Decision: missing file + explicit values → warn, allow.
     console.warn(
       '[matrix] config: credentials file missing or unreadable — identity invariant unverifiable (explicit userId allowed)',
     );

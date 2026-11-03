@@ -69,7 +69,7 @@ export function fuzzyCommandCandidates(
 
 /**
  * The plain-text reply shown when an unknown `/name` has fuzzy candidates
- * (A3 phase 1). phase 2 replaces the transport with a Matrix poll.
+ * A later version replaces the text reply with a Matrix poll.
  */
 export function formatCommandSuggestion(name: string, candidates: string[]): string {
   const list = candidates.map((c) => `/${c}`).join(' ');

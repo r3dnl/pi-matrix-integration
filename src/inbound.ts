@@ -235,8 +235,8 @@ export function createInbound(deps: InboundDeps): Inbound {
 
       // Slash relay: a room-typed /command dispatches exactly as
       // if typed in the composer. Unknown names with fuzzy candidates get
-      // a plain-text suggestion reply in the room (A3 phase 1 — polls are
-      // the phase-2 transport); names with no candidates fall through to
+      // a plain-text suggestion reply in the room (a Matrix poll is
+      // the later transport); names with no candidates fall through to
       // normal injection so the LLM sees them as plain text.
       if (cfg.slashRelay && !matrixMessage.isFromPi) {
         // Agent-directed help ("help" or "@pi_agent: help") routes to the

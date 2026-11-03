@@ -28,7 +28,7 @@ export interface MatrixConfig {
   deviceId?: string;
   // transport-and-state.md: the SDK sync long-poll cap (ms). Default 60000.
   syncTimeoutMs?: number;
-  // Identity (phase 0, transport-and-state.md): the account store's
+  // Identity (transport-and-state.md): the account store's
   // credentials file is the single source of truth for user_id + homeserver.
   // Both are optional here — absent means "derive from the credentials
   // file" (loadConfig), and a present-but-mismatched `userId` is a

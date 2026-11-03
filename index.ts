@@ -16,7 +16,7 @@ import { createMatrixLogger } from "./src/logger.js";
 import { MatrixIntegration, PI_MATRIX_KEY, type MatrixGlobal, resolveStartupConfigWithMigration, createLoggerAndValidateConfig } from "./src/integration.js";
 import { registerCommands } from "./src/commands.js";
 
-// The tail helpers moved to src/classify.ts (transport-and-state.md phase 1); the export
+// The tail helpers moved to src/classify.ts (transport-and-state.md); the export
 // stays here for API parity with the pre-restructure index.ts (no live
 // test consumer — the logic tests never imported it; reviewer review finding).
 export { truncateFinalMessage } from "./src/classify.js";
@@ -44,7 +44,7 @@ export default function (pi: ExtensionAPI) {
     return; // Config validation failed, error already logged
   }
 
-  // The Matrix stack (transport-and-state.md composition root, phase 5): one object owns
+  // The Matrix stack (transport-and-state.md composition root): one object owns
   // the stack construction + the object-stable rebind — /matrix-switch
   // re-points its internals, never replaces the instance.
   const integration = new MatrixIntegration(pi, validated.config, validated.logger, prev);
@@ -55,7 +55,7 @@ export default function (pi: ExtensionAPI) {
   integration.attach(pi);
 
   // The /matrix-* commands + matrix_* tools — thin adapters over the
-  // composition root (transport-and-state.md phase 5).
+  // composition root (transport-and-state.md).
   registerCommands(pi, integration);
 
   // Park the current instance so a later re-registration can take it over

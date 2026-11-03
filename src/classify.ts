@@ -1,6 +1,6 @@
 /**
  * Pi Matrix Integration — pure classification helpers (extracted from
- * index.ts, phase 1 of the planned restructure).
+ * index.ts during the entry-point split).
  *
  * Module-level pure functions per the "constants → module, state → class"
  * rule: message → milestone/TODO extraction, Pi message text joining +

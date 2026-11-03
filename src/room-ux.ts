@@ -6,7 +6,7 @@
  * /matrix-help guide. Every room
  * auto-reply posts through the outgoing pipeline (`post` =
  * MessageHandler.post — configuration-and-room-behaviour.md: MessageHandler is the only writer;
- * auto-replies ride the dedupe window, declared delta from phase 2).
+ * auto-replies ride the dedupe window).
  *
  * Uses the injected PickerState (configuration-and-room-behaviour.md: the two protocol pickers
  * are distinct tracker instances — the "never share a posted list"
@@ -145,7 +145,7 @@ export class RoomUx {
         });
     };
     // A numbered or exact-path reply resolves against the LAST candidate
-    // list posted in this session (the phase 2 picker, separate from).
+    // list posted in this session (the artifact picker).
     const picked = this.picker.artifact.resolveReply(aBody);
     if (picked) {
       if (!http?.available()) note("File attachments need a live Matrix connection (the transport is the sdk outbox; check the connection status / credentials).");
