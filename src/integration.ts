@@ -682,7 +682,7 @@ export class MatrixIntegration {
         const c = await sdkClient();
         await c.invite(roomId, userId);
       },
-      // Room encryption state for the join warning (FINDING-012): a direct
+      // Room encryption state for the join warning: a direct
       // state read (the login client is not joined/synced, so local state is
       // empty). true = encryption event present; false = clear not-found;
       // undefined = unreadable (403 / network) → the caller does not alarm.

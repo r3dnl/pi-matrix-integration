@@ -123,7 +123,7 @@ export function createNicobailonProvider(deps: SubagentProviderDeps): SubagentPr
         async: true,
         ...(model !== undefined ? { model } : {}),
         // pi-subagents 0.80.0 wakes the parent on EVERY async completion
-        // (BUG-SUMMARIZER-ONFINAL-LOOP C); notify.js only honors
+        // (the 2026-10 summary loop, fix C); notify.js only honors
         // `scheduleOrigin.quiet` on the workflow paths. The
         // pi-subagents.quiet-single-spawn.patch teaches the single path to
         // carry it, and this origin makes a successful completion deliver

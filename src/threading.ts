@@ -44,7 +44,7 @@ export interface ThreadRootState {
    * rather than content (a wake-answer final, see `suppressOnFinalOnce`). A
    * pass whose whole delta is such posts re-summarises its own output — a
    * no-op that still costs an LLM run plus a parent wake
-   * (BUG-SUMMARIZER-ONFINAL-LOOP B).
+   * (the 2026-10 summary loop, fix B).
    */
   bookkeepingSinceSummary?: number;
   /**
@@ -214,7 +214,7 @@ export class ThreadManager {
    * One-shot: the next `"final"` post answers a summarizer wake absorbed into
    * the live run (lifecycle sets it right before that broadcast). It is
    * bookkeeping, not new thread content, so it must not re-arm the report-out
-   * trigger (BUG-SUMMARIZER-ONFINAL-LOOP A). Consumed by the post, cleared by
+   * trigger (the 2026-10 summary loop, fix A). Consumed by the post, cleared by
    * the lifecycle at the next run start.
    */
   private suppressOnFinalOnce = false;

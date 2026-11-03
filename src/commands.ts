@@ -132,7 +132,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
         `  User: ${status.userId}`,
       ];
 
-      // Encryption truth (FINDING-012): the room's real m.room.encryption
+      // Encryption truth: the room's real m.room.encryption
       // state, read live from the transport — never the config flag.
       if (status.connected) {
         const enc = stack.outbox.isRoomEncrypted?.();

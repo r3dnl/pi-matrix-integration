@@ -168,7 +168,7 @@ export class Lifecycle {
   /** A summarizer wake notice was absorbed into the run currently live (see
    *  `onMessageEnd`). Its report-out must still reach the room, but it must
    *  not re-arm the on-final summary trigger — that answer is the wake's own
-   *  bookkeeping (BUG-SUMMARIZER-ONFINAL-LOOP A). Cleared at the next
+   *  bookkeeping (the 2026-10 summary loop, fix A). Cleared at the next
    *  `before_agent_start`. */
   private wakeFuelTurn = false;
 
@@ -242,7 +242,7 @@ export class Lifecycle {
       if (success) {
         this.enabled = true;
         this.deps.outbox.startDelivery(this.deps.deliveryCallbacks);
-        // Reviewer row C4: clear lastError on success so /matrix-status'
+        // Clear lastError on success so /matrix-status'
         // "Last Error" line doesn't go stale
         // after a successful reconnect.
         this.snapshot = {
@@ -258,7 +258,7 @@ export class Lifecycle {
         // (Universal/App Links), falling back to the web client.
         const roomUri = buildMatrixToLink(this.deps.cfg.roomId);
         ctx.ui.notify(`Connected to Matrix!${roomUri}`, "success");
-        // Startup encryption notice (FINDING-012): tell the user the room's
+        // Startup encryption notice: tell the user the room's
         // REAL E2EE state with the same lock language as the footer. The
         // state rides the first sync, so poll briefly (non-blocking) rather
         // than guess; the footer stays the persistent indicator.
@@ -292,7 +292,7 @@ export class Lifecycle {
   }
 
   /**
-   * Inform the user of the room's encryption state once known (FINDING-012).
+   * Inform the user of the room's encryption state once known.
    * The `m.room.encryption` state event arrives with the first sync, so the
    * transport reports `undefined` until then — poll a few seconds, notify once,
    * then give up silently (the footer keeps refreshing and shows the lock as
