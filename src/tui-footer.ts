@@ -65,14 +65,14 @@ function splitMxid(id: string): { local: string; domain: string } | undefined {
 }
 
 /**
- * Local part of a room URI: `#alias:domain` / `!roomId:domain` →
+ * Local part of a room id: `#alias:domain` / `!roomId:domain` →
  * `#alias` / `!roomId`. A bare value (no domain) is returned unchanged.
  * First colon: the alias/id never carries one, the domain may (`:port`).
  */
-function roomLocalPart(uri: string): string | undefined {
-  if (!uri) return undefined;
-  const i = uri.indexOf(":");
-  return i > 0 ? uri.slice(0, i) : uri;
+function roomLocalPart(roomId: string): string | undefined {
+  if (!roomId) return undefined;
+  const i = roomId.indexOf(":");
+  return i > 0 ? roomId.slice(0, i) : roomId;
 }
 
 /**
@@ -150,16 +150,16 @@ export class TuiFooter {
   /**
    * The Matrix URI part of the footer: `user:domain/#room`, each part in its
    * own color (user cyan, domain dim, room green). Falls back to the plain,
-   * uncolored room URI when the user identity is unavailable.
+   * uncolored room id when the user identity is unavailable.
    */
   private formatRoomSegment(status: ConnectionStatus): string {
     const user = status.userId ? splitMxid(status.userId) : undefined;
-    const room = roomLocalPart(status.roomUri);
-    const domain = user?.domain ?? splitMxid(status.roomUri)?.domain;
+    const room = roomLocalPart(status.roomId);
+    const domain = user?.domain ?? splitMxid(status.roomId)?.domain;
 
-    // No user identity → fall back to the raw room URI (old layout).
+    // No user identity → fall back to the raw room id (old layout).
     if (!user || !room || !domain) {
-      return this.truncate(status.roomUri || user?.local || "");
+      return this.truncate(status.roomId || user?.local || "");
     }
 
     return `${cUser(user.local)}:${cDomain(domain)}/${cRoom(this.truncate(room))}`;

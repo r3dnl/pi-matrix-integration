@@ -445,7 +445,9 @@ export type ConnectionStatus = {
   lastError?: string;
   lastActivity?: number;
   lastErrorTime?: number;
-  roomUri: string;
+  /** The configured room id or alias (`!abc:domain` / `#alias:domain`) — not
+   *  a matrix.to link. */
+  roomId: string;
   userId: string;
 };
 

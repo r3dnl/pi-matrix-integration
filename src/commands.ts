@@ -129,7 +129,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
         "Matrix Integration Status:",
         `  Enabled: ${stack.lifecycle.isEnabled() ? "Yes" : "No"}`,
         `  Connected: ${status.connected ? "Yes" : "No"}${status.connecting ? " (connecting…)" : ""}`,
-        `  Room: ${status.roomUri}`,
+        `  Room: ${status.roomId}`,
         `  User: ${status.userId}`,
       ];
 

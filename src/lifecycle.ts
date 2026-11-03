@@ -178,7 +178,7 @@ export class Lifecycle {
     this.snapshot = {
       connected: false,
       connecting: false,
-      roomUri: deps.cfg.roomId,
+      roomId: deps.cfg.roomId,
       userId: deps.cfg.userId ?? "",
     };
   }
