@@ -129,7 +129,7 @@ function summaryShape(l: SummaryLimits): string[] {
     "{immediate next step}",
     "",
     "## Main decisions",
-    "- {decision} (reason)",
+    "- {decision} (reason)  ·  an unsettled choice as `OPEN: {question}`",
   ];
 }
 
@@ -143,6 +143,12 @@ function summaryRules(l: SummaryLimits): string[] {
     `- ## Recent activity keeps the newest ${l.recentMax} points in detail; older material moves up instead of piling up.`,
     "- Keep baseline points that are still true; update the ones the delta changed; drop obsolete ones. The delta is the newest material — fold it in.",
     "- Only include sections that have content. No timestamps, no \"as of\", no meta-commentary.",
+    // A decision is something the user chose or the code proves. Recommendation
+    // language in the conversation is not a choice: the scheduled runner turned
+    // an option it was shown as "recommended" into a decision the user never made,
+    // and the next run inherited it as fact.
+    "- Record only decisions actually taken. A choice still being weighed goes as `OPEN: {question}` — never resolve it yourself, not even when the conversation recommends one.",
+    "- If the baseline states a decision and the delta shows it was never taken (or was reversed), correct the line instead of repeating it.",
     `At most ${l.maxLines} lines total.`,
   ];
 }
