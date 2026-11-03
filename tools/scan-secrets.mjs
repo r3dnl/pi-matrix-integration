@@ -54,6 +54,9 @@ function listFiles(root, fromGit) {
   const out = [];
   (function walk(dir) {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      // Third-party trees are not our artifact; the tarball never
+      // contains them, a checkout always does.
+      if (e.name === "node_modules" || e.name === ".git") continue;
       const p = path.join(dir, e.name);
       if (e.isDirectory()) walk(p);
       else out.push(p);

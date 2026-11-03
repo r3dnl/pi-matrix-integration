@@ -1,0 +1,24 @@
+name: Nightly
+
+# Weekly machinery that must not rot silently. Story 16 extends this
+# workflow with the live tier; the vendored-code expiry check is here
+# from day one because `src/qr2025/` is a snapshot with an expiry
+# condition (docs/dev/developing.md, "Vendored code").
+
+on:
+  schedule:
+    - cron: "30 4 * * 1" # Mondays 04:30 UTC
+  workflow_dispatch:
+
+jobs:
+  vendored-expiry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Vendored-code expiry probe
+        run: node tools/check-vendored.mjs
