@@ -102,10 +102,9 @@ export class RoomUx {
     // thread (the `m.relates_to` reply relation); otherwise flat room
     // (the pipeline post).
     const threadRoot = matrixMessage.threadRoot;
-    // ponytail: `http?.available()` vs the original `http.available()` —
-    // the original threw a TypeError on the no-outbox (legacy mtx) path
-    // before the note could display; the optional chain makes the guard
-    // live (declared micro-delta, phase 4 manual criteria).
+    // `http?.available()` instead of `http.available()`: the plain call threw a
+    // TypeError on the no-outbox path, before the note could display. The
+    // optional chain is what makes the guard live.
     const note = (message: string) => {
       if (threadRoot && http?.available()) {
         http.postThreadReply(message, threadRoot).catch((error: unknown) => {

@@ -197,7 +197,7 @@ const SUBAGENT_NOTIFY_CUSTOM_TYPE = "subagent-notify";
  * dies on the next quiet turn anyway.
  *
  * ponytail: pi-subagents 0.80.0 has no spawn-time knob to suppress the parent
- * wake (`notify.js:776` defaults `triggerTurn` to true for async runs). The
+ * wake (its async runs default `triggerTurn` to true). The
  * upgrade path is an upstream `notify: false` spawn param, which would let
  * this guard go away.
  */

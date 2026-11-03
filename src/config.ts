@@ -568,8 +568,9 @@ export function getEffectiveConfig(): MatrixConfig {
  *   4. Rename .json to .json.bak
  *
  * Safe to call on every startup — already-converted files are skipped.
- * ponytail: one-time migration, remove this + the v1 code path
- * once all projects are converted.
+ * ponytail: kept for config files written before v2, which is every existing
+ * install. It goes together with the v1 reader, and that needs a major bump —
+ * dropping it alone strands anyone still running a v1 file.
  */
 export function convertAllConfigs(): number {
   const dirs = new Set<string>();
