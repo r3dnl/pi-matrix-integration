@@ -16,7 +16,7 @@ import type {
   PiMessageType,
   MatrixSendResult,
 } from './types.js';
-import type { MatrixHttpResult, Outbox } from './outbox.js';
+import type { OutboxResult, Outbox } from './outbox.js';
 import type { ThreadManager, SendKind } from './threading.js';
 import { convertMarkdown, htmlToMarkdown, looksLikeHtml, removeTableBlocks, stripHtmlTags } from './markdown.js';
 import { createConsoleLogger, type MatrixLogger } from './logger.js';
@@ -306,7 +306,7 @@ export class MessageHandler {
     text: string,
     rootId?: string,
     opts?: { nestedRoot?: boolean; html?: string },
-  ): Promise<MatrixHttpResult> {
+  ): Promise<OutboxResult> {
     if (!this.outbox) return { success: false, error: "no outbox (thread writes need the Matrix transport)" };
     const { body, html } =
       opts?.html !== undefined ? { body: text, html: opts.html } : this.threadPayload(text);
@@ -325,7 +325,7 @@ export class MessageHandler {
    * (rejected m.replace → a new in-thread summary message) stays in
    * ThreadManager.editSummary.
    */
-  async editInThread(targetEventId: string, text: string, html?: string): Promise<MatrixHttpResult> {
+  async editInThread(targetEventId: string, text: string, html?: string): Promise<OutboxResult> {
     if (!this.outbox) return { success: false, error: "no outbox" };
     const formatted = html ?? convertMarkdown(text).html;
     return this.outbox.editMessage(targetEventId, text, { threadRoot: true, html: formatted });
