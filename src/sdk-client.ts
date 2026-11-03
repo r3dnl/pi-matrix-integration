@@ -167,9 +167,10 @@ export interface SdkDeliveryCallbacks {
  * `deviceId` wins — it is an operator override. With nothing configured, the
  * credentials file's own `device_id` is used, because the token is
  * device-bound (the spike's 400 M_BAD_JSON root cause was a hardcoded id that
- * didn't match the device the token was minted for). Note the override can
- * itself cause that mismatch: a configured id that is not the device the
- * token belongs to is rejected by the homeserver (D-R4-23). The fresh-login default is
+ * didn't match the device the token was minted for). The override can itself
+ * cause that mismatch: a configured id that is not the device the token
+ * belongs to is rejected by the homeserver, so `onMismatch` lets the caller
+ * warn before the 400 arrives. The fresh-login default is
  * `PI_AGENT_1`: it keeps the `PI_AGENT` identity AND satisfies the MAS
  * device-scope policy (MAS 1.15.0, `policies/authorization_grant/
  * authorization_grant.rego`), which requires the scope's device id to match
@@ -180,7 +181,11 @@ export interface SdkDeliveryCallbacks {
 export function resolveDeviceId(
   optsDeviceId: string | undefined,
   credDeviceId: string | undefined,
+  onMismatch?: (configured: string, fromCredentialsFile: string) => void,
 ): string {
+  if (optsDeviceId && credDeviceId && optsDeviceId !== credDeviceId) {
+    onMismatch?.(optsDeviceId, credDeviceId);
+  }
   return optsDeviceId ?? credDeviceId ?? "PI_AGENT_1";
 }
 
@@ -288,8 +293,14 @@ export class SdkOutbox implements Outbox {
       userId: this.opts.userId,
       // The token is device-bound: prefer the credentials file's own
       // device_id (see resolveDeviceId for the MAS device-scope policy the
-      // fresh-login default must satisfy).
-      deviceId: resolveDeviceId(this.opts.deviceId, cred.device_id),
+      // fresh-login default must satisfy). A configured id that disagrees
+      // with the credentials file wins and is warned about — the homeserver
+      // otherwise rejects the session with a bare 400.
+      deviceId: resolveDeviceId(this.opts.deviceId, cred.device_id, (configured, fromFile) =>
+        this.logger.warn(
+          `[matrix] configured deviceId "${configured}" differs from the credentials file's device_id "${fromFile}"; ` +
+            "the configured id wins — if connect fails with 400, remove deviceId from the config",
+        )),
       store: new sdk.MemoryStore(),
       // js-sdk `Logger` seam (lib/client.js: `opts.logger ?? logger`);
       // also feeds initRustCrypto → OlmMachine, so the Rust-crypto WASM
