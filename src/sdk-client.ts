@@ -57,13 +57,13 @@ type SdkMatrixEvent = InstanceType<SdkModule["MatrixEvent"]>;
 type SdkRoom = InstanceType<SdkModule["Room"]>;
 type SdkSyncState = SdkModule["SyncState"];
 
-/** MSC1767 thread marker (the shape the homeserver retained live —
- *  same constant as the matrix-http client, so both transports emit
- *  identical event content). */
+/** MSC1767 thread marker (the shape the homeserver retained live, kept
+ *  identical across rewrites so events written before and after render the
+ *  same). */
 const THREAD_MARKER = { "m.topological_ordering": 1, "m.message_count": 1 };
 
 /** The js-sdk default `initialSyncLimit` (10) backfills too few events
- *  for the thread-delta read; 50 matches the matrix-http poll window. */
+ *  for the thread-delta read, so it is raised to 50. */
 const DEFAULT_INITIAL_SYNC_LIMIT = 50;
 
 /** Sync long-poll cap (ms) — the js-sdk `startClient({ timeout })`. */
@@ -1167,8 +1167,7 @@ export class SdkOutbox implements Outbox {
     }
   }
 
-  /** The summarizer's thread-delta read (the matrix-http `readTimeline`
-   *  equivalent): newest-first, the caller filters to a thread. */
+  /** The summarizer's thread-delta read: newest-first, the caller filters to a thread. */
   async readTimeline(
     limit = 100,
   ): Promise<{ success: boolean; messages: ThreadDeltaMessage[]; error?: string }> {

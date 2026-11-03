@@ -39,7 +39,7 @@ export interface SummarizeDispatcherDeps {
   source?: "room" | "session";
   /** Fir-tree shape caps handed to both runners (default DEFAULT_SUMMARY_LIMITS). */
   limits?: SummaryLimits;
-  /** Room-sourced delta (matrix-http read, `mtx` fallback). Not called in session mode. */
+  /** Room-sourced delta, read from the room rather than the session. Not called in session mode. */
   readDelta: (root: SummarizeRoot) => Promise<ThreadDeltaMessage[]>;
   /** Subagent driver (room mode only; `isAvailable()` pings the RPC bus). */
   subagent: SubagentSummarizer;

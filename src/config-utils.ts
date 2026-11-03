@@ -396,8 +396,8 @@ export const DEFAULT_CONFIG: MatrixConfig = {
   voiceTranscription: true,
   // `@@` outbound attach: a lone @@fragment uploads a work artifact or a
   // media file (image/audio/video) as a Matrix file attachment. One cap for
-  // both — `maxBytesUpload` — because media is the binding case. Requires a
-  // matrix-http transport (the mtx CLI has no media verb). Off by default.
+  // both — `maxBytesUpload` — because media is the binding case. Uploads go
+  // through the sdk transport. Off by default.
   fileAttach: false,
   // Candidate matcher for `@@` artifact attach: "builtin" (pure
   // substring + length rank, zero deps) or "fzf" (headless fzf relevance

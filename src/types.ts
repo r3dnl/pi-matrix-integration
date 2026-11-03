@@ -107,7 +107,7 @@ export interface MatrixConfig {
   mirrorAskUserPolls?: boolean;
   // `@` remote file picker (triggered from Matrix). Default false.
   remoteFilePicker?: boolean;
-  // `@@` file attachment to outbound Matrix messages (needs a matrix-http transport).
+  // `@@` file attachment to outbound Matrix messages.
   fileAttach?: boolean;
   // How the `@@` artifact picker ranks: "builtin" (substring + length) or
   // "fzf" (headless fzf relevance, falls back to builtin when absent).
@@ -117,10 +117,10 @@ export interface MatrixConfig {
   // Candidate list length for both pickers; the list shows at most this many
   // matches and says how many it hid. Default 10.
   pickerLimit?: number;
-  // Threading . Master gate for
+  // Threading (threads-and-summaries.md). Master gate for
   // session→thread mapping, lazy thread-root creation, and routing all
-  // outgoing traffic into the active thread. Off until a matrix-http transport or
-  // `mtx` thread verbs are available. Default false.
+  // outgoing traffic into the active thread. Needs the sdk transport, which is
+  // the only transport. Default false.
   threads?: boolean;
   // Root + sub-thread marker glyph. Default "🧵".
   threadIcon?: string;

@@ -158,8 +158,8 @@ export class MessageHandler {
    * Threading (threads-and-summaries.md): when the session is pending, the first
    * outgoing user message creates the thread root and is posted into it
    * (ordering invariant: root first, then the reply). With an active
-   * thread, traffic routes into it via the matrix-http transport; on any thread
-   * failure the send falls back to the flat `mtx` path .
+   * thread, traffic routes into it through the outbox; on any thread
+   * failure the send falls back to the flat path.
    */
   async handleOutgoingMessage(piMessage: PiMessage): Promise<MatrixSendResult> {
     const kind: SendKind =
@@ -329,7 +329,7 @@ export class MessageHandler {
    * Thread-path payload (mirrors `sendFormattedMessage` without the table
    * split — in a thread, tables stay inline in the html; the flat path
    * keeps its `tablesInSeparateMessage` behavior). Plain mode → `html`
-   * undefined, the matrix-http post is a plain `body` only. The
+   * undefined, the post carries a plain `body` only. The
    * pipeline's formatter step — postInThread converts at write time
    * instead of callers pre-computing.
    */
