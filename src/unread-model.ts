@@ -32,7 +32,7 @@ import { dirname } from 'node:path';
 /** A one-line, length-bounded preview (never the full body, §19.7). */
 export const PREVIEW_LIMIT = 80;
 
-export const API_VERSION = 'homeops/v1';
+export const API_VERSION = 'pi-matrix/v1';
 export const SCHEMA = 'pi-matrix/unread';
 /** v3 = the Python v2 layout (per-room map + watermark) + the D1 thread map. */
 export const VERSION = 3;

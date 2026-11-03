@@ -113,7 +113,7 @@ console.log("== save/load (U-01 atomic, U-06 degradable) ==");
   const raw = JSON.parse(fs.readFileSync(file, "utf8"));
   check(
     "file shape carries schema + version + per-thread count?",
-    raw.apiVersion === "homeops/v1" && raw.schema === "pi-matrix/unread" && raw.version === 3 &&
+    raw.apiVersion === "pi-matrix/v1" && raw.schema === "pi-matrix/unread" && raw.version === 3 &&
       raw.rooms[ROOM].threads[ROOT].count === 2,
     JSON.stringify(raw),
   );
