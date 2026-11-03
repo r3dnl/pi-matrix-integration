@@ -111,9 +111,9 @@ import { createRequire } from "node:module";
  */
 export interface MatrixStack {
   outbox: SdkOutbox;
-  /** Per-thread unread model (was owned by the deleted facade) — per-env path.
-   *  Ephemeral by design — no state/ persistence beyond its own
-   *  `unread-<env>.json` load/save. */
+  /** Per-thread unread model (was owned by the deleted facade) — one file per
+   *  homeserver domain. Ephemeral by design — no state/ persistence beyond its
+   *  own `unread-<homeserver-domain>.json` load/save. */
   unreadModel: UnreadModel;
   unreadPath: string;
   /** The delivery-callback bundle (the outbox's read-side legs +
