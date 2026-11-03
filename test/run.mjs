@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 // config-contract first: it is the cheap schema/wiring gate, and every other
 // suite assumes the config chains it checks are intact.
-const tests = ["config-contract.mjs", "config-migration.mjs", "repro.mjs", "test-logic.mjs", "test-gates.mjs", "test-unread-model.mjs", "test-project-provision.mjs", "test-sdk-logger.mjs", "test-stdout-capture.mjs", "test-sdk-delivery.mjs", "test-account-lock.mjs", "test-polls.mjs", "login-check.mjs", "login-wiring-check.mjs", "qr2025-check.mjs", "subagent-bus.mjs", "owner-bus.mjs", "tintinweb-provider.mjs", "nicobailon-provider.mjs", "summarizer-wake.mjs", "summarize-cadence.mjs", "stale-message-guard.mjs", "deps-contract.mjs"];
+const tests = ["config-contract.mjs", "config-migration.mjs", "repro.mjs", "test-logic.mjs", "test-gates.mjs", "test-unread-model.mjs", "test-project-provision.mjs", "test-sdk-logger.mjs", "test-stdout-capture.mjs", "test-sdk-delivery.mjs", "test-account-lock.mjs", "test-polls.mjs", "login-check.mjs", "login-wiring-check.mjs", "qr2025-check.mjs", "subagent-bus.mjs", "owner-bus.mjs", "tintinweb-provider.mjs", "nicobailon-provider.mjs", "summarizer-wake.mjs", "summarize-cadence.mjs", "stale-message-guard.mjs", "deps-contract.mjs", "security-boundary.mjs"];
 // shadow-diff runs its fixture selftest (the §5.3 gate: "runs on two fixture
 // NDJSON files") rather than the two-file CLI.
 const testFiles = [...tests, { file: "shadow-diff.mjs", args: ["--selftest"] }];

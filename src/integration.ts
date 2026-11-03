@@ -63,6 +63,7 @@ import {
   homeserverDomain,
   type LoginResult,
   type LoginResponse,
+  makeLoginFetch,
 } from "./login.js";
 import { buildMatrixHelp } from "./matrix-help.js";
 import { createSdkOutbox, type SdkOutbox, type SdkDeliveryCallbacks } from "./sdk-client.js";
@@ -636,9 +637,11 @@ export class MatrixIntegration {
     const sdkClient = async () => {
       if (!client) {
         const sdk = await import("matrix-js-sdk");
+        // Credentials must never be relayed to another host by a 3xx
+        // (story 6): the login client fetches through the redirect guard.
         client = token
-          ? new sdk.MatrixClient({ baseUrl: hs, accessToken: token })
-          : new sdk.MatrixClient({ baseUrl: hs });
+          ? new sdk.MatrixClient({ baseUrl: hs, accessToken: token, fetchFn: makeLoginFetch() })
+          : new sdk.MatrixClient({ baseUrl: hs, fetchFn: makeLoginFetch() });
       }
       return client;
     };
