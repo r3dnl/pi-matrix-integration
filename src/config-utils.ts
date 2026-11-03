@@ -298,8 +298,8 @@ function warnUnreadV2Keys(v2: Record<string, unknown>, read: Set<string>): void 
 // Naming notes:
 // - ``roomId`` is the room **alias** (e.g., ``#pi-updates:matrix.example.com``), not a room id:
 //   the server generates the real ``!…`` room id at creation, but the alias
-//   is stable, matches ``mtx room list``'s ``alias`` field, and ``mtx -r``
-//   resolves aliases to room ids.
+//   is stable, carries the ``alias`` field the alias resolver reads, and the
+//   server resolves aliases to room ids.
 // - Placeholder values use {brackets} to indicate what should be replaced.
 export const DEFAULT_CONFIG: MatrixConfig = {
   // userId + homeserver are intentionally ABSENT (phase 0, phase 3):
@@ -411,7 +411,7 @@ export const DEFAULT_CONFIG: MatrixConfig = {
   pickerLimit: 10,
   // Threading: session→thread mapping with
   // lazy root creation. Thread writes ride the outbox write surface
-  // (the SdkOutbox thread delegate; the `mtx` CLI has no thread verbs).
+  // (the SdkOutbox thread delegate).
   // Default true.
   threads: true,
   // QR login (2025 variant, MSC4108/MSC4388) method offer (configuration-and-room-behaviour.md).

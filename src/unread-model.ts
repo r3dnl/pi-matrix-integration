@@ -1,9 +1,9 @@
 /**
  * Pi Matrix Integration - Unread model
  *
- * Port of the `mtx` account-store unread model (tools/mtx/mtx/unread.py,
- * transport-and-state.md) **plus the D1 thread dimension**
- * (TRANSPORT-DECISION D1, transport-and-state.md): one unread unit per conversation with new
+ * Port of the account-store unread model (transport-and-state.md)
+ * **plus the D1 thread dimension**
+ * (transport-and-state.md): one unread unit per conversation with new
  * activity, not one per event.
  *
  * D1 semantics (option B, settled): `total = new_flat_messages +

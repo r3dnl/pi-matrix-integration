@@ -53,7 +53,7 @@ export interface RoomUxDeps {
   cfg: MatrixConfig;
   logger: MatrixLogger;
   /** The Outbox seam for `@@` artifact uploads + in-thread notes
-   *  (`postThreadReply`/`sendFile`); absent (the legacy mtx profile) →
+   *  (`postThreadReply`/`sendFile`); absent →
    *  the no-transport note path. */
   outbox?: Outbox;
   /** The pipeline write surface: room auto-replies post
