@@ -51,6 +51,7 @@ rename).
 | `homeserver` | — (from login / credentials) | `PI_MATRIX_HOMESERVER` | Homeserver base URL the client connects to. |
 | `userId` | — | `PI_MATRIX_USER` | The agent's Matrix user id, e.g. `@pi_agent:example.com`. |
 | `deviceId` | *(unset → the credentials file's `device_id`, else `PI_AGENT_1`)* | `PI_MATRIX_DEVICE_ID` | Device the token is presented as. See below. |
+| *(env only)* | *(derived from the working directory)* | `PI_MATRIX_PROJECT` | Names the project by hand, overriding the name derived from the cwd. |
 | `credentialsPath` | `~/.config/mtx/accounts/{pi-matrix-username}--{matrix-domain}/credentials.json` | `PI_MATRIX_CREDENTIALS_PATH` | Where the access token is read from and written by `/matrix-login`. |
 | `roomId` (`autoConnect` block) | `#{room-name}:{matrix-server-domain}` | `PI_MATRIX_ROOM` | Target room. Accepts an alias or an id. |
 | `autoConnect` | `true` | `PI_MATRIX_AUTO_CONNECT` | Connect at session start. `/matrix-connect` stays the manual retry. |
@@ -152,6 +153,7 @@ README.
 | `summarizeOnFinalMessage` | `threadSummaryOnFinal` | `true` | `PI_MATRIX_THREAD_SUMMARY_ON_FINAL` | Run a pass right after the turn's final message lands in the thread. |
 | `useLlmForSummaries` | `threadSummaryByLlm` | `true` | `PI_MATRIX_THREAD_SUMMARY_BY_LLM` | `false` = a zero-cost heuristic line instead of an LLM pass. |
 | `summarizeLimit` | `threadSummarizeLimit` | `40` | `PI_MATRIX_THREAD_SUMMARIZE_LIMIT` | Cap on new messages fed into one pass. |
+| *(unset)* | `threadSummarizeModel` | *(inherited session model)* | `PI_MATRIX_THREAD_SUMMARIZE_MODEL` | Model pin for the summarizer run. |
 | `summarizeRunTimeoutMs` | `threadSummarizeRunTimeoutMs` | `1800000` | `PI_MATRIX_THREAD_SUMMARIZE_RUN_TIMEOUT_MS` | Completion budget (ms) for one summarizer run on slow models. Lower it only where the summarizer model is fast; a too-low budget kills slow but successful runs. |
 | `summarizeMilestoneMax` | `threadSummarizeMilestoneMax` | `8` | `PI_MATRIX_THREAD_SUMMARIZE_MILESTONE_MAX` | Milestone lines kept in the summary shape. |
 | `summarizeRecentMax` | `threadSummarizeRecentMax` | `5` | `PI_MATRIX_THREAD_SUMMARIZE_RECENT_MAX` | Recent-activity lines kept. |

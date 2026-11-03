@@ -41,6 +41,8 @@ The tiers are a policy, not a preference: deterministic checks belong in the off
 
 Scripts live in `test/` and use the hand-rolled harness in `test/_harness.mjs`. There is no test framework on purpose: 34 working scripts and one shared runner beat a migration nobody asked for. Add a new script to the offline tier's discovery rather than inventing a second runner.
 
+Two environment seams make the offline tier hermetic. `PI_MATRIX_TEST_OUTBOX` set to a module path replaces the real transport with the module's exported outbox (the fake lives in `test/fake-outbox.mjs`); `PI_MATRIX_TEST` marks the hermetic run and skips work that only makes sense against a live session. They are test-only; nothing user-facing reads them.
+
 ## Running the live tier against your own homeserver
 
 The live scripts read the homeserver and the agent's credentials from the environment. Nothing secret is committed, and nothing secret belongs in a script — when you see a hard-coded hostname or account name in a test file, that is a defect to fix, not a convention to copy.
