@@ -79,7 +79,7 @@ export interface Outbox {
   /** Joined room-member user ids (post-sync room state on the SDK path). */
   roomMembers(): Promise<string[]>;
 
-  /** The `mtx room list` shape the alias resolver consumes (room ids + aliases). */
+  /** Room ids + aliases, the shape the alias resolver consumes. */
   roomInfo(): Promise<{ rooms: Array<{ room_id?: string; alias?: string | null }> }>;
 
   /** True when the connected room carries `m.room.encryption`. Read live

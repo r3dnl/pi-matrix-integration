@@ -162,7 +162,7 @@ export type SendKind = "milestone" | "final" | "user" | "decision" | "other";
  * Thread lifecycle + routing + summarizer + state persistence.
  *
  * One instance per room. `canRoute()` is the choke point: false → callers
- * fall back to the flat `mtx` send path, so threading is always a
+ * fall back to the flat send path, so threading is always a
  * non-blocking enhancement.
  */
 /**
@@ -575,7 +575,7 @@ export class ThreadManager {
    * root, capped to `threadSummarizeLimit`, and trimmed to after
    * `lastSummarizedEventId`. The room is the source of truth — the Pi session
    * only triggers/hosts the run. No delegate / an empty read → `[]`
-   * (the caller may fall back to the `mtx` read, or run on the baseline alone).
+   * (the caller may fall back to the outbox timeline read, or run on the baseline alone).
    */
   async readThreadDelta(limit = 100): Promise<ThreadDeltaMessage[]> {
     const root = this.activeRoot();

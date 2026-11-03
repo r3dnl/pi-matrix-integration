@@ -25,9 +25,9 @@ import { createConsoleLogger, type MatrixLogger } from './logger.js';
 export interface MessageHandlerOptions {
   /** Dedupe window for outgoing sends (ms). Default 600_000 (10 min). */
   dedupeWindowMs?: number;
-  /** Convert outgoing markdown to HTML and send it via `--html`. Default false. */
+  /** Convert outgoing markdown to HTML and send it as a formatted body. Default false. */
   sendFormatted?: boolean;
-  /** Send detected table blocks in separate `mtx` sends. Default false. */
+  /** Send detected table blocks in separate sends. Default false. */
   tablesInSeparateMessage?: boolean;
   /** Thread router: when it has an active thread,
    * outgoing traffic rides the thread delegate instead of the flat
@@ -341,7 +341,7 @@ export class MessageHandler {
 
   /**
    * Send a formatted (HTML) message. With `tablesInSeparateMessage`, table
-   * blocks go out as their own `mtx` sends; the surrounding text keeps its
+   * blocks go out as their own sends; the surrounding text keeps its
    * own send with the tables removed. Plain `body` always stays available
    * as the fallback for non-HTML clients.
    */

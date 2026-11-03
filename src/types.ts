@@ -78,18 +78,17 @@ export interface MatrixConfig {
   // Final-message broadcast cutoff (chars); longer answers are truncated.
   // Default 2000.
   maxFinalMessageLength?: number;
-  // Pass the process-wide `MTX_ALLOW_PROD=1` allowance to `mtx`, clearing its
-  // production-mutation guard (a name matching `prd*`) without a per-call `--force`
-  // (the agent mutates prod continuously). Default false.
+  // Reserved: a production-mutation allowance that external tooling may read
+  // from the environment. Nothing in this extension reads it. Default false.
   allowProd?: boolean;
   // Convert outgoing markdown to HTML and send it as `formatted_body`
-  // (`format: org.matrix.custom.html`, via `mtx message send --html`).
-  // Requires the deployed `mtx` to support `--html` — keep false until the
-  // formatted-body change is deployed and rendering is verified in Element.
+  // (`format: org.matrix.custom.html`).
+  // The room client decides how a formatted body renders, so this stays off
+  // until rendering is verified in the client you use.
   // Default false.
   sendFormatted?: boolean;
   // When sendFormatted is on: split markdown table blocks into their own
-  // `mtx` send instead of inlining them in the same message. Default false.
+  // send instead of inlining them in the same message. Default false.
   tablesInSeparateMessage?: boolean;
   // Error log file owned by the extension (recurring errors land here
   // instead of the TUI console). Default `~/.pi/logs/pi-matrix.log`.
@@ -428,7 +427,7 @@ export interface MatrixSendResult {
   eventId: string;
   success: boolean;
   // True when the send was skipped because identical content went out
-  // within the dedupe window (no `mtx` call was made).
+  // within the dedupe window (no request was sent).
   deduped?: boolean;
   error?: string;
   timestamp: number;

@@ -1283,7 +1283,7 @@ export class SdkOutbox implements Outbox {
     }
   }
 
-  /** The `mtx room list` shape the alias resolver consumes. */
+  /** Room ids + aliases for the alias resolver. */
   async roomInfo(): Promise<{ rooms: Array<{ room_id?: string; alias?: string | null }> }> {
     if (!this.available() || this.client === null) return { rooms: [] };
     try {
