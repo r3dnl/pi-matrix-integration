@@ -324,7 +324,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
       description:
         "Replace the active Matrix thread's root summary with a markdown body. " +
         "The extension prepends the '🧵 {topic}' line itself — pass the body only " +
-        "(# Topic / ## Main discussion points / ## Main decisions sections). " +
+        "(# Topic / ## Milestones / ## Recent activity / ## Main decisions sections). " +
         "Only available while a thread is active.",
       parameters: Type.Object({
         summary: Type.String({ description: "Markdown summary body for the thread root (no 🧵 line)" }),
