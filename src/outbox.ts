@@ -18,11 +18,10 @@ import type { ThreadDeltaMessage } from "./summarize.js";
 
 /**
  * Soft-fail op result shape shared by the result-returning Outbox ops.
- * Re-homed here when the legacy transport was deleted, so this seam owns the
- * type every op signature returns. The name still says "Http" for that
- * history; the transport behind it is matrix-js-sdk.
+ * Named for the seam that owns it; every op signature returns this, and the
+ * transport behind every one of them is matrix-js-sdk.
  */
-export interface MatrixHttpResult {
+export interface OutboxResult {
   success: boolean;
   eventId?: string;
   error?: string;
@@ -35,10 +34,10 @@ export interface Outbox {
   available(): boolean;
 
   /** Post a plain room message (no thread marker — the flat send). */
-  postMessage(body: string, html?: string): Promise<MatrixHttpResult>;
+  postMessage(body: string, html?: string): Promise<OutboxResult>;
 
   /** Post a thread root (`m.thread` marker). */
-  postThreadRoot(body: string, html?: string): Promise<MatrixHttpResult>;
+  postThreadRoot(body: string, html?: string): Promise<OutboxResult>;
 
   /** Post an in-thread reply (spec `m.relates_to` thread relation). */
   postThreadReply(
@@ -46,14 +45,14 @@ export interface Outbox {
     rootId: string,
     nestedRoot?: boolean,
     html?: string,
-  ): Promise<MatrixHttpResult>;
+  ): Promise<OutboxResult>;
 
   /** Edit our own event via `m.replace`. */
   editMessage(
     targetEventId: string,
     text: string,
     opts?: { threadRoot?: boolean; html?: string },
-  ): Promise<MatrixHttpResult>;
+  ): Promise<OutboxResult>;
 
   /** Read the room's recent timeline (newest-first, the summarizer's delta). */
   readTimeline(
@@ -61,7 +60,7 @@ export interface Outbox {
   ): Promise<{ success: boolean; messages: ThreadDeltaMessage[]; error?: string }>;
 
   /** Update the room topic state event. */
-  setRoomTopic(topic: string): Promise<MatrixHttpResult>;
+  setRoomTopic(topic: string): Promise<OutboxResult>;
 
   /** Upload `data` and post it as an `m.file` event (MSC4125 on the SDK path). */
   sendFile(
@@ -70,7 +69,7 @@ export interface Outbox {
     contentType: string,
     body?: string,
     threadRoot?: string,
-  ): Promise<MatrixHttpResult>;
+  ): Promise<OutboxResult>;
 
   /**
    * Read the room's recent messages (oldest → newest) for `/matrix-messages`

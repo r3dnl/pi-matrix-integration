@@ -39,7 +39,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import type { MatrixEvent, MatrixMessage } from "./types.js";
 import type { ThreadDeltaMessage } from "./summarize.js";
-import type { MatrixHttpResult, Outbox } from "./outbox.js";
+import type { OutboxResult, Outbox } from "./outbox.js";
 import { parseMatrixEvent } from "./thread-meta.js";
 import type { MatrixLogger } from "./logger.js";
 import {
@@ -601,7 +601,7 @@ export class SdkOutbox implements Outbox {
   // never a throw into the caller)
   // ==========================================================================
 
-  private async soft(op: string, fn: () => Promise<MatrixHttpResult>): Promise<MatrixHttpResult> {
+  private async soft(op: string, fn: () => Promise<OutboxResult>): Promise<OutboxResult> {
     if (!this.available()) {
       return {
         success: false,
@@ -619,7 +619,7 @@ export class SdkOutbox implements Outbox {
   private async postContent(
     content: Record<string, unknown>,
     threadRoot?: string,
-  ): Promise<MatrixHttpResult> {
+  ): Promise<OutboxResult> {
     const client = this.client!;
     const room = this.resolvedRoomId;
     if (!room) {
@@ -640,7 +640,7 @@ export class SdkOutbox implements Outbox {
     return { success: true, eventId: res.event_id ?? "" };
   }
 
-  async postThreadRoot(body: string, html?: string): Promise<MatrixHttpResult> {
+  async postThreadRoot(body: string, html?: string): Promise<OutboxResult> {
     return this.soft("postThreadRoot", async () =>
       this.postContent({
         msgtype: "m.text",
@@ -652,7 +652,7 @@ export class SdkOutbox implements Outbox {
   }
 
   /** The flat room send (no thread marker, no thread relation). */
-  async postMessage(body: string, html?: string): Promise<MatrixHttpResult> {
+  async postMessage(body: string, html?: string): Promise<OutboxResult> {
     return this.soft("postMessage", async () =>
       this.postContent({
         msgtype: "m.text",
@@ -667,7 +667,7 @@ export class SdkOutbox implements Outbox {
     rootId: string,
     nestedRoot = false,
     html?: string,
-  ): Promise<MatrixHttpResult> {
+  ): Promise<OutboxResult> {
     return this.soft("postThreadReply", async () =>
       this.postContent(
         {
@@ -685,7 +685,7 @@ export class SdkOutbox implements Outbox {
     targetEventId: string,
     text: string,
     opts?: { threadRoot?: boolean; html?: string },
-  ): Promise<MatrixHttpResult> {
+  ): Promise<OutboxResult> {
     return this.soft("editMessage", async () =>
       this.postContent({
         msgtype: "m.text",
@@ -718,7 +718,7 @@ export class SdkOutbox implements Outbox {
     answers: { id: string; label: string }[],
     threadRoot?: string,
     maxSelections = 1,
-  ): Promise<MatrixHttpResult> {
+  ): Promise<OutboxResult> {
     return this.soft("sendPoll", async () => {
       const client = this.client!;
       const room = this.resolvedRoomId;
@@ -782,7 +782,7 @@ export class SdkOutbox implements Outbox {
    * Flat `m.reference` like poll.end — the poll widget aggregates votes
    * by poll event id, no thread relation.
    */
-  async sendPollVote(pollEventId: string, answers: string[], labels: string[]): Promise<MatrixHttpResult> {
+  async sendPollVote(pollEventId: string, answers: string[], labels: string[]): Promise<OutboxResult> {
     return this.soft("sendPollVote", async () => {
       const client = this.client!;
       const room = this.resolvedRoomId;
@@ -814,7 +814,7 @@ export class SdkOutbox implements Outbox {
    * referenced via `m.relates_to` (m.reference), flat by design — no
    * thread relation (the stop resolves by poll event id).
    */
-  async endPoll(pollEventId: string): Promise<MatrixHttpResult> {
+  async endPoll(pollEventId: string): Promise<OutboxResult> {
     return this.soft("endPoll", async () => {
       const client = this.client!;
       const room = this.resolvedRoomId;
@@ -838,7 +838,7 @@ export class SdkOutbox implements Outbox {
     });
   }
 
-  async setRoomTopic(topic: string): Promise<MatrixHttpResult> {
+  async setRoomTopic(topic: string): Promise<OutboxResult> {
     return this.soft("setRoomTopic", async () => {
       const client = this.client!;
       const room = this.resolvedRoomId;
@@ -864,7 +864,7 @@ export class SdkOutbox implements Outbox {
     contentType: string,
     body?: string,
     threadRoot?: string,
-  ): Promise<MatrixHttpResult> {
+  ): Promise<OutboxResult> {
     return this.soft("sendFile", async () => {
       const client = this.client!;
       const encrypt = (this.opts.attachEncryption ?? "on") === "on";

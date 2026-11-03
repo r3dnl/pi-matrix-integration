@@ -15,7 +15,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import type { MatrixHttpResult } from "./outbox.js";
+import type { OutboxResult } from "./outbox.js";
 import type { MatrixLogger } from "./logger.js";
 import { createConsoleLogger } from "./logger.js";
 import { filterThreadDelta, type ThreadDeltaMessage } from "./summarize.js";
@@ -81,10 +81,10 @@ export type SessionStartReason = "startup" | "reload" | "new" | "resume" | "fork
  * `readTimeline` straight at the seam.
  */
 export interface ThreadSend {
-  postThreadRoot(body: string, html?: string): Promise<MatrixHttpResult>;
-  postThreadReply(body: string, rootId: string, nestedRoot?: boolean, html?: string): Promise<MatrixHttpResult>;
-  editMessage(targetEventId: string, text: string, opts?: { threadRoot?: boolean; html?: string }): Promise<MatrixHttpResult>;
-  setRoomTopic(topic: string): Promise<MatrixHttpResult>;
+  postThreadRoot(body: string, html?: string): Promise<OutboxResult>;
+  postThreadReply(body: string, rootId: string, nestedRoot?: boolean, html?: string): Promise<OutboxResult>;
+  editMessage(targetEventId: string, text: string, opts?: { threadRoot?: boolean; html?: string }): Promise<OutboxResult>;
+  setRoomTopic(topic: string): Promise<OutboxResult>;
   readTimeline(limit?: number): Promise<{ success: boolean; messages: ThreadDeltaMessage[]; error?: string }>;
 }
 
@@ -427,7 +427,7 @@ export class ThreadManager {
     // The pipeline write step: route + sub-thread target
     // computed above; the actual outbox call + markdown conversion happen
     // in the MessageHandler's injected delegate.
-    const res: MatrixHttpResult = await this.threadSend.postThreadReply(text, targetRootId, false, html);
+    const res: OutboxResult = await this.threadSend.postThreadReply(text, targetRootId, false, html);
 
     if (!res.success) {
       this.warnFlat(`in-thread reply failed: ${res.error ?? "no event id"}`);
