@@ -1,166 +1,103 @@
-# Pi Matrix Integration - Quick Start Guide
+# Quick Start
 
-## 🚀 Get Started in 5 Minutes
+Go from install to a working room in about ten minutes. You need: a working
+Pi installation, a Matrix homeserver you can create accounts on, and a
+Matrix account for the agent (its own — never your personal one).
 
-### Step 1: Install the Extension
-
-```bash
-# Copy the extension to your Pi extensions directory
-cp -r pi-matrix-integration ~/.pi/agent/extensions/
-
-# Or if you're already in the right place:
-# The extension is already at ~/.pi/agent/extensions/pi-matrix-integration/
-```
-
-### Step 2: Configure Matrix Account
-
-**Option A: Use the setup script (Recommended)**
-```bash
-# Run the interactive setup
-bash ~/.pi/agent/extensions/pi-matrix-integration/setup.sh
-
-# Follow the prompts to:
-# 1. Verify mtx installation
-# 2. Create Matrix account for Pi
-# 3. Configure the extension
-```
-
-**Option B: Manual Configuration**
-```bash
-# Edit the configuration file
-nano ~/.pi/agent/extensions/pi-matrix-integration/config/matrix-config.json
-
-# Update with your Matrix server details:
-{
-  "environment": "tst2",
-  "homeserver": "tst2-matrix.r3d.nl",
-  "userId": "@your-pi-bot:tst2-matrix.r3d.nl",
-  "roomId": "!your-room-id:tst2-matrix.r3d.nl",
-  "credentialsPath": "~/.config/mtx/accounts/your-pi-bot--tst2-matrix.r3d.nl/credentials.json",
-  "mtxHome": "~/.config/mtx"
-}
-```
-
-### Step 3: Start Pi and Connect
+## 1. Install the extension
 
 ```bash
-# Start Pi (the extension loads automatically)
-pi
-
-# In your Pi session, connect to Matrix
-/matrix-connect
-
-# You should see: "Connected to Matrix!"
+pi install npm:pi-matrix-integration@1.0.0
 ```
 
-### Step 4: Test the Integration
+(From git: `pi install git:github.com/r3dnl/pi-matrix-integration@v1.0.0`.
+From a checkout: `pi install /path/to/pi-matrix-integration`.)
 
-```
-# Send a test message to Matrix
-/matrix-send "Hello from Pi!"
+Optional but recommended — room-mode thread summaries and sub-agent
+visibility need the `pi-subagents` extension:
 
-# Check connection status
-/matrix-status
-
-# Get recent messages
-/matrix-messages
+```bash
+pi install npm:pi-subagents
 ```
 
-### Step 5: Use Matrix for Decisions
+Apply the question-mirror patches (one command, idempotent; enables full
+terminal ↔ room synchronisation of decision questionnaires):
 
-Decisions use the RPIV `ask_user_question` dialogue, which this extension
-mirrors into the room:
-
-```
-# Pi shows the decision questionnaire in the terminal AND in the room
-# You answer on the terminal or in the room — whichever completes first wins
-# Pi proceeds with your choice
+```bash
+sh ~/.pi/agent/npm/node_modules/pi-matrix-integration/patches/rpiv-ask-user-question/apply.sh
 ```
 
-## 📋 Common Commands
+## 2. Prepare the room
+
+1. Create the agent's account on your homeserver (see your server's
+   documentation for account creation).
+2. Create a room for the project and invite the agent. Keep it
+   invite-only — room members can drive the agent.
+
+## 3. Log in and connect
+
+Start Pi in your project directory:
+
+```bash
+cd <project> && pi
+```
+
+In the Pi session:
+
+```
+/matrix-login      # probe homeserver, agent username + password, token stored
+/matrix-connect    # connect to the room (first run asks which room)
+/matrix-status     # prints server, room, user — connected
+```
+
+## 4. Verify both directions
+
+```
+/matrix-send "Hello from Pi"
+```
+
+…appears in the room. Then type `hello` in the room — a moment later it
+shows in the terminal marked `[Matrix]`, and Pi answers it.
+
+## 5. See what happens automatically
+
+With defaults, once connected Pi automatically:
+
+- posts a milestone line on session start, compaction, and model change,
+- echoes your terminal-typed prompts as `🧑 User: …`,
+- broadcasts each turn's final message as `💬 Pi: …`,
+- opens a `🧵 <topic>` thread for the session and keeps its root summary
+  updated as the conversation moves,
+- shows the connection in the footer: `💬 (user:domain/#room 🧵 on)`.
+
+When Pi raises a decision questionnaire, it appears in the terminal **and**
+in the room. Answer wherever you are: option numbers, `Custom: …`, 👍/👎;
+a review step confirms before Pi proceeds.
+
+## Commands you will actually use
 
 | Command | What it does |
 |---------|--------------|
-| `/matrix-connect` | Connect to Matrix room |
-| `/matrix-disconnect` | Disconnect from Matrix |
-| `/matrix-toggle` | Toggle Matrix on/off |
 | `/matrix-status` | Show connection status |
-| `/matrix-send Hello!` | Send message to Matrix |
-| `/matrix-messages 5` | Show last 5 messages |
+| `/matrix-send Hello!` | Send a message to the room |
+| `/matrix-messages 5` | Show the last 5 room messages |
+| `/matrix-toggle` | Toggle the integration on/off |
+| `/matrix-thread-toggle` | Toggle threading |
+| `/matrix-help` | Post the end-user guide to the room |
 
-## 🎯 What Happens Automatically
+The full surface (13 commands + 2 aliases) is in the
+[README](README.md#commands).
 
-Once connected, Pi will automatically:
+## If something does not work
 
-1. **Broadcast Milestones** - When Pi completes a task, it sends an update to Matrix
-   ```
-   Pi: Analysis complete. [Milestone: Analysis Done]
-   → Matrix: "🎯 Milestone: Analysis Done"
-   ```
+[docs/user/troubleshooting.md](docs/user/troubleshooting.md) walks the five
+common failures: cannot connect, connected-but-silent, missing threads,
+decryption problems, stale summaries. The extension log is
+`<project>/.pi/matrix/state/pi-matrix.log` for a project-local config.
 
-2. **Show Matrix Messages** - Messages from Matrix appear in Pi with clear attribution
-   ```
-   [Matrix] username: Let's proceed with option A
-   ```
+## Learn more
 
-3. **Display Connection Status** - Footer shows Matrix connection info
-   ```
-   ✓ Matrix(tst2): !pi-updates:tst2-matrix.r3d.nl
-   ```
-
-4. **Mirror Decisions** - RPIV `ask_user_question` dialogues are mirrored
-   into the room; answer in the terminal or the room, first one wins
-   ```
-   Pi shows the option dialogue in the terminal and the room
-   → You reply (terminal or room); Pi proceeds with your choice
-   ```
-
-## 🔧 Troubleshooting
-
-### "mtx command not found"
-```bash
-# Install mtx from your synapse-matrix repository
-cd ~/code/homeops/synapse-matrix/tools/mtx
-bash install.sh
-```
-
-### "Matrix not connected"
-```
-# Check your configuration
-cat ~/.pi/agent/extensions/pi-matrix-integration/config/matrix-config.json
-
-# Test mtx directly
-mtx status -e tst2
-
-# Verify credentials exist
-ls ~/.config/mtx/accounts/
-```
-
-### Messages not appearing in Pi
-```
-# Check if polling is working
-/matrix-messages
-
-# Verify connection
-/matrix-status
-
-# Check mtx can read messages
-mtx message read -r !your-room-id -e tst2
-```
-
-## 📖 Learn More
-
-- **Full Documentation**: See `README.md`
-- **Architecture**: See `DESIGN.md`
-- **Project Summary**: See `SUMMARY.md`
-- **Verification**: See `VERIFICATION.md`
-
-## 🎉 You're Done!
-
-The extension is now ready to use. Pi will automatically:
-- Send milestone updates to Matrix
-- Receive user responses from Matrix
-- Use Matrix for decision-making
-- Show connection status in the footer
-
-Enjoy your Matrix-integrated Pi experience! 🎊
+- [README](README.md) — the full picture
+- [Configuration reference](docs/user/configuration.md) — every key, default, env override
+- [Ask-user pairing](docs/user/ask-user-pairing.md) — phone + terminal questionnaires
+- [Architecture](docs/dev/architecture/README.md) — how it is built
