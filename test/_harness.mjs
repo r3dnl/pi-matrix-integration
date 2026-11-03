@@ -65,8 +65,11 @@ export function piPackageDir() {
  */
 export async function createPiJiti(baseUrl = import.meta.url) {
   const pkgDir = piPackageDir();
-  const jitiPath = path.join(pkgDir, "node_modules", "jiti", "lib", "jiti-static.mjs");
-  const { createJiti } = await import(jitiPath);
+  // jiti is a declared devDependency (same version Pi itself ships). Import
+  // it by name — a nested copy under pi-coding-agent is not a seam: npm
+  // prunes anything the lockfile does not own, and the whole offline tier
+  // dies with it.
+  const { createJiti } = await import("jiti");
 
   const require = createRequire(path.join(pkgDir, "package.json"));
   const alias = {
