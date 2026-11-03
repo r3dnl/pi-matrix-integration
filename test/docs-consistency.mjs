@@ -193,6 +193,18 @@ for (const file of OUR_SOURCE) {
   for (const name of documented) {
     if (!registered.has(name)) fail(`README documents /${name} but src/commands.ts does not register it`)
   }
+  // The /matrix-help guide is the room's own copy of the surface: it must
+  // mention every registered command (room-reachability means nothing if
+  // the room cannot discover it) and no command that does not exist.
+  const helpSrc = fs.readFileSync(path.join(ROOT, 'src/matrix-help.ts'), 'utf8')
+  const inHelp = new Set()
+  for (const m of helpSrc.matchAll(/\/(matrix-[a-z-]+|pi-help)\b/g)) inHelp.add(m[1])
+  for (const name of registered) {
+    if (!inHelp.has(name)) fail(`/matrix-help guide never mentions /${name} though src/commands.ts registers it`)
+  }
+  for (const name of inHelp) {
+    if (!registered.has(name)) fail(`/matrix-help guide mentions /${name} but src/commands.ts does not register it`)
+  }
 
   const configUtils = fs.readFileSync(path.join(ROOT, 'src/config-utils.ts'), 'utf8')
   const envMap = new Set()
@@ -220,7 +232,7 @@ for (const file of OUR_SOURCE) {
   }
 }
 
-console.log(`checked ${markdown.length} markdown files (${linkCount} internal links); identifier scan: ${STRICT.length} files strict (${strictHits.length} hits); ticket-label scan: ${SOURCE_FILES.length} files (${labelHits} hits); stale-reference scan: ${OUR_SOURCE.length} files (${staleHits} hits); surface: README commands + PI_MATRIX_* keys cross-checked against src/`) 
+console.log(`checked ${markdown.length} markdown files (${linkCount} internal links); identifier scan: ${STRICT.length} files strict (${strictHits.length} hits); ticket-label scan: ${SOURCE_FILES.length} files (${labelHits} hits); stale-reference scan: ${OUR_SOURCE.length} files (${staleHits} hits); surface: README commands + /matrix-help guide + PI_MATRIX_* keys cross-checked against src/`) 
 if (failures > 0) {
   console.log(`\n${failures} documentation-consistency failure(s)`)
   process.exit(1)

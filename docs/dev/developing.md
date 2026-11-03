@@ -97,3 +97,11 @@ is ever exposed beyond the owner's own devices, rotate those accounts first.
 ## How to ask for a change
 
 Open an issue with the Pi version, the package version, your homeserver software, and a log excerpt with secrets stripped. `AGENTS.md` documents what an AI coding agent is and is not allowed to change here; read it before letting one edit this repository.
+
+The `/matrix-*` command surface has a standing redesign on the backlog
+(README Roadmap). Three rules bind it: the config file is the leading
+declarative description of behaviour; commands invoke functionality and
+are not where preferences get stored; anything a user needs away from the
+terminal must be reachable from the room, so it must be a command. Do not
+rename or remove a command outside that redesign — names are user-facing
+surface and change only with a major bump.
