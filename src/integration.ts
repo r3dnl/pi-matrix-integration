@@ -1010,9 +1010,9 @@ export class MatrixIntegration {
     });
 
     // The room-sourced delta for the summarizer prompt (threads-and-summaries.md
-    // transport-and-state.md): prefer the matrix-http read (no "read clears unread" side
-    // effect); when the matrix-http read is unavailable or empty, fall
-    // back to the `mtx` CLI read (the same source /matrix-messages uses).
+    // transport-and-state.md): prefer the thread manager's own delta read (no
+    // "read clears unread" side effect); when it comes back empty, fall
+    // back to the outbox timeline read.
     // The summary is a pure function of the room artifact — the Pi session
     // only triggers/hosts the run. Only the "room" source path calls this;
     // "session" mode never reads the room.

@@ -200,7 +200,7 @@ export class ThreadManager {
   private activeRootId: string | undefined;
   private sessionState: "pending" | "active" | "flat" = "flat";
   private logger: MatrixLogger;
-  /** Set once when the matrix-http transport fails; stops repeat logging . */
+  /** Set once the thread route has failed and gone flat; stops repeat logging. */
   private flatModeLogged = false;
   private topicWarnLogged = false;
   /**
@@ -338,7 +338,7 @@ export class ThreadManager {
   /**
    * Post the thread root (`🧵 New Conversation[: topic]`), record it, and
    * switch the session to routing into it. Idempotent: a second call in the
-   * same session returns the existing root without another `mtx`/matrix-http call.
+   * same session returns the existing root without another room write.
    * Returns undefined in flat mode (no thread-write delegate) or on failure — the caller then
    * falls back to a flat send.
    */

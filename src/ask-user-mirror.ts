@@ -112,7 +112,7 @@ export interface UpstreamAnswerEntry {
   text?: string;
 }
 
-/** The `rpiv:ask-user:answer` payload the mirror emits (`AskUserAnswerEventPayload`). */
+/** The `rpiv:ask-user:answer` payload the mirror emits. */
 export interface MirrorAnswerPayload {
   toolCallId: string;
   /** Echoed on the verdict (`answer-result`) so the mirror can pair it. */
