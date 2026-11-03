@@ -1,0 +1,85 @@
+# Developing
+
+You are reading the development half of the docs. If you only want to run the extension, read the README and `docs/user/`.
+
+## What you need
+
+- Node 22 or newer.
+- Pi installed and working. The extension is loaded by Pi as a TypeScript source package — there is no build step and no `dist/` directory. Pi executes the `.ts` files.
+- A Matrix homeserver you may create accounts on, and an account for the agent. Use an account of the agent's own, never your personal one, and an invite-only room.
+- Optional: a sub-agent package (`@tintinweb/pi-subagents` or `pi-subagents`). Several features are better with one and degrade without it.
+
+## The loop
+
+```bash
+npm install                 # five runtime dependencies; see SECURITY.md
+npm test                    # deterministic suite, no homeserver, no model
+npm run test:logic          # the large behavioural suite, same constraints
+npm run test:live           # needs a real homeserver (see below)
+```
+
+There is no build, so there is nothing to compile before you can try a change: point Pi at the checkout and it loads it.
+
+```bash
+pi -e ./          # load this checkout as a package for one run
+```
+
+Then in Pi: `/matrix-login` to authenticate the agent account, `/matrix-connect` to attach the room, `/matrix-status` to confirm, `/matrix-help` for the command list.
+
+Two gates are being added in this release and are not wired yet: a strict typecheck (`npm run typecheck`) and a container-based end-to-end harness. Until they exist, read the diff yourself and run the suites above.
+
+## The test tiers
+
+| Command | Needs network | Needs a model | What it proves |
+|---------|--------------|---------------|----------------|
+| `npm test` | no | no | units and the full send/receive cycle against `test/fake-outbox.mjs` |
+| `npm run test:logic` | no | no | the deep behavioural suite: threading, outbox, config, question mirror |
+| `npm run test:live` | yes | yes | real homeserver, real model, real room state assertions |
+| `npm run test:repro` | varies | varies | a single bug reproduction, not part of any gate |
+
+The tiers are a policy, not a preference: deterministic checks belong in the offline tier because they have to run on every push and must never be flaky. Anything that reads the room belongs in `test:live`, and `test:live` must assert on what actually landed in the room — fetched over the client-server API — not on internal variables. An assertion on internal state can pass while the room shows nothing, and that has already happened once here.
+
+Scripts live in `test/` and use the hand-rolled harness in `test/_harness.mjs`. There is no test framework on purpose: 34 working scripts and one shared runner beat a migration nobody asked for. Add a new script to the offline tier's discovery rather than inventing a second runner.
+
+## Running the live tier against your own homeserver
+
+The live scripts read the homeserver and the agent's credentials from the environment. Nothing secret is committed, and nothing secret belongs in a script — when you see a hard-coded hostname or account name in a test file, that is a defect to fix, not a convention to copy.
+
+```bash
+export PI_MATRIX_HOMESERVER=https://matrix.example.org
+export PI_MATRIX_USERNAME=pi_agent
+export PI_MATRIX_PASSWORD='<from your secret store>'
+npm run test:live
+```
+
+Create a fresh room per run (the scripts do) so reruns cannot interfere, and expect the suite to write messages to that room.
+
+## Architecture
+
+Read [docs/dev/architecture/README.md](architecture/README.md) before a change that crosses modules. It states the invariants — one identity and one writer, event bus over cross-imports, atomic state writes — and each topic ends with the invariants that must not break.
+
+The short version of the module map: `src/integration.ts` is the composition root and subscribes every Pi lifecycle event; `src/lifecycle.ts` holds the session state machine; `src/outbox.ts` is the only write path; `src/inbound.ts` is the only read path.
+
+## Adding a dependency
+
+1. Ask whether the standard library or an installed dependency already does it. Five runtime dependencies is the current total and each one is justified in `SECURITY.md`.
+2. Never put a Pi host-provided package (`@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, `typebox`) in `dependencies` — they are `peerDependencies` at `"*"`. A physical copy can bypass Pi's module mapping and create duplicate registries.
+3. Add a row to `SECURITY.md`: why it is needed, who maintains it, when it last released.
+4. Check `renovate.json` covers it, and note that majors of `matrix-js-sdk` and `@matrix-org/matrix-sdk-crypto-wasm` move as one pair.
+
+## Vendored code
+
+`src/qr2025/` is vendored from a `matrix-js-sdk` pull request, Apache-2.0, headers intact, provenance in `NOTICE`. Do not edit those files. `tools/check-vendored.mjs` fails when the installed SDK starts exporting what the secure channel needs — at that point delete `src/qr2025/` and keep the attribution.
+
+## Releasing
+
+1. Update `CHANGELOG.md` (Keep a Changelog) and bump `version` in `package.json`.
+2. Confirm `npm pack --dry-run` ships what you expect: sources, `agents/`, the docs and `NOTICE` — nothing from `state/`, `config/` or `manifests/`.
+3. Run `npm test` and `npm run test:live` once, fully.
+4. Tag `v<version>` and publish. The published tarball must be reproducible from the tag.
+
+Breaking changes to config keys or command names require a major bump. Both are user-facing surface.
+
+## How to ask for a change
+
+Open an issue with the Pi version, the package version, your homeserver software, and a log excerpt with secrets stripped. `AGENTS.md` documents what an AI coding agent is and is not allowed to change here; read it before letting one edit this repository.

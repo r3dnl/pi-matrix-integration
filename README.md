@@ -575,8 +575,14 @@ MIT License - see LICENSE file for details.
 
 For issues or questions:
 - Check the troubleshooting section above
-- Review the design document for architecture details
+- Read the architecture tree for how it is built: [docs/dev/architecture/](docs/dev/architecture/README.md)
 - Open an issue in the repository
+
+## For developers
+
+- [Developing](docs/dev/developing.md) — setup, the loop, the three test tiers, releasing
+- [Coding standards](docs/dev/coding-standards.md) — the rules and the gate that enforces each one
+- [Architecture](docs/dev/architecture/README.md) — the map, the invariants, and why they are there
 
 ## Version History
 
