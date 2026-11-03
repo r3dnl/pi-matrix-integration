@@ -2,7 +2,7 @@
  * Project-provisioning test: per-project credentials under
  * ~/.config/mtx/projects/<project>/ (the flat ~/.config/mtx/accounts/ is the
  * pre-per-project default). Verifies:
- *   1. getProjectName() slugs the cwd (r3d.nl→r3d-nl, Strata→strata) and
+ *   1. getProjectName() slugs the cwd (example.org→example-org, Strata→strata) and
  *      honours the PI_MATRIX_PROJECT override.
  *   2. getProjectCredentialsPath() emits the per-project `~`-form path.
  *   3. ensureProjectConfig() creates the project-local config seeded with the
@@ -40,8 +40,8 @@ function chdirTo(name) {
 }
 
 // ---- 1. getProjectName ---------------------------------------------------
-chdirTo("r3d.nl");
-check("slug: r3d.nl → r3d-nl", cfg.getProjectName() === "r3d-nl", `got ${cfg.getProjectName()}`);
+chdirTo("example.org");
+check("slug: example.org → example-org", cfg.getProjectName() === "example-org", `got ${cfg.getProjectName()}`);
 chdirTo("Strata");
 check("slug: Strata → strata", cfg.getProjectName() === "strata", `got ${cfg.getProjectName()}`);
 process.env.PI_MATRIX_PROJECT = "tennisplanner";
@@ -53,11 +53,11 @@ check(
 delete process.env.PI_MATRIX_PROJECT;
 
 // ---- 2. getProjectCredentialsPath ---------------------------------------
-chdirTo("r3d.nl");
+chdirTo("example.org");
 const credPath = cfg.getProjectCredentialsPath();
 check(
-  "path shape: projects/r3d-nl/accounts/<leaf>/credentials.json",
-  credPath.startsWith("~/.config/mtx/projects/r3d-nl/accounts/") &&
+  "path shape: projects/example-org/accounts/<leaf>/credentials.json",
+  credPath.startsWith("~/.config/mtx/projects/example-org/accounts/") &&
     credPath.endsWith("/credentials.json"),
   `got ${credPath}`,
 );
@@ -132,7 +132,7 @@ check(
 fs.mkdirSync(path.dirname(credsFresh), { recursive: true });
 fs.writeFileSync(
   credsFresh,
-  JSON.stringify({ user_id: "@pi_agent:matrix.r3d.nl", homeserver: "https://matrix.r3d.nl", access_token: "syt_x" }),
+  JSON.stringify({ user_id: "@pi_agent:matrix.example.org", homeserver: "https://matrix.example.org", access_token: "syt_x" }),
 );
 const loadedCred = cfg.loadConfig();
 check(
@@ -154,14 +154,14 @@ check(
   `got ${credsDir}`,
 );
 const saved = login.saveCredentials(credsDir, {
-  user_id: "@pi_agent:matrix.r3d.nl",
-  homeserver: "https://matrix.r3d.nl",
+  user_id: "@pi_agent:matrix.example.org",
+  homeserver: "https://matrix.example.org",
   device_id: "DEV",
   access_token: "syt_new",
 });
 check(
   "saveCredentials lands under the per-project accounts dir",
-  saved.startsWith(path.join(root, ".config/mtx/projects/strata/accounts", "pi_agent--matrix.r3d.nl", "credentials.json")),
+  saved.startsWith(path.join(root, ".config/mtx/projects/strata/accounts", "pi_agent--matrix.example.org", "credentials.json")),
   `got ${saved}`,
 );
 check("no flat accounts dir was created", !fs.existsSync(path.join(root, ".config", "mtx", "accounts")));

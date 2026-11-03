@@ -36,12 +36,18 @@ jobs:
           PI_MATRIX_HOMESERVER: ${{ secrets.PI_MATRIX_HOMESERVER }}
           PI_MATRIX_USERNAME: ${{ secrets.PI_MATRIX_USERNAME }}
           PI_MATRIX_PASSWORD: ${{ secrets.PI_MATRIX_PASSWORD }}
+          PI_MATRIX_SECOND_TOKEN: ${{ secrets.PI_MATRIX_SECOND_TOKEN }}
+          PI_MATRIX_SECOND_USER: ${{ secrets.PI_MATRIX_SECOND_USER }}
+          PI_MATRIX_SECOND_PASSWORD: ${{ secrets.PI_MATRIX_SECOND_PASSWORD }}
       - name: Live scenario tier
         run: npm run test:live
         env:
           PI_MATRIX_HOMESERVER: ${{ secrets.PI_MATRIX_HOMESERVER }}
           PI_MATRIX_USERNAME: ${{ secrets.PI_MATRIX_USERNAME }}
           PI_MATRIX_PASSWORD: ${{ secrets.PI_MATRIX_PASSWORD }}
+          PI_MATRIX_SECOND_TOKEN: ${{ secrets.PI_MATRIX_SECOND_TOKEN }}
+          PI_MATRIX_SECOND_USER: ${{ secrets.PI_MATRIX_SECOND_USER }}
+          PI_MATRIX_SECOND_PASSWORD: ${{ secrets.PI_MATRIX_SECOND_PASSWORD }}
       # The perf gates fail loudly until the performance suites land; keep
       # nightly red-free until they exist, then drop the continue-on-error.
       - name: Performance gates

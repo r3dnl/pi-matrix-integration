@@ -249,7 +249,7 @@ function probeFetch(opts = {}) {
 // runLoginDialogue wiring — toggle off unchanged, toggle on fail-fast
 // ---------------------------------------------------------------------------
 
-const HS = "https://tst2-matrix.r3d.nl";
+const HS = "https://test.example.org";
 
 function loginFetch(flows) {
   return async (url) => {
@@ -349,7 +349,7 @@ function scriptedUi(script = {}) {
     password: ["pw"],
   });
   const LOGIN_RESPONSE = {
-    user_id: "@vincent:tst2-matrix.r3d.nl",
+    user_id: "@vincent:test.example.org",
     homeserver: HS,
     device_id: "PIAGENT01",
     access_token: "fake-token",
@@ -366,7 +366,7 @@ function scriptedUi(script = {}) {
         return LOGIN_RESPONSE;
       },
       async resolveRoomAlias() {
-        return { room_id: "!room:tst2-matrix.r3d.nl" };
+        return { room_id: "!room:test.example.org" };
       },
       async createRoom() {
         throw new Error("configured room should resolve, not be created");
@@ -376,7 +376,7 @@ function scriptedUi(script = {}) {
       },
     }),
     homeserverPrefill: HS,
-    configuredRoomId: "#pi-updates:tst2-matrix.r3d.nl",
+    configuredRoomId: "#pi-updates:test.example.org",
     qr2025: true,
   });
   // The room step resolves the configured alias and the toggle selects run.

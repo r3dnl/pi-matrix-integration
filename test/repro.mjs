@@ -32,7 +32,7 @@ process.env.PI_MATRIX_TEST_OUTBOX = path.join(EXT_DIR, "test", "fake-outbox.mjs"
 const fakeCreds = path.join(tmp, "credentials.json");
 fs.writeFileSync(
   fakeCreds,
-  JSON.stringify({ user_id: "@pi_agent:tst2-matrix.r3d.nl", homeserver: "tst2-matrix.r3d.nl" }, null, 2),
+  JSON.stringify({ user_id: "@pi_agent:test.example.org", homeserver: "test.example.org" }, null, 2),
 );
 process.env.PI_MATRIX_CREDENTIALS_PATH = fakeCreds;
 // Keep the run hermetic: warnings go to a temp log, not the real one.
@@ -41,7 +41,7 @@ process.env.PI_MATRIX_LOG_PATH = path.join(tmp, "repro-matrix.log");
 // must ride the flat outbox.postMessage path (the exact-string assertions
 // below compare the recorded flat bodies). Threads on would soft-attach
 // the pending-session milestone to the shared thread-map's latest root
-// (the live tst2 session's state) and the fake would log the thread-reply
+// (the live session's state) and the fake would log the thread-reply
 // token instead of the body.
 process.env.PI_MATRIX_THREADS = "false";
 // Send recording (fake-outbox call-log state).

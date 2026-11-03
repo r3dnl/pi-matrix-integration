@@ -29,8 +29,8 @@ fs.writeFileSync(
   threadFixture,
   JSON.stringify(
     [
-      { eventId: "$evt-T1", sender: "@vincent:tst2-matrix.r3d.nl", body: "in-thread reply", timestamp: TS + 1000, threadRoot: "$evt-T0" },
-      { eventId: "$evt-T3", sender: "@vincent:tst2-matrix.r3d.nl", body: "legacy MSC1767 in-thread reply", timestamp: TS + 1500, threadRoot: "$evt-T0" },
+      { eventId: "$evt-T1", sender: "@vincent:test.example.org", body: "in-thread reply", timestamp: TS + 1000, threadRoot: "$evt-T0" },
+      { eventId: "$evt-T3", sender: "@vincent:test.example.org", body: "legacy MSC1767 in-thread reply", timestamp: TS + 1500, threadRoot: "$evt-T0" },
       { eventId: "$evt-T2", sender: config.userId, body: "🧵 New Conversation: testing", timestamp: TS + 2000, isFromPi: true, isThreadRoot: true },
       { eventId: "$evt-S1", sender: config.userId, body: "hello world", timestamp: TS + 500, isFromPi: true, isThreadRoot: false },
     ],
@@ -1004,30 +1004,30 @@ const writeProfile = (file, room) =>
     }),
   );
 writeProfile("matrix-config.jsonc", "#live:example.org");
-writeProfile("matrix-config.tst2.pi-updates.jsonc", "#pi-updates:example.org");
-writeProfile("matrix-config.prd2.jsonc", "#prd2:example.org");
+writeProfile("matrix-config.alpha.pi-updates.jsonc", "#pi-updates:example.org");
+writeProfile("matrix-config.beta.jsonc", "#beta:example.org");
 process.chdir(projDir);
 try {
   const { listProfiles, loadProfile } = await jiti.import(path.join(EXT_DIR, "src/config-utils.ts"));
   const profiles = listProfiles();
-  check("listProfiles finds the .jsonc profiles", profiles.includes("tst2.pi-updates") && profiles.includes("prd2"), JSON.stringify(profiles));
+  check("listProfiles finds the .jsonc profiles", profiles.includes("alpha.pi-updates") && profiles.includes("beta"), JSON.stringify(profiles));
   const missing = loadProfile("does-not-exist");
   check("unknown profile -> invalid with a clear error", missing.valid === false && missing.errors.join(",").includes("does-not-exist"), JSON.stringify(missing.errors));
   const evil = loadProfile("../evil");
   check("path-traversal profile name rejected", evil.valid === false, JSON.stringify(evil.errors));
-  const tst2 = loadProfile("tst2.pi-updates");
-  check("loadProfile('tst2.pi-updates') validates", tst2.valid === true && tst2.config.roomId === "#pi-updates:example.org", JSON.stringify({ valid: tst2.valid, room: tst2.config.roomId }));
+  const alpha = loadProfile("alpha.pi-updates");
+  check("loadProfile('alpha.pi-updates') validates", alpha.valid === true && alpha.config.roomId === "#pi-updates:example.org", JSON.stringify({ valid: alpha.valid, room: alpha.config.roomId }));
 
   console.log("== config: last-active profile persistence ==");
   const { persistActiveProfile, getActiveProfileName, getActiveProfilePath } = await jiti.import(path.join(EXT_DIR, "src/config-utils.ts"));
   const { resolveStartupConfig } = await jiti.import(path.join(EXT_DIR, "src/config.ts"));
   const pointerPath = getActiveProfilePath();
-  persistActiveProfile("tst2.pi-updates");
-  check("persistActiveProfile writes the pointer", getActiveProfileName() === "tst2.pi-updates", pointerPath);
+  persistActiveProfile("alpha.pi-updates");
+  check("persistActiveProfile writes the pointer", getActiveProfileName() === "alpha.pi-updates", pointerPath);
   const started = resolveStartupConfig();
   check(
     "resolveStartupConfig honors the pointer",
-    started.profile === "tst2.pi-updates" && started.valid === true && started.config.roomId === "#pi-updates:example.org",
+    started.profile === "alpha.pi-updates" && started.valid === true && started.config.roomId === "#pi-updates:example.org",
     JSON.stringify({ profile: started.profile, room: started.config.roomId, errors: started.errors }),
   );
   persistActiveProfile("does-not-exist");
@@ -1386,7 +1386,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
   // Reaction path (index.ts onReaction): the reaction key goes through the
   // SAME consume entry as room text — normalized, so Element's FE0F keys
   // behave like the bare codepoints. The 4 picker variants above ARE this
-  // path; assert the live-room key shapes (as captured from tst2) too.
+  // path; assert the live-room key shapes (as captured from a live deployment) too.
   for (const reactionKey of ["\ud83d\udc4d\ufe0f", "\u2705\ufe0f", "\u2714\ufe0f", "\u2713"]) {
     const emittedV = [];
     const mirrorV = createAskUserMirror({

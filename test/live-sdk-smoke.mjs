@@ -1,7 +1,7 @@
 /**
  * LIVE smoke test for the production SdkOutbox connect path (addendum):
  * shim install + initRustCrypto + /sync + alias resolution + delivery start,
- * against the real tst2 homeserver. Opt-in (needs credentials + network),
+ * against the real homeserver. Opt-in (needs credentials + network),
  * NOT part of test/run.mjs.
  *
  *   node test/live-sdk-smoke.mjs [storeDir]
@@ -17,21 +17,29 @@ import { createPiJiti, EXT_DIR, requireLiveEnv } from "./_harness.mjs";
 
 requireLiveEnv();
 
+/**
+ * The live account the environment names: homeserver + username from
+ * PI_MATRIX_*, identity read from the credentials file /matrix-login writes
+ * for that server, room from PI_MATRIX_ROOM (default #pi-updates).
+ */
+function liveAccountFromEnv() {
+  const homeserver = process.env.PI_MATRIX_HOMESERVER;
+  const domain = new URL(homeserver).host;
+  const credentialsPath = path.join(process.env.HOME, ".config", "mtx", "accounts", `${process.env.PI_MATRIX_USERNAME}--${domain}`, "credentials.json");
+  const userId = JSON.parse(fs.readFileSync(credentialsPath, "utf-8")).user_id;
+  const room = process.env.PI_MATRIX_ROOM ?? "#pi-updates";
+  return { homeserver, userId, roomId: room.includes(":") ? room : `${room}:${domain}`, credentialsPath };
+}
+
 const jiti = await createPiJiti(import.meta.url);
 const { SdkOutbox } = await jiti.import(path.join(EXT_DIR, "src/sdk-client.ts"));
 
+const envCreds = liveAccountFromEnv();
 const outbox = new SdkOutbox({
-  homeserver: "tst2-matrix.r3d.nl",
-  userId: "@pi-agent:tst2-matrix.r3d.nl",
-  roomId: "#pi-updates:tst2-matrix.r3d.nl",
-  credentialsPath: path.join(
-    process.env.HOME,
-    ".config",
-    "mtx",
-    "accounts",
-    "pi_agent--tst2-matrix.r3d.nl",
-    "credentials.json",
-  ),
+  homeserver: envCreds.homeserver,
+  userId: envCreds.userId,
+  roomId: envCreds.roomId,
+  credentialsPath: envCreds.credentialsPath,
   e2ee: "on",
   attachEncryption: "on",
   cryptoStoreDir: process.argv[2] ?? path.join(os.tmpdir(), "pi-sdk-live-smoke"),

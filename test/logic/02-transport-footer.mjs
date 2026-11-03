@@ -106,7 +106,7 @@ console.log("== footer: matrix URI + thread indicator ==");
 {
   const baseStatus = {
     connected: true, connecting: false,
-    roomId: "#pi-updates:matrix.r3d.nl", lastError: undefined,
+    roomId: "#pi-updates:matrix.example.org", lastError: undefined,
   };
   const plain = (s) => (s ?? "").replace(/\u001b\[[0-9;]*m/g, "");
   const footer = (status, threadStatus) => {
@@ -121,39 +121,39 @@ console.log("== footer: matrix URI + thread indicator ==");
 
   // Matrix URI convention: user:domain/#room, each part in its own color.
   const withUser = footer(
-    { ...baseStatus, userId: "@pi_agent:matrix.r3d.nl" },
+    { ...baseStatus, userId: "@pi_agent:matrix.example.org" },
     () => ({ icon: "🧵", enabled: true }),
   );
   check(
     "matrix URI convention → [💬 user:domain/#room 🧵 on]",
-    plain(withUser) === "[💬 pi_agent:matrix.r3d.nl/#pi-updates 🧵 on]",
+    plain(withUser) === "[💬 pi_agent:matrix.example.org/#pi-updates 🧵 on]",
     JSON.stringify(withUser),
   );
   check(
     "user/domain/room each carry their own ANSI color",
     withUser?.includes("\u001b[36mpi_agent\u001b[39m") === true &&
-      withUser?.includes("\u001b[38;5;208mmatrix.r3d.nl\u001b[39m") === true &&
+      withUser?.includes("\u001b[38;5;208mmatrix.example.org\u001b[39m") === true &&
       withUser?.includes("\u001b[32m#pi-updates\u001b[39m") === true,
     JSON.stringify(withUser),
   );
   const noUser = footer(baseStatus, () => ({ icon: "🧵", enabled: true }));
   check(
     "no user identity → plain room URI fallback (uncolored)",
-    plain(noUser) === "[💬 #pi-updates:matrix.r3d.nl 🧵 on]" && !noUser?.includes("\u001b[36m"),
+    plain(noUser) === "[💬 #pi-updates:matrix.example.org 🧵 on]" && !noUser?.includes("\u001b[36m"),
     JSON.stringify(noUser),
   );
   const roomId = footer(
-    { ...baseStatus, roomId: "!abcdefgh1234567:matrix.r3d.nl", userId: "@pi_agent:matrix.r3d.nl" },
+    { ...baseStatus, roomId: "!abcdefgh1234567:matrix.example.org", userId: "@pi_agent:matrix.example.org" },
     undefined,
   );
   check(
     "!room id → local part kept, domain dropped",
-    plain(roomId) === "[💬 pi_agent:matrix.r3d.nl/!abcdefgh1234567]",
+    plain(roomId) === "[💬 pi_agent:matrix.example.org/!abcdefgh1234567]",
     JSON.stringify(roomId),
   );
 
   const off = footer(
-    { ...baseStatus, userId: "@pi_agent:matrix.r3d.nl" },
+    { ...baseStatus, userId: "@pi_agent:matrix.example.org" },
     () => ({ icon: "🧵", enabled: false }),
   );
   check(
@@ -170,11 +170,11 @@ console.log("== footer: matrix URI + thread indicator ==");
   const f = createTuiFooter({ getThreadStatus: () => ({ icon: "🧵", enabled: true }) });
   const status = {
     connected: true, connecting: false,
-    roomId: "#pi-updates:matrix.r3d.nl", userId: "@pi_agent:matrix.r3d.nl",
+    roomId: "#pi-updates:matrix.example.org", userId: "@pi_agent:matrix.example.org",
   };
   check(
     "TuiFooter.formatStatus → [💬 user:domain/#room 🧵 on]",
-    f.formatStatus(status).replace(/\u001b\[[0-9;]*m/g, "") === "[💬 pi_agent:matrix.r3d.nl/#pi-updates 🧵 on]",
+    f.formatStatus(status).replace(/\u001b\[[0-9;]*m/g, "") === "[💬 pi_agent:matrix.example.org/#pi-updates 🧵 on]",
     JSON.stringify(f.formatStatus(status)),
   );
   const f2 = createTuiFooter({ footerIcon: "M" });

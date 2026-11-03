@@ -21,8 +21,8 @@ const jiti = await createPiJiti(import.meta.url);
 const { createSdkOutbox } = jiti("../src/sdk-client.ts");
 const { check, finish } = makeCheck("sdk-delivery");
 
-const ROOM = "!pi-updates:tst2-matrix.r3d.nl";
-const SELF = "@pi_agent:tst2-matrix.r3d.nl";
+const ROOM = "!pi-updates:test.example.org";
+const SELF = "@pi_agent:test.example.org";
 
 /** Minimal EventEmitter stand-in for a js-sdk MatrixEvent. */
 function makeFakeEvent(raw) {
@@ -63,7 +63,7 @@ const fakeSdk = {
 };
 
 const outbox = createSdkOutbox({
-  homeserver: "tst2-matrix.r3d.nl",
+  homeserver: "test.example.org",
   userId: SELF,
   roomId: ROOM,
   credentialsPath: "/dev/null",
@@ -87,7 +87,7 @@ const roomStub = { roomId: ROOM };
 // event.clearEvent. The pipeline must read clearEvent, not event.event.
 const encRaw = {
   event_id: "$enc-1",
-  sender: "@vincent:tst2-matrix.r3d.nl",
+  sender: "@vincent:test.example.org",
   origin_server_ts: 1_700_000_000_000,
   type: "m.room.encrypted",
   room_id: ROOM,
@@ -117,7 +117,7 @@ check(
 // 2. decryption failure: never emitted
 const failRaw = {
   event_id: "$enc-fail",
-  sender: "@vincent:tst2-matrix.r3d.nl",
+  sender: "@vincent:test.example.org",
   origin_server_ts: 1_700_000_001_000,
   type: "m.room.encrypted",
   room_id: ROOM,
@@ -131,7 +131,7 @@ check("failed decryption never emitted", delivered.length === 1, JSON.stringify(
 // 3. plaintext live event: emitted immediately
 const plainRaw = {
   event_id: "$plain-1",
-  sender: "@vincent:tst2-matrix.r3d.nl",
+  sender: "@vincent:test.example.org",
   origin_server_ts: 1_700_000_002_000,
   type: "m.room.message",
   room_id: ROOM,
@@ -147,7 +147,7 @@ check(
 // 4. backfill (non-live) events: baselined, never emitted
 const backfillRaw = {
   event_id: "$back-1",
-  sender: "@vincent:tst2-matrix.r3d.nl",
+  sender: "@vincent:test.example.org",
   origin_server_ts: 1_700_000_003_000,
   type: "m.room.message",
   room_id: ROOM,
@@ -159,7 +159,7 @@ check("backfill event baselined, not emitted", delivered.length === 2, JSON.stri
 // 5. ENCRYPTED backfill: old events stay baselined even once decrypted
 const oldEncRaw = {
   event_id: "$enc-old",
-  sender: "@vincent:tst2-matrix.r3d.nl",
+  sender: "@vincent:test.example.org",
   origin_server_ts: Date.now() - 3_600_000, // 1 h ago — outside the 10-min grace
   type: "m.room.encrypted",
   room_id: ROOM,
@@ -179,7 +179,7 @@ check("old encrypted backfill stays baselined", delivered.length === 2, JSON.str
 //    window): emitted, not baselined (the 2026-09-18 `test123` case)
 const recentEncRaw = {
   event_id: "$enc-recent",
-  sender: "@vincent:tst2-matrix.r3d.nl",
+  sender: "@vincent:test.example.org",
   origin_server_ts: Date.now() - 5_000,
   type: "m.room.encrypted",
   room_id: ROOM,
@@ -204,7 +204,7 @@ check(
 //    already delivered — but still delivers genuinely new ones.
 const seenPath = join(mkdtempSync(join(tmpdir(), "sdk-seen-")), "seen.json");
 const outboxA = createSdkOutbox({
-  homeserver: "tst2-matrix.r3d.nl",
+  homeserver: "test.example.org",
   userId: SELF,
   roomId: ROOM,
   credentialsPath: "/dev/null",
@@ -220,7 +220,7 @@ outboxA.startDelivery({
 });
 const reconnectRaw = {
   event_id: "$enc-reconnect",
-  sender: "@vincent:tst2-matrix.r3d.nl",
+  sender: "@vincent:test.example.org",
   origin_server_ts: Date.now() - 5_000,
   type: "m.room.encrypted",
   room_id: ROOM,
@@ -242,7 +242,7 @@ check(
 
 // second connection (new pi session): same event re-backfilled → suppressed
 const outboxB = createSdkOutbox({
-  homeserver: "tst2-matrix.r3d.nl",
+  homeserver: "test.example.org",
   userId: SELF,
   roomId: ROOM,
   credentialsPath: "/dev/null",
@@ -275,7 +275,7 @@ check("seen ids persisted to disk", JSON.parse(readFileSync(seenPath, "utf8")).i
 // the live path (no decryption round-trip to fake up)
 const freshRaw = {
   event_id: "$plain-fresh",
-  sender: "@vincent:tst2-matrix.r3d.nl",
+  sender: "@vincent:test.example.org",
   origin_server_ts: Date.now() - 1_000,
   type: "m.room.message",
   room_id: ROOM,
@@ -348,7 +348,7 @@ check(
 // 8d. the send record persists: a RESTARTED connection (new outbox, same
 //     seenPath) still dedupes the confirmed copy of pi's own send
 const outboxC = createSdkOutbox({
-  homeserver: "tst2-matrix.r3d.nl",
+  homeserver: "test.example.org",
   userId: SELF,
   roomId: ROOM,
   credentialsPath: "/dev/null",

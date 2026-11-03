@@ -31,7 +31,7 @@ Everything above runs offline; CI is green when all of it is green.
 | --- | --- |
 | `npm test` | offline units plus the full cycle against the fake outbox — the gate on every push, under a 120-second budget |
 | `npm run test:logic` | the deep behavioural suite, split by subsystem under `test/logic/` |
-| `npm run test:live` | a real homeserver, a real model, assertions on what actually landed in the room |
+| `npm run test:live` | the 13 named scenarios: a real homeserver, assertions on what actually landed in the room, fetched over the client-server API |
 | `npm run test:perf` | latency and context-size budgets; reserved until the performance stories land |
 
 The live tier reads `PI_MATRIX_HOMESERVER`, `PI_MATRIX_USERNAME` and

@@ -1,6 +1,6 @@
 /**
  * The PI_MATRIX_TEST_OUTBOX seam fake (TO-BE Slice 6): a call-log SdkOutbox
- * (the fake-mtx.js:92–112 precedent — state-file logs, no shared-process
+ * (the fake-transport precedent — state-file logs, no shared-process
  * assumptions). The composition root's `createRequire` loads this module
  * when `PI_MATRIX_TEST_OUTBOX` names it; the spawned gate/repro suites
  * read the call logs to assert on sends without shared-process state.

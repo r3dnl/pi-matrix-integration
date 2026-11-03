@@ -43,6 +43,9 @@ visible in the output.
 
 `make e2e-npm` does the same install from the npm registry instead of the
 local tarball, proving the published artifact rather than the checkout.
+The scenario suite's per-scenario evidence is written to the repo's
+`artifacts/` directory through a bind mount, so a `make e2e` run leaves
+`artifacts/live-<run-id>/` behind for the demo file and the nightly upload.
 Both targets build on the same pinned Pi version (`PI_VERSION`, default
 1.5.0); bump it deliberately with the release so a Pi change cannot break
 the gate silently.
@@ -53,8 +56,10 @@ context, for a manual walkthrough in a Matrix client of your choice.
 ## Pointing at another homeserver
 
 The defaults above are the only configuration the harness needs: the three
-`PI_MATRIX_*` variables, plus `PI_MATRIX_ROOM` if you want a fixed room
-alias instead of a fresh `e2e-<timestamp>` room per run. The live gate is
+`PI_MATRIX_*` variables plus the second-actor variables the scenario suite
+requires (see [Developing](../docs/dev/developing.md), "Running the live
+tier"), plus `PI_MATRIX_ROOM` if you want a fixed room alias instead of a
+fresh `e2e-<timestamp>` room per run. The live gate is
 the maintainer's test homeserver; anything else works as long as account
 creation and room creation are allowed for the agent account. E2EE rooms
 should work with any spec-compliant server — if your server differs, the

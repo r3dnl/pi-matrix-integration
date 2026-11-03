@@ -58,9 +58,9 @@ const { tmp, stateDir, TS, config, fakeOutbox, connOk, fakePi, handler, integrat
     getRooms() { return []; },
   };
   const baseOpts = {
-    homeserver: "tst2-matrix.r3d.nl",
-    userId: "@pi-agent:tst2-matrix.r3d.nl",
-    roomId: "#pi-updates:tst2-matrix.r3d.nl",
+    homeserver: "test.example.org",
+    userId: "@pi-agent:test.example.org",
+    roomId: "#pi-updates:test.example.org",
     credentialsPath: "/nonexistent/credentials.json",
     logger: { warn() {}, error() {}, debug() {}, info() {} },
   };
@@ -86,7 +86,7 @@ const { tmp, stateDir, TS, config, fakeOutbox, connOk, fakePi, handler, integrat
   const rootR = await outbox.postThreadRoot("root", "<i>r</i>");
   const rootC = calls.sends.at(-1).content;
   check(
-    "sdk postThreadRoot → the m.thread marker the homeops server retains (MSC1767 shape)",
+    "sdk postThreadRoot → the m.thread marker a spec-compliant homeserver retains (MSC1767 shape)",
     rootR.success && rootC["m.thread"]?.["m.topological_ordering"] === 1 &&
       rootC["m.thread"]?.["m.message_count"] === 1 && rootC.body === "root",
   );
@@ -297,7 +297,7 @@ const { tmp, stateDir, TS, config, fakeOutbox, connOk, fakePi, handler, integrat
   });
   tlHandler(ev("$seed-1", "@v:dom", "m.room.message", { body: "backfill" }), { roomId: "!resolved:test" }, false, false, { liveEvent: false });
   tlHandler(ev("$live-1", "@v:dom", "m.room.message", { body: "live message" }), { roomId: "!resolved:test" }, false, false, { liveEvent: true });
-  tlHandler(ev("$self-1", "@pi-agent:tst2-matrix.r3d.nl", "m.room.message", { body: "my own post" }), { roomId: "!resolved:test" }, false, false, { liveEvent: true });
+  tlHandler(ev("$self-1", "@pi-agent:test.example.org", "m.room.message", { body: "my own post" }), { roomId: "!resolved:test" }, false, false, { liveEvent: true });
   tlHandler(ev("$react-1", "@v:dom", "m.reaction", { "m.relates_to": { rel_type: "m.annotation", event_id: "$live-1", key: "👍" } }), { roomId: "!resolved:test" }, false, false, { liveEvent: true });
   check(
     "sdk delivery: backfill is BASELINED — no emit, no unread bump (the seed event itself)",
@@ -318,9 +318,9 @@ const { tmp, stateDir, TS, config, fakeOutbox, connOk, fakePi, handler, integrat
   fakeClient.sendMessage = async () => ({ event_id: "$own-sent" });
   const ownSent = await readBox.postMessage("sent via outbox");
   check("sdk delivery: the outbox send records the event id", ownSent.success === true && ownSent.eventId === "$own-sent", JSON.stringify(ownSent));
-  tlHandler(ev("$own-sent", "@pi-agent:tst2-matrix.r3d.nl", "m.room.message", { body: "confirmed copy" }), { roomId: "!resolved:test" }, false, false, { liveEvent: true });
+  tlHandler(ev("$own-sent", "@pi-agent:test.example.org", "m.room.message", { body: "confirmed copy" }), { roomId: "!resolved:test" }, false, false, { liveEvent: true });
   check("sdk delivery: the confirmed copy of an outbox send drops (send record, not sender)", !emitted.includes("$own-sent") && !bumped.includes("$own-sent"));
-  tlHandler(ev("~!temp-1", "@pi-agent:tst2-matrix.r3d.nl", "m.room.message", { body: "local echo" }), { roomId: "!resolved:test" }, false, false, { liveEvent: true });
+  tlHandler(ev("~!temp-1", "@pi-agent:test.example.org", "m.room.message", { body: "local echo" }), { roomId: "!resolved:test" }, false, false, { liveEvent: true });
   check("sdk delivery: a ~! temp-id local echo drops", !emitted.includes("~!temp-1") && !bumped.includes("~!temp-1"));
   check("sdk delivery: reactions route to onReaction (never onMessage)", reactions.includes("👍") && !emitted.includes("$react-1"));
   readBox.stopDelivery();

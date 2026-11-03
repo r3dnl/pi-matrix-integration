@@ -41,10 +41,10 @@ fs.writeFileSync(
   readFixture,
   JSON.stringify(
     [
-      { eventId: "$r1", sender: "@vincent:tst2-matrix.r3d.nl", body: "", timestamp: 1700000000000 + 4000, reactionKey: "👍\uFE0F", parentEventId: "$tgt" },
+      { eventId: "$r1", sender: "@vincent:test.example.org", body: "", timestamp: 1700000000000 + 4000, reactionKey: "👍\uFE0F", parentEventId: "$tgt" },
       { eventId: "$m1", sender: config.userId, body: "self message", timestamp: 1700000000000 + 4100, isFromPi: true },
-      { eventId: "$t1", sender: "@vincent:tst2-matrix.r3d.nl", body: "root", timestamp: 1700000000000 + 4300, isThreadRoot: true },
-      { eventId: "$t2", sender: "@vincent:tst2-matrix.r3d.nl", body: "reply", timestamp: 1700000000000 + 4400, threadRoot: "$t1" },
+      { eventId: "$t1", sender: "@vincent:test.example.org", body: "root", timestamp: 1700000000000 + 4300, isThreadRoot: true },
+      { eventId: "$t2", sender: "@vincent:test.example.org", body: "reply", timestamp: 1700000000000 + 4400, threadRoot: "$t1" },
     ],
     null,
     1,
@@ -637,15 +637,15 @@ const { readCredentialsIdentity } = await jiti.import(path.join(EXT_DIR, "src/co
 // exercised end to end.
 const credDir = path.join(stateDir, "phase0-cred");
 fs.mkdirSync(credDir, { recursive: true });
-const credPath = path.join(credDir, "pi_user--matrix.r3d.nl", "credentials.json");
+const credPath = path.join(credDir, "pi_user--matrix.example.org", "credentials.json");
 fs.mkdirSync(path.dirname(credPath), { recursive: true });
 fs.writeFileSync(
   credPath,
-  JSON.stringify({ user_id: "@pi_user:matrix.r3d.nl", homeserver: "https://matrix.r3d.nl", access_token: "tok" }),
+  JSON.stringify({ user_id: "@pi_user:matrix.example.org", homeserver: "https://matrix.example.org", access_token: "tok" }),
 );
 const phase0CfgPath = path.join(stateDir, "phase0-cfg.json");
 const basePhase0 = {
-  roomId: "#pi-updates:matrix.r3d.nl",
+  roomId: "#pi-updates:matrix.example.org",
   credentialsPath: credPath,
 };
 const writePhase0 = (obj) => {
@@ -655,11 +655,11 @@ const writePhase0 = (obj) => {
 
 // 1) credentials owner == userId → valid, userId retained
 {
-  const p = writePhase0({ userId: "@pi_user:matrix.r3d.nl" });
+  const p = writePhase0({ userId: "@pi_user:matrix.example.org" });
   const v = getValidConfig(p);
   check(
     "owner == userId → valid, userId retained",
-    v.valid === true && v.config.userId === "@pi_user:matrix.r3d.nl",
+    v.valid === true && v.config.userId === "@pi_user:matrix.example.org",
     JSON.stringify(v.errors),
   );
 }
@@ -672,21 +672,21 @@ const writePhase0 = (obj) => {
   check(
     "userId + homeserver absent → derived from credentials",
     v.valid === true &&
-      v.config.userId === "@pi_user:matrix.r3d.nl" &&
-      v.config.homeserver === "matrix.r3d.nl",
+      v.config.userId === "@pi_user:matrix.example.org" &&
+      v.config.homeserver === "matrix.example.org",
     JSON.stringify({ userId: v.config.userId, homeserver: v.config.homeserver, errors: v.errors }),
   );
 }
 
 // 3) mismatch → invalid, error names both values
 {
-  const p = writePhase0({ userId: "@pi_agent:matrix.r3d.nl" });
+  const p = writePhase0({ userId: "@pi_agent:matrix.example.org" });
   const v = getValidConfig(p);
   check(
     "mismatch → invalid, error names both values",
     v.valid === false &&
-      v.errors.join(" ").includes("@pi_agent:matrix.r3d.nl") &&
-      v.errors.join(" ").includes("@pi_user:matrix.r3d.nl"),
+      v.errors.join(" ").includes("@pi_agent:matrix.example.org") &&
+      v.errors.join(" ").includes("@pi_user:matrix.example.org"),
     JSON.stringify(v.errors),
   );
 }
@@ -694,11 +694,11 @@ const writePhase0 = (obj) => {
 // 4) missing file + explicit userId → valid (R4: warn + allow). The explicit
 //    userId is honored and the invariant simply cannot be checked.
 {
-  const p = writePhase0({ userId: "@pi_user:matrix.r3d.nl", homeserver: "matrix.r3d.nl", credentialsPath: path.join(credDir, "no-such.json") });
+  const p = writePhase0({ userId: "@pi_user:matrix.example.org", homeserver: "matrix.example.org", credentialsPath: path.join(credDir, "no-such.json") });
   const v = getValidConfig(p);
   check(
     "missing credentials + explicit userId → valid (R4)",
-    v.valid === true && v.config.userId === "@pi_user:matrix.r3d.nl",
+    v.valid === true && v.config.userId === "@pi_user:matrix.example.org",
     JSON.stringify(v.errors),
   );
 }
@@ -717,9 +717,9 @@ const writePhase0 = (obj) => {
 // 6) homeserver absent + credentials file lacks the field + no explicit value
 //    → error (no default fallback — R3).
 {
-  const credNoHost = path.join(credDir, "nohost", "pi_user--matrix.r3d.nl", "credentials.json");
+  const credNoHost = path.join(credDir, "nohost", "pi_user--matrix.example.org", "credentials.json");
   fs.mkdirSync(path.dirname(credNoHost), { recursive: true });
-  fs.writeFileSync(credNoHost, JSON.stringify({ user_id: "@pi_user:matrix.r3d.nl", access_token: "t" }));
+  fs.writeFileSync(credNoHost, JSON.stringify({ user_id: "@pi_user:matrix.example.org", access_token: "t" }));
   const p = writePhase0({ credentialsPath: credNoHost });
   const v = getValidConfig(p);
   check(
@@ -730,9 +730,9 @@ const writePhase0 = (obj) => {
 }
 
 // 7) unknown-key guard still catches csSelfUserId (never in the schema), and
-//    the prd2-shaped config no longer carries it.
+//    the production-shaped config no longer carries it.
 {
-  const p = writePhase0({ userId: "@pi_user:matrix.r3d.nl", homeserver: "matrix.r3d.nl", csSelfUserId: "@pi_user:matrix.r3d.nl" });
+  const p = writePhase0({ userId: "@pi_user:matrix.example.org", homeserver: "matrix.example.org", csSelfUserId: "@pi_user:matrix.example.org" });
   const warns = [];
   const ow = console.warn;
   console.warn = (...a) => warns.push(a.join(" "));
@@ -754,16 +754,16 @@ const writePhase0 = (obj) => {
   const withField = readCredentialsIdentity(credPath);
   check(
     "readCredentialsIdentity: user_id field wins",
-    withField?.owner === "@pi_user:matrix.r3d.nl" && withField?.homeserver === "matrix.r3d.nl",
+    withField?.owner === "@pi_user:matrix.example.org" && withField?.homeserver === "matrix.example.org",
     JSON.stringify(withField),
   );
-  const noFieldDir = path.join(credDir, "fallback", "pi_user--matrix.r3d.nl", "credentials.json");
+  const noFieldDir = path.join(credDir, "fallback", "pi_user--matrix.example.org", "credentials.json");
   fs.mkdirSync(path.dirname(noFieldDir), { recursive: true });
   fs.writeFileSync(noFieldDir, JSON.stringify({ access_token: "t" }));
   const fallback = readCredentialsIdentity(noFieldDir);
   check(
     "readCredentialsIdentity: filename fallback yields owner",
-    fallback?.owner === "@pi_user:matrix.r3d.nl",
+    fallback?.owner === "@pi_user:matrix.example.org",
     JSON.stringify(fallback),
   );
   check("readCredentialsIdentity: missing path → undefined", readCredentialsIdentity(path.join(credDir, "nope.json")) === undefined, "");
@@ -1285,8 +1285,8 @@ check(
   "isAgentHelp: mention of the agent + help is agent-directed",
   isAgentHelp("@pi_agent help", AGENT) &&
     isAgentHelp("@pi_agent: help", AGENT) &&
-    isAgentHelp("@pi_agent:tst2-matrix.r3d.nl help", AGENT) &&
-    isAgentHelp("@pi_agent:tst2-matrix.r3d.nl: help", AGENT),
+    isAgentHelp("@pi_agent:test.example.org help", AGENT) &&
+    isAgentHelp("@pi_agent:test.example.org: help", AGENT),
   "@pi_agent[...] help variants -> true",
 );
 check(

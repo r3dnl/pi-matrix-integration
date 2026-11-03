@@ -116,7 +116,7 @@ const { buildLoginUi, MaskedInput, TOUR_YES } = await jiti.import(path.join(EXT_
 // Hermetic homeserver: serves the /login probe + login, and the room-step
 // endpoints (alias resolve -> 404 not-found, createRoom, setRoomAlias PUT).
 // The js-sdk may hit the r0 or v3 prefix; match on the path suffix.
-const USER_ID = "@vincent:tst2-matrix.r3d.nl";
+const USER_ID = "@vincent:test.example.org";
 const createRoomBodies = [];
 const server = http.createServer((req, res) => {
   const url = req.url || "";
@@ -158,11 +158,11 @@ const projectDir = path.join(tmp, "project");
 const projectCfgDir = path.join(projectDir, ".pi", "matrix");
 const stateDir = path.join(tmp, "outbox-state");
 const accountsDir = path.join(tmp, "accounts");
-const newAccountDir = path.join(accountsDir, "vincent--tst2-matrix.r3d.nl");
+const newAccountDir = path.join(accountsDir, "vincent--test.example.org");
 const newCredsFile = path.join(newAccountDir, "credentials.json");
 // A login now creates a per-account profile (matrix-config.<localpart>--<domain>.jsonc)
 // named after the credentials account dir + points last-active-profile at it.
-const PROFILE_NAME = "vincent--tst2-matrix.r3d.nl";
+const PROFILE_NAME = "vincent--test.example.org";
 // Login writes the profile in the v2 shape, so it lands as `.jsonc`.
 const profileConfigPath = path.join(projectCfgDir, `matrix-config.${PROFILE_NAME}.jsonc`);
 const lastActiveProfilePath = path.join(projectCfgDir, "last-active-profile");
@@ -406,7 +406,7 @@ async function runFactory(label, uiScript, run) {
 // file) — each later phase starts from the fresh-machine state again.
 const resetFreshState = () => {
   writeProjectConfig({});
-  fs.rmSync(path.join(accountsDir, "vincent--tst2-matrix.r3d.nl"), { recursive: true, force: true });
+  fs.rmSync(path.join(accountsDir, "vincent--test.example.org"), { recursive: true, force: true });
   fs.rmSync(profileConfigPath, { force: true });
   fs.rmSync(lastActiveProfilePath, { force: true });
 };
@@ -419,7 +419,7 @@ const resetFreshState = () => {
   const { ctxBase } = await runFactory("C2 first-run cancel", { input: [HS, "vincent"], password: "escape" }, async (h, ctx) => {
     await h.sessionStart({ type: "session_start", reason: "startup" }, ctx);
   });
-  check("C2: no credentials file on cancel", !fs.existsSync(path.join(accountsDir, "vincent--tst2-matrix.r3d.nl", "credentials.json")));
+  check("C2: no credentials file on cancel", !fs.existsSync(path.join(accountsDir, "vincent--test.example.org", "credentials.json")));
   check("C2: config untouched on cancel", fs.readFileSync(projectConfigPath, "utf8") === cfgBefore);
   check(
     "C2: no success announcement on cancel",

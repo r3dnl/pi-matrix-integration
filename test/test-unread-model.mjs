@@ -17,7 +17,7 @@ const { UnreadModel, makePreview, PREVIEW_LIMIT } = await jiti.import(
   path.join(EXT_DIR, "src/unread-model.ts"),
 );
 
-const ROOM = "!room:tst2-matrix.r3d.nl";
+const ROOM = "!room:test.example.org";
 const ROOT = "$root-A";
 
 console.log("== D1 bump rules ==");
@@ -90,7 +90,7 @@ console.log("== preview (never the full body, §19.7) ==");
 console.log("== save/load (U-01 atomic, U-06 degradable) ==");
 {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "unread-model-"));
-  const file = path.join(dir, "unread-tst2.json");
+  const file = path.join(dir, "unread-alpha.json");
   const m = new UnreadModel();
   m.bump(ROOM, { ts: 1, preview: "f1" });
   m.bump(ROOM, { ts: 2, preview: "f2" });

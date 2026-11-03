@@ -168,9 +168,9 @@ function tempDir(name) {
   return dir;
 }
 
-const HS = "https://tst2-matrix.r3d.nl";
-const USER_ID = "@vincent:tst2-matrix.r3d.nl";
-const ACCOUNT = "vincent--tst2-matrix.r3d.nl";
+const HS = "https://test.example.org";
+const USER_ID = "@vincent:test.example.org";
+const ACCOUNT = "vincent--test.example.org";
 const LOGIN_RESPONSE = {
   access_token: "syt_tok_123",
   device_id: "PIAGENT01",
@@ -221,13 +221,13 @@ const LOGIN_RESPONSE = {
 
   // different account → different file
   const file3 = saveCredentials(dir, {
-    user_id: "@other:tst2-matrix.r3d.nl",
+    user_id: "@other:test.example.org",
     homeserver: HS,
     device_id: "PIAGENT03",
     access_token: "tok3",
   });
   check("different localpart → different account dir",
-    file3 === path.join(dir, "other--tst2-matrix.r3d.nl", "credentials.json"), file3);
+    file3 === path.join(dir, "other--test.example.org", "credentials.json"), file3);
   fs.rmSync(dir, { recursive: true, force: true });
 }
 
@@ -278,13 +278,13 @@ const LOGIN_RESPONSE = {
 // ---------------------------------------------------------------------------
 {
   check("normalizeHomeserver: bare domain gets https://",
-    normalizeHomeserver("tst2-matrix.r3d.nl") === "https://tst2-matrix.r3d.nl");
+    normalizeHomeserver("test.example.org") === "https://test.example.org");
   check("normalizeHomeserver: https:// passes through",
-    normalizeHomeserver("https://tst2-matrix.r3d.nl") === "https://tst2-matrix.r3d.nl");
+    normalizeHomeserver("https://test.example.org") === "https://test.example.org");
   check("normalizeHomeserver: explicit http:// passes through (the user was warned)",
-    normalizeHomeserver("http://tst2-matrix.r3d.nl") === "http://tst2-matrix.r3d.nl");
+    normalizeHomeserver("http://test.example.org") === "http://test.example.org");
   check("normalizeHomeserver: trims surrounding whitespace",
-    normalizeHomeserver("  tst2-matrix.r3d.nl ") === "https://tst2-matrix.r3d.nl");
+    normalizeHomeserver("  test.example.org ") === "https://test.example.org");
   check("normalizeHomeserver: empty stays empty (the dialogue asks first)",
     normalizeHomeserver("") === "");
 }
@@ -297,11 +297,11 @@ const LOGIN_RESPONSE = {
 {
   const { buildMatrixToLink } = await jiti.import(path.join(EXT_DIR, "src/lifecycle.ts"));
   check("matrix.to link: room alias",
-    buildMatrixToLink("#r:tst2-matrix.r3d.nl")
-      === " https://matrix.to/#/#r:tst2-matrix.r3d.nl");
+    buildMatrixToLink("#r:test.example.org")
+      === " https://matrix.to/#/#r:test.example.org");
   check("matrix.to link: room ID",
-    buildMatrixToLink("!id:tst2-matrix.r3d.nl")
-      === " https://matrix.to/#/!id:tst2-matrix.r3d.nl");
+    buildMatrixToLink("!id:test.example.org")
+      === " https://matrix.to/#/!id:test.example.org");
   check("matrix.to link: missing roomId -> empty (no broken URL)",
     buildMatrixToLink(undefined) === "");
 }
@@ -354,7 +354,7 @@ const dialogDeps = (extra = {}) => {
   // created (absent), alias claimed, roomId persisted
   check("dialogue: room step resolved the typed alias",
     deps.loginStub.roomCalls.resolve.length === 1 &&
-    deps.loginStub.roomCalls.resolve[0] === "#myroom:tst2-matrix.r3d.nl",
+    deps.loginStub.roomCalls.resolve[0] === "#myroom:test.example.org",
     JSON.stringify(deps.loginStub.roomCalls.resolve));
   check("dialogue: room created encrypted (user picked On) + empty invite",
     deps.loginStub.roomCalls.create.length === 1 &&
@@ -364,11 +364,11 @@ const dialogDeps = (extra = {}) => {
   check("dialogue: alias claimed after creation",
     deps.loginStub.roomCalls.alias.length === 1 &&
     deps.loginStub.roomCalls.alias[0].roomId === "!room-created:hs" &&
-    deps.loginStub.roomCalls.alias[0].alias === "#myroom:tst2-matrix.r3d.nl");
+    deps.loginStub.roomCalls.alias[0].alias === "#myroom:test.example.org");
   check("dialogue: result carries the room alias",
-    result.roomId === "#myroom:tst2-matrix.r3d.nl", String(result.roomId));
+    result.roomId === "#myroom:test.example.org", String(result.roomId));
   check("dialogue: config patch persists the room alias",
-    configPatches.some((p) => p.credentialsPath === result.credentialsPath && p.roomId === "#myroom:tst2-matrix.r3d.nl"),
+    configPatches.some((p) => p.credentialsPath === result.credentialsPath && p.roomId === "#myroom:test.example.org"),
     JSON.stringify(configPatches));
   // Story 4: the three toggles are asked (defaults accepted) and persisted,
   // the tour is offered and declined
@@ -551,7 +551,7 @@ const dialogDeps = (extra = {}) => {
   // R3.1 (#2): a bare domain typed at the homeserver step is auto-prepended
   // with https:// before the probe — and the stored homeserver is the
   // normalized form.
-  const BARE = "tst2-matrix.r3d.nl";
+  const BARE = "test.example.org";
   const ui = makeUi({
     select: [...DEFAULT_SELECTS],
     input: [BARE, "vincent", "myroom", ""],
@@ -659,10 +659,10 @@ const dialogDeps = (extra = {}) => {
 // --- homeserverDomain ------------------------------------------------------
 console.log("\n--- homeserverDomain (alias domain part) ---");
 check("homeserverDomain: strips scheme + trailing slash, keeps host",
-  homeserverDomain("https://tst2-matrix.r3d.nl") === "tst2-matrix.r3d.nl");
+  homeserverDomain("https://test.example.org") === "test.example.org");
 check("homeserverDomain: keeps the port (alias domains include it)",
   homeserverDomain("http://localhost:8008/") === "localhost:8008");
-check("homeserverDomain: bare host passes through", homeserverDomain("tst2-matrix.r3d.nl") === "tst2-matrix.r3d.nl");
+check("homeserverDomain: bare host passes through", homeserverDomain("test.example.org") === "test.example.org");
 
 // --- proposeRoomAlias ------------------------------------------------------
 console.log("\n--- proposeRoomAlias (design §8 step 1) ---");
@@ -914,7 +914,7 @@ console.log("\n--- buildTourPrompt (design §10): one canned prompt, matrix-help
 // Story 5: verified-probe regression tier (design §15) + device-id default fix
 // ===========================================================================
 // Fixtures only — the live probes stay manual (network). These lock the
-// server-side login chain + MAS device-scope policy as proven on tst2
+// server-side login chain + MAS device-scope policy as observed against a real deployment
 // (Synapse 1.151.0 / MAS 1.15.0) without a phone.
 
 // The MAS device-scope policy regex, verbatim from MAS 1.15.0
@@ -922,7 +922,7 @@ console.log("\n--- buildTourPrompt (design §10): one canned prompt, matrix-help
 //   regex.match(`^urn:matrix:client:device:[A-Za-z0-9._~!$&'()*+,;=:@/-]{10,}$`, scope)
 const MAS_DEVICE_SCOPE_RE = /^urn:matrix:client:device:[A-Za-z0-9._~!$&'()*+,;=:@/-]{10,}$/;
 
-// Fixture: GET /_matrix/client/versions (tst2, Synapse 1.151.0). Only the
+// Fixture: GET /_matrix/client/versions (captured from Synapse 1.151.0). Only the
 // unstable_features map is load-bearing — it distinguishes the 2024 vs 2025
 // MSC4108 feature shapes.
 const VERSIONS_FIXTURE = {
@@ -935,14 +935,14 @@ const VERSIONS_FIXTURE = {
   },
 };
 
-// Fixture: GET /_matrix/client/v1/auth_metadata (tst2-mas, MAS 1.15.0).
+// Fixture: GET /_matrix/client/v1/auth_metadata (captured from MAS 1.15.0).
 const AUTH_METADATA_FIXTURE = {
-  issuer: "https://tst2-mas.r3d.nl/",
-  account_management_uri: "https://tst2-mas.r3d.nl/account/",
-  authorization_endpoint: "https://tst2-mas.r3d.nl/authorize",
-  token_endpoint: "https://tst2-mas.r3d.nl/oauth2/token",
-  jwks_uri: "https://tst2-mas.r3d.nl/oauth2/keys.json",
-  registration_endpoint: "https://tst2-mas.r3d.nl/oauth2/registration",
+  issuer: "https://mas.example.org/",
+  account_management_uri: "https://mas.example.org/account/",
+  authorization_endpoint: "https://mas.example.org/authorize",
+  token_endpoint: "https://mas.example.org/oauth2/token",
+  jwks_uri: "https://mas.example.org/oauth2/keys.json",
+  registration_endpoint: "https://mas.example.org/oauth2/registration",
   scopes_supported: ["openid", "email"],
   response_types_supported: ["code", "id_token", "code id_token"],
   response_modes_supported: ["form_post", "query", "fragment"],
@@ -956,12 +956,12 @@ const AUTH_METADATA_FIXTURE = {
     "client_secret_basic", "client_secret_post", "client_secret_jwt",
     "private_key_jwt", "none",
   ],
-  revocation_endpoint: "https://tst2-mas.r3d.nl/oauth2/revoke",
-  introspection_endpoint: "https://tst2-mas.r3d.nl/oauth2/introspect",
+  revocation_endpoint: "https://mas.example.org/oauth2/revoke",
+  introspection_endpoint: "https://mas.example.org/oauth2/introspect",
   code_challenge_methods_supported: ["plain", "S256"],
-  userinfo_endpoint: "https://tst2-mas.r3d.nl/oauth2/userinfo",
-  device_authorization_endpoint: "https://tst2-mas.r3d.nl/oauth2/device",
-  "org.matrix.matrix-authentication-service.graphql_endpoint": "https://tst2-mas.r3d.nl/graphql",
+  userinfo_endpoint: "https://mas.example.org/oauth2/userinfo",
+  device_authorization_endpoint: "https://mas.example.org/oauth2/device",
+  "org.matrix.matrix-authentication-service.graphql_endpoint": "https://mas.example.org/graphql",
 };
 
 // Mirror of the js-sdk OAuth2.registerClient payload (RFC 7591 dynamic

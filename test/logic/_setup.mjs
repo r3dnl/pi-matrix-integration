@@ -21,9 +21,9 @@ process.env.FAKE_MTX_STATE = stateDir;
 export const TS = 1_700_000_000_000;
 
 export const config = {
-  homeserver: "tst2-matrix.r3d.nl",
-  userId: "@pi-agent:tst2-matrix.r3d.nl",
-  roomId: "!pi-updates:tst2-matrix.r3d.nl",
+  homeserver: "test.example.org",
+  userId: "@pi-agent:test.example.org",
+  roomId: "!pi-updates:test.example.org",
   credentialsPath: path.join(stateDir, "credentials.json"),
   pollInterval: 60,
   autoReconnect: false,
@@ -69,10 +69,10 @@ export const integrator = createSessionIntegrator(
 export const evt = (eventId, { body, type = "m.room.message", reaction, sender } = {}) => ({
   eventId,
   type,
-  sender: sender ?? "@vincent:tst2-matrix.r3d.nl",
+  sender: sender ?? "@vincent:test.example.org",
   body: body ?? "",
   roomId: config.roomId,
   timestamp: Date.now(),
-  isFromPi: (sender ?? "@vincent:tst2-matrix.r3d.nl") === config.userId,
+  isFromPi: (sender ?? "@vincent:test.example.org") === config.userId,
   ...(reaction ? { reactionKey: reaction.key, parentEventId: reaction.event_id } : {}),
 });

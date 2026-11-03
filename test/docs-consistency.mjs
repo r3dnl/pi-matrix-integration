@@ -102,6 +102,12 @@ const STRICT = [
   ...walk('docs').filter(f => f.endsWith('.md')),
   ...walk('src').filter(f => /\.(ts|mjs)$/.test(f)),
   ...walk('index.ts'),
+  // the whole-tree close of the identifier gate: test fixtures speak
+  // example.org, tools and CI files are shipped files too
+  ...walk('test').filter(f => /\.(ts|mjs|js|json|jsonc|md)$/.test(f)),
+  ...walk('tools').filter(f => /\.(mjs|js|json)$/.test(f)),
+  ...walk('docker').filter(f => !f.endsWith('Dockerfile')),
+  ...walk('.github'),
 ]
 
 function scanInternalNames (files) {
