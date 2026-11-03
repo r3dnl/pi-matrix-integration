@@ -81,7 +81,7 @@ export interface SubagentProvider {
    * for children this process does not host (detached-runner posture,
    * configuration-and-room-behaviour.md). Returns the unsubscribe.
    */
-  completionChannel?(onSettle: (name: string, result: string) => void): () => void;
+  completionChannel?(onSettle: (runId: string, result: string) => void): () => void;
 }
 
 // ---------------------------------------------------------------------------

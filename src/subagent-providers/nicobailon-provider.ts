@@ -189,7 +189,7 @@ export function createNicobailonProvider(deps: SubagentProviderDeps): SubagentPr
   /** Second consumer for the same completion stream (pane tracking, H1):
    *  forwards every completion this bus sees, keyed by run id — failures
    *  included (the room's spawn line must settle "done" either way). */
-  function completionChannel(onSettle: (name: string, result: string) => void): () => void {
+  function completionChannel(onSettle: (runId: string, result: string) => void): () => void {
     const forward = (raw: unknown) => {
       const p = raw as { runId?: string; id?: string } | undefined;
       const s = settleFrom(raw, p?.runId ?? p?.id ?? "");
