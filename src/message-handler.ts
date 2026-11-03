@@ -175,13 +175,18 @@ export class MessageHandler {
 
   /**
    * The single outgoing pipeline: format → dedupe → write.
-   * Every room write goes through here — consumers pass markdown (or a
-   * pre-prefixed plain line); `kind` feeds the thread ledger; `dedupe: false`
-   * explicitly opts out of the content-key window (decision re-issues — a
+   * Every room write lands in this class. Consumer sends enter `post()`
+   * (format → dedupe → route); consumers pass markdown (or a
+   * pre-prefixed plain line), `kind` feeds the thread ledger, and
+   * `dedupe: false` explicitly opts out of the content-key window
+   * (decision re-issues — a
    * re-ask is intentional, so it must not be suppressed). Thread routing +
    * ledger happen in the ThreadManager; the actual outbox write comes back
    * through `postInThread` (the pipeline owns format + dedupe, the manager
-   * owns route + ledger only).
+   * owns route + ledger only). Writes the ThreadManager starts on its own —
+   * the thread root, milestone lines, the summary edit — enter through
+   * `postInThread` / `postThreadRoot` / `editInThread`, which format but do
+   * not consult the dedupe window.
    */
   async post(
     text: string,
