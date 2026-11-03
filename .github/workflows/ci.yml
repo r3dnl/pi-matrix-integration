@@ -23,6 +23,10 @@ jobs:
         run: node tools/scan-secrets.mjs
       - name: Credential scan (self-check: the gate can bite)
         run: node tools/scan-secrets.mjs --self-check
+      - name: Dependency audit (production tree)
+        run: npm audit --omit=dev
+      - name: Registry signature check (production tree)
+        run: npm audit signatures --omit=dev
       - name: Typecheck
         run: npm run typecheck
       - name: Lint

@@ -17,7 +17,7 @@ npm run test:logic                   # deep behavioural suite
 npm run test:live                    # requires PI_MATRIX_HOMESERVER,
                                      # PI_MATRIX_USERNAME, PI_MATRIX_PASSWORD
 npm run test:repro                   # single-bug reproduction
-npm run prepare                      # publish hook: runs the typecheck
+npm run prepack                      # publish guard: runs the typecheck
 ```
 
 A change is done when every gate is green, `npm run test:live` passes
