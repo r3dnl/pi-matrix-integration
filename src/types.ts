@@ -24,7 +24,8 @@ export interface MatrixConfig {
   // when set, the store's key material is unreadable without this passphrase.
   storePassphrase?: string;
   // transport-and-state.md: the stable device id (the bot's E2EE identity across
-  // restarts). Default "PI_AGENT".
+  // restarts). Default "PI_AGENT_1" — the MAS device-scope policy needs at
+  // least 10 characters, which rules out "PI_AGENT".
   deviceId?: string;
   // transport-and-state.md: the SDK sync long-poll cap (ms). Default 60000.
   syncTimeoutMs?: number;

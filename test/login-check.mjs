@@ -1041,6 +1041,8 @@ console.log("\n--- device-id default fix (MAS policy shape) ---");
     resolveDeviceId("custom-device", undefined) === "custom-device");
   check("device-id: the credentials file's device_id beats the default",
     resolveDeviceId(undefined, "from-cred") === "from-cred");
+  check("device-id: an explicit deviceId beats the credentials file's id",
+    resolveDeviceId("custom-device", "from-cred") === "custom-device");
   check("device-id: PI_AGENT_1 passes the MAS device-scope policy",
     MAS_DEVICE_SCOPE_RE.test(deviceScopeOf(resolveDeviceId(undefined, undefined))));
 }
