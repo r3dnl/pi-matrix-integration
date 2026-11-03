@@ -7,28 +7,28 @@
 // ============================================================================
 
 export interface MatrixConfig {
-  // ADDENDUM-SDK-HTTP-TRANSPORT §5: MSC4125 sender-side attachment
+  // transport-and-state.md: MSC4125 sender-side attachment
   // encryption (the VectorIM Element Web fix). "on" encrypts every m.file
   // upload (AES-256-CTR v2; non-MSC4125 clients see ciphertext — the
   // documented trade-off). Default "on".
   attachEncryption?: "on" | "off";
-  // ADDENDUM §4/§5: E2EE via the bundled Rust crypto WASM + the file-backed
+  // transport-and-state.md: E2EE via the bundled Rust crypto WASM + the file-backed
   // crypto store. Default "on" — the homeserver's new-room default is
   // encrypted (encryption_enabled_by_default_for_room_type: all).
   e2ee?: "on" | "off";
-  // ADDENDUM §5: the on-disk crypto-store root (device + room keys).
+  // transport-and-state.md: the on-disk crypto-store root (device + room keys).
   // Default: `<dirname(credentialsPath)>/store` (the account dir that
   // holds credentials.json — per-account separation).
   cryptoStoreDir?: string;
   // At-rest encryption for the crypto store (the WASM's `storagePassword`):
   // when set, the store's key material is unreadable without this passphrase.
   storePassphrase?: string;
-  // ADDENDUM §5: the stable device id (the bot's E2EE identity across
+  // transport-and-state.md: the stable device id (the bot's E2EE identity across
   // restarts). Default "PI_AGENT".
   deviceId?: string;
-  // ADDENDUM §5: the SDK sync long-poll cap (ms). Default 60000.
+  // transport-and-state.md: the SDK sync long-poll cap (ms). Default 60000.
   syncTimeoutMs?: number;
-  // Identity (Phase 0, DESIGN-TRANSPORT-AND-IDENTITY §2): the account store's
+  // Identity (phase 0, transport-and-state.md): the account store's
   // credentials file is the single source of truth for user_id + homeserver.
   // Both are optional here — absent means "derive from the credentials
   // file" (loadConfig), and a present-but-mismatched `userId` is a
@@ -79,7 +79,7 @@ export interface MatrixConfig {
   // Default 2000.
   maxFinalMessageLength?: number;
   // Pass the process-wide `MTX_ALLOW_PROD=1` allowance to `mtx`, clearing its
-  // production-mutation guard (`prd`/`prd2`) without a per-call `--force`
+  // production-mutation guard (a name matching `prd*`) without a per-call `--force`
   // (the agent mutates prod continuously). Default false.
   allowProd?: boolean;
   // Convert outgoing markdown to HTML and send it as `formatted_body`
@@ -94,14 +94,14 @@ export interface MatrixConfig {
   // Error log file owned by the extension (recurring errors land here
   // instead of the TUI console). Default `~/.pi/logs/pi-matrix.log`.
   logPath?: string;
-  // Relay room-typed `/command` messages into Pi as composer input (item 9).
+  // Relay room-typed `/command` messages into Pi as composer input .
   // Unknown names get a plain-text fuzzy-suggestion reply. Default true.
   slashRelay?: boolean;
   // Dual-surface RPIV decisions: mirror `ask_user_question` questionnaires
   // into the room; a phone reply proceeds the decision (terminal stays
   // usable, first surface to complete wins). Default true.
   mirrorAskUser?: boolean;
-  // Native Matrix polls for RPIV decision questions (DESIGN-DECISIONS §5):
+  // Native Matrix polls for RPIV decision questions :
   // each single-select question also posts as a tappable m.poll. No-op
   // when mirrorAskUser is false. Default true.
   mirrorAskUserPolls?: boolean;
@@ -117,7 +117,7 @@ export interface MatrixConfig {
   // Candidate list length for both pickers; the list shows at most this many
   // matches and says how many it hid. Default 10.
   pickerLimit?: number;
-  // Threading (DESIGN-ROOM-THREADING.md §2.10). Master gate for
+  // Threading . Master gate for
   // session→thread mapping, lazy thread-root creation, and routing all
   // outgoing traffic into the active thread. Off until a matrix-http transport or
   // `mtx` thread verbs are available. Default false.
@@ -143,25 +143,25 @@ export interface MatrixConfig {
   // Update the room topic with a short status line at summary/shutdown.
   // Default false (needs PL ≥ 50 or a privileged user — see T5).
   roomTopicUpdates?: boolean;
-  // Sub-agent sub-threads + role prefixes (DESIGN §1.5). Flips on after
-  // S4 verdict ≥ heuristic. Default false.
+  // Sub-agent sub-threads + role prefixes (threads-and-summaries.md). Flips on after
+  // review round 4 verdict ≥ heuristic. Default false.
   subThreads?: boolean;
   // `🤖 sub-agent-{role}:` prefixes on sub-agent marker traffic.
   // Default true (when subThreads is on).
   rolePrefixes?: boolean;
-  // The sub-agent spawn tool name (DESIGN S4: the shipped `subagent`
+  // The sub-agent spawn tool name (review round 4: the shipped `subagent`
   // extension registers a tool named `subagent`). Default "subagent".
   subagentToolName?: string;
-  // Side-chain (core `Agent` tool) sub-agent tracking (DESIGN-SUBAGENT-TRACKING
-  // §5): detection + routing are ALWAYS on (side-chain sessions never open
+  // Side-chain (core `Agent` tool) sub-agent tracking (configuration-and-room-behaviour.md
+  // configuration-and-room-behaviour.md): detection + routing are ALWAYS on (side-chain sessions never open
   // their own thread root); `enabled` gates the REPORTING (spawn messages,
   // traffic, nested milestone lines). Default true.
   subagents?: SubagentsConfig;
   // Thread-summary prompt delta: max number of the thread's messages kept in
-  // the summarizer prompt (most recent; DESIGN-ROOM-SUMMARIZER §5). Default 40.
+  // the summarizer prompt (most recent; threads-and-summaries.md). Default 40.
   threadSummarizeLimit?: number;
   threadSummarizeRunTimeoutMs?: number;
-  // Fir-tree summary caps (DESIGN-THREADING-SUMMARIZE §3): max lines in
+  // Fir-tree summary caps: max lines in
   // `## Milestones` (default 4), max bullets in `## Recent activity`
   // (default 5), hard total-line cap on the posted body (default 25).
   threadSummarizeMilestoneMax?: number;
@@ -169,15 +169,15 @@ export interface MatrixConfig {
   threadSummarizeMaxLines?: number;
   // Model pin ("provider/modelId") for the thread-summary subagent run; a
   // small model keeps the cadence runs cheap. Omit to inherit the session's
-  // model (DESIGN-THREADING-SUMMARIZE §3). Default undefined.
+  // model . Default undefined.
   threadSummarizeModel?: string;
   // Where the summarizer's delta comes from. "room" (default) = the thread's
   // own Matrix messages; "session" = the Pi session's own context (legacy
-  // in-session re-prompt, DESIGN-ROOM-SUMMARIZER §1). "session" runs the
+  // in-session re-prompt, threads-and-summaries.md). "session" runs the
   // pass in the main session; "room" uses the subagent (in-session fallback).
   threadSummarizeSource?: "room" | "session";
   // Where non-user sends from a pending session (no thread root yet) go:
-  // "flat" (default) = the main conversation (today's §1.4 behavior);
+  // "flat" (default) = the main conversation (today's configuration-and-room-behaviour.md behavior);
   // "latest" = soft-attach them to the most recent thread root (the
   // session stays pending; the first user message still opens a new root).
   threadPendingRoute?: "flat" | "latest";
@@ -212,7 +212,7 @@ export interface MatrixConfig {
   maxBytesUpload?: number;
 }
 
-// Side-chain sub-agent reporting (DESIGN-SUBAGENT-TRACKING §5). Detection and
+// Side-chain sub-agent reporting . Detection and
 // routing are always on; these keys gate the REPORTING only.
 export interface SubagentsConfig {
   /** Master (G5): off → sub-agents are silent in Matrix. Default true. */
@@ -232,7 +232,7 @@ export interface SubagentsConfig {
   colorPalette?: string[];
   /** Plain-mode actor marker. Default "⚡". */
   plainMarker?: string;
-  /** Sub-agent provider dialect (DESIGN-SUBAGENT-PROVIDER §4): `auto`
+  /** Sub-agent provider dialect: `auto`
    *  binds today's tintinweb dialect until the async probe lands; an
    *  explicit dialect that never answers logs one warning per session.
    *  Env alias `PI_MATRIX_SUBAGENT_PROVIDER`. Default "auto". */
@@ -272,7 +272,7 @@ export interface PartialMatrixConfig {
   pickerLimit?: number;
   threads?: boolean;
   // QR login (2025 variant, MSC4108/MSC4388) method offer in the login
-  // dialogue (design §16). Off by default; gated at probe time as well.
+  // dialogue (configuration-and-room-behaviour.md). Off by default; gated at probe time as well.
   qr2025?: boolean;
   threadIcon?: string;
   footerIcon?: string;
@@ -317,7 +317,7 @@ export interface PartialMatrixConfig {
 }
 
 // ============================================================================
-// Project Room Manifest Types (backlog item 5)
+// Project Room Manifest Types 
 // ============================================================================
 
 /**
@@ -375,7 +375,7 @@ export interface MatrixMessage {
   mediaInfo?: Record<string, unknown>;
   /** MSC4125 encrypted-attachment object (carries its own `key`/`iv`). */
   mediaFile?: Record<string, unknown>;
-  // Thread metadata (DESIGN-ROOM-THREADING §2.2): set when the event carries
+  // Thread metadata: set when the event carries
   // a spec `m.relates_to` thread relation / legacy MSC1767
   // `content["org.matrix.msc1767.thread_root"]` (a reply in a thread) or
   // `content["m.thread"]` (itself a thread root). Bookkeeping only — thread
@@ -415,7 +415,7 @@ export interface MatrixEvent {
      *  marks the event as an EDIT, not a message (parseMatrixEvent drops
      *  it — see thread-meta.ts). */
     ["m.new_content"]?: unknown;
-    /** Thread reply (spec): the thread root event id (DESIGN §5 T9). */
+    /** Thread reply (spec): the thread root event id (threads-and-summaries.md T9). */
     /** Reaction annotation (m.reaction): `m.relates_to` = `m.annotation`,
      *  the emoji/text is `key`, the target is `event_id`. */
     ["m.relates_to"]?: { rel_type?: string; event_id?: string; key?: string };
@@ -474,7 +474,7 @@ export interface MatrixMessageDetails {
   timestamp?: number;
   roomId?: string;
   type?: PiMessageType;
-  // Thread metadata carried through for bookkeeping (DESIGN §2.4 — no routing
+  // Thread metadata carried through for bookkeeping (threads-and-summaries.md — no routing
   // effect: one Pi session per instance).
   threadRoot?: string;
 }

@@ -1,11 +1,11 @@
 /**
  * Pi Matrix Integration - Thread Manager
  *
- * DESIGN-ROOM-THREADING.md §2.3/§2.6/§2.7: the session→thread lifecycle.
+ * threads-and-summaries.md: the session→thread lifecycle.
  *
- * Lazy creation (§1.4): a `new` session is merely *pending* — no Matrix
+ * Lazy creation: a `new` session is merely *pending* — no Matrix
  * traffic until the first user message, which posts the thread root FIRST
- * (ordering invariant §2.5.1) and only then posts the user's message as an
+ * (ordering invariant threads-and-summaries.md) and only then posts the user's message as an
  * in-thread reply. All later outgoing traffic routes into the active
  * thread via the Outbox seam (`src/outbox.ts`).
  *
@@ -49,7 +49,7 @@ export interface ThreadRootState {
   bookkeepingSinceSummary?: number;
   /**
    * Per-root event-id watermark: the eventId of the newest thread message
-   * folded into the last LLM summary (DESIGN-ROOM-SUMMARIZER §3 gap 3). The
+   * folded into the last LLM summary (threads-and-summaries.md gap 3). The
    * delta is by event, not by ledger `msgCount` (the ledger counts outgoing
    * sends only; the room also carries the user's own phone messages).
    */
@@ -71,7 +71,7 @@ export type ThreadMapState = Record<string, ThreadMapEntry>;
 export type SessionStartReason = "startup" | "reload" | "new" | "resume" | "fork";
 
 /**
- * The thread-write surface the composition root injects (TO-BE §1.5):
+ * The thread-write surface the composition root injects :
  * ThreadManager computes route + ledger and delegates the actual writes
  * to the MessageHandler pipeline (format + dedupe live there; markdown.ts
  * is the single formatter). The manager holds no transport reference —
@@ -94,10 +94,10 @@ export interface ThreadManagerOptions {
   /** Room-key for the state map (e.g. `#pi-updates:domain` or env-qualified). */
   roomKey: string;
   /**
-   * Thread-write delegate (TO-BE §1.5: routing + ledger only — no
+   * Thread-write delegate (threads-and-summaries.md: routing + ledger only — no
    * transport reference in the manager; the composition root wires this
    * to the MessageHandler pipeline). Absent → all thread writes
-   * soft-fail (§2.11 degradation).
+   * soft-fail (threads-and-summaries.md degradation).
    */
   threadSend?: ThreadSend;
   /** `state/thread-map.json` path; undefined disables persistence. */
@@ -107,7 +107,7 @@ export interface ThreadManagerOptions {
   threadIcon?: string;
   threadSummaryEvery?: number;
   /**
-   * Fibonacci-capped summary cadence (DESIGN-ROOM-SUMMARIZER §3): the
+   * Fibonacci-capped summary cadence: the
    * trigger interval starts 1, 1, 2, 3, 5, 8… and caps at
    * `threadSummaryEvery` (whichever is lower). Default **on**;
    * `false` restores the fixed modulo cadence.
@@ -130,13 +130,13 @@ export interface ThreadManagerOptions {
    * the prompt carries the same cap as its primary control.
    */
   threadSummaryMaxLines?: number;
-  /** Firing the agent into a summarization run (DESIGN §2.7). */
+  /** Firing the agent into a summarization run (threads-and-summaries.md). */
   onSummarizeRequest?: (root: ThreadRootState) => void | Promise<void>;
   roomTopicUpdates?: boolean;
   subThreads?: boolean;
   rolePrefixes?: boolean;
   /**
-   * Where non-user sends from a PENDING session (no root yet) go — §1.4
+   * Where non-user sends from a PENDING session (no root yet) go — threads-and-summaries.md
    * extension. "flat" (default) keeps today's behavior: they fall through
    * to the flat main-conversation send. "latest" soft-attaches them to the
    * most recent root (the session stays pending, so the first user message
@@ -155,7 +155,7 @@ export interface ThreadSendResult {
   timestamp: number;
 }
 
-/** A kind of outgoing message, used to update the root ledger (§2.7). */
+/** A kind of outgoing message, used to update the root ledger . */
 export type SendKind = "milestone" | "final" | "user" | "decision" | "other";
 
 /**
@@ -166,7 +166,7 @@ export type SendKind = "milestone" | "final" | "user" | "decision" | "other";
  * non-blocking enhancement.
  */
 /**
- * Summary-cadence gate (DESIGN-ROOM-SUMMARIZER §3). Fixed mode: the
+ * Summary-cadence gate . Fixed mode: the
  * original modulo check. Fibonacci mode (default): the trigger points are
  * absolute per root — intervals 1, 1, 2, 3, 5, 8, 13… capped at `cap`
  * (whichever is lower) — so a busy thread settles onto the
@@ -200,11 +200,11 @@ export class ThreadManager {
   private activeRootId: string | undefined;
   private sessionState: "pending" | "active" | "flat" = "flat";
   private logger: MatrixLogger;
-  /** Set once when the matrix-http transport fails; stops repeat logging (§2.11). */
+  /** Set once when the matrix-http transport fails; stops repeat logging . */
   private flatModeLogged = false;
   private topicWarnLogged = false;
   /**
-   * Single-flight guard (DESIGN-THREADING-SUMMARIZE §2): cadence points can
+   * Single-flight guard: cadence points can
    * be one message apart while a run takes seconds — a second dispatch would
    * spawn a 2nd subagent over the same (stale-baseline) delta and double-edit
    * the root. Set when a run is dispatched, cleared when its promise settles.
@@ -229,7 +229,7 @@ export class ThreadManager {
   }
 
   // ==========================================================================
-  // Session lifecycle (§1.4, §2.6)
+  // Session lifecycle 
   // ==========================================================================
 
   /**
@@ -329,7 +329,7 @@ export class ThreadManager {
   }
 
   /** True when outgoing traffic should route into the active thread.
-   *  TO-BE §1.1: one transport, all ops soft-fail — no transport-presence
+   *  transport-and-state.md: one transport, all ops soft-fail — no transport-presence
    *  gate; routing degrades to the flat path. */
   canRoute(): boolean {
     return this.opts.enabled && this.activeRoot() !== undefined;
@@ -395,7 +395,7 @@ export class ThreadManager {
     let root = this.activeRoot();
     let softAttached = false;
     if (!root && this.sessionState === "pending" && kind !== "user" && this.opts.pendingRoute === "latest") {
-      // Soft-attach (§1.4 extension, `threadPendingRoute: "latest"`): a
+      // Soft-attach (threads-and-summaries.md extension, `threadPendingRoute: "latest"`): a
       // pending session (no root yet) borrows the most recent root for
       // non-user sends — session-start milestones and work milestones of
       // headless / sub-agent sessions land in the thread instead of the
@@ -413,7 +413,7 @@ export class ThreadManager {
     }
 
     // Sub-thread routing: reply to the sub-thread's nested root, but the
-    // *ledger* and summary still live on the parent root (§2.7 counts from
+    // *ledger* and summary still live on the parent root (threads-and-summaries.md counts from
     // the local send ledger, not thread reads).
     let targetRootId = root.eventId;
     if (subThreadName) {
@@ -424,7 +424,7 @@ export class ThreadManager {
       targetRootId = sub.eventId; // a plain in-thread reply into the sub-thread
     }
 
-    // The pipeline write step (TO-BE §1.5): route + sub-thread target
+    // The pipeline write step: route + sub-thread target
     // computed above; the actual outbox call + markdown conversion happen
     // in the MessageHandler's injected delegate.
     const res: MatrixHttpResult = await this.threadSend.postThreadReply(text, targetRootId, false, html);
@@ -466,7 +466,7 @@ export class ThreadManager {
     return { eventId: res.eventId ?? "", success: true, timestamp: Date.now() };
   }
 
-  /** Post a sub-thread root under the parent root (DESIGN §1.5 emulated nesting). */
+  /** Post a sub-thread root under the parent root (threads-and-summaries.md emulated nesting). */
   async spawnSubThread(name: string, role: string): Promise<ThreadSubThread | undefined> {
     if (!this.opts.subThreads || !this.canRoute() || !this.threadSend) return undefined;
     const root = this.activeRoot()!;
@@ -505,7 +505,7 @@ export class ThreadManager {
   }
 
   /**
-   * Cross-instance sync (§2.6): the main session and the summarizer
+   * Cross-instance sync: the main session and the summarizer
    * subagent each hold their own in-memory ThreadManager; the state file
    * is the only thing they share (last-writer-wins). Before a summary run
    * (or a room delta read) copy the persisted summary fields back into the
@@ -525,7 +525,7 @@ export class ThreadManager {
   }
 
   // ==========================================================================
-  // Ledger + summarizer (§2.7)
+  // Ledger + summarizer 
   // ==========================================================================
 
   private recordOnRoot(root: ThreadRootState, kind: SendKind, body: string): void {
@@ -570,7 +570,7 @@ export class ThreadManager {
   }
 
   /**
-   * Read the active thread's delta (DESIGN-ROOM-SUMMARIZER §3 gaps 1–3): the
+   * Read the active thread's delta (threads-and-summaries.md gaps 1–3): the
    * newest thread messages the Outbox-seam timeline read returns, filtered to this
    * root, capped to `threadSummarizeLimit`, and trimmed to after
    * `lastSummarizedEventId`. The room is the source of truth — the Pi session
@@ -684,7 +684,7 @@ export class ThreadManager {
   async updateSummary(customMd?: string, watermarkEventId?: string): Promise<boolean> {
     const root = this.activeRoot();
     if (!root || !this.threadSend) return false;
-    // Teardown/persist path (DESIGN §6.2): in LLM mode with a saved baseline,
+    // Teardown/persist path (threads-and-summaries.md): in LLM mode with a saved baseline,
     // a no-arg call means "restore the last good LLM summary", never re-derive
     // the heuristic — that re-derivation is the /reload clobber that erased
     // the LLM-written root. Safe: the recursive call has a customMd, so it
@@ -742,13 +742,13 @@ export class ThreadManager {
 
   private async editSummary(root: ThreadRootState, text: string): Promise<boolean> {
     // Design rule: user-visible content sends always carry the html
-    // formatter (DESIGN.md “always-html”) — the pipeline’s `editInThread`
+    // formatter (the design doc “always-html”) — the pipeline’s `editInThread`
     // owns the conversion (markdown.ts is the single formatter).
     // `threadRoot: true`: keep the `m.thread` marker in the edit's new
-    // content (root edits are the only edit target, §2.5.4).
+    // content (root edits are the only edit target, threads-and-summaries.md).
     const res = await this.threadSend!.editMessage(root.eventId, text, { threadRoot: true });
     if (res.success) return true;
-    // §2.5.4: an `m.replace` the server rejects falls back to a new
+    // threads-and-summaries.md: an `m.replace` the server rejects falls back to a new
     // in-thread summary message — logged, never lost. The fallback rides
     // the same pipeline write (the delegate formats it).
     const fallbackText = `${this.opts.threadIcon ?? "🧵"} summary: ${text}`;
@@ -765,7 +765,7 @@ export class ThreadManager {
     return this.opts.sessionHint ? `\`${this.opts.sessionHint}\`` : "";
   }
 
-  /** Heuristic root text (§2.7) — zero LLM cost, plain English, no timestamp. */
+  /** Heuristic root text  — zero LLM cost, plain English, no timestamp. */
   composeSummary(root?: ThreadRootState): string {
     const r = root ?? this.activeRoot();
     const icon = this.opts.threadIcon ?? "🧵";
@@ -780,7 +780,7 @@ export class ThreadManager {
     return [`${icon} ${r.topic}`, span, body].filter((l) => l !== "").join("\n");
   }
 
-  /** Update the room topic with a short status line (gated, §1.3). */
+  /** Update the room topic with a short status line (gated, threads-and-summaries.md). */
   async updateTopic(): Promise<void> {
     if (!this.opts.roomTopicUpdates || !this.threadSend) return;
     const root = this.activeRoot();
@@ -796,8 +796,8 @@ export class ThreadManager {
   }
 
   /**
-   * Adopt an existing thread root as the active thread (DESIGN §1.4.5 /
-   * §2.6): used when the user's in-room reply already carries a thread root
+   * Adopt an existing thread root as the active thread (threads-and-summaries.md /
+   * threads-and-summaries.md): used when the user's in-room reply already carries a thread root
    * (they started the conversation in a thread, e.g. in Element). Creates
    * the state-map entry when the root is unknown to us.
    */
@@ -825,7 +825,7 @@ export class ThreadManager {
   }
 
   /**
-   * `session_shutdown` (DESIGN §1.4.5): final summary into the root +
+   * `session_shutdown` (threads-and-summaries.md): final summary into the root +
    * optional topic update. Non-blocking — a failed outbox call must not
    * hold shutdown up.
    */
@@ -836,7 +836,7 @@ export class ThreadManager {
   }
 
   // ==========================================================================
-  // State persistence (§2.6)
+  // State persistence 
   // ==========================================================================
 
   private load(): ThreadMapState {

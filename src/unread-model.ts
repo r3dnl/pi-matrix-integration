@@ -2,8 +2,8 @@
  * Pi Matrix Integration - Unread model
  *
  * Port of the `mtx` account-store unread model (tools/mtx/mtx/unread.py,
- * DESIGN-TRANSPORT-AND-IDENTITY §3.1) **plus the D1 thread dimension**
- * (TRANSPORT-DECISION D1, §3.3): one unread unit per conversation with new
+ * transport-and-state.md) **plus the D1 thread dimension**
+ * (TRANSPORT-DECISION D1, transport-and-state.md): one unread unit per conversation with new
  * activity, not one per event.
  *
  * D1 semantics (option B, settled): `total = new_flat_messages +
@@ -12,7 +12,7 @@
  * thread root is a new conversation, so it counts as one unit like a flat
  * message. `clear()` wipes the flat counter AND the thread map.
  *
- * Structural deltas vs the Python model (R6 option A, documented):
+ * Structural deltas vs the Python model (phase 6 option A, documented):
  * - `since` is **per-room** (this extension is single-account, single-room
  *   per config), not account-level; it is a `number` (ms), matching
  *   Python's `int` so the cross-language shadow diff type-joins.
@@ -23,13 +23,13 @@
  * Invariants (the Python originals'): U-01 atomic save (tmp + replace),
  * U-04 idempotent watermark (`since` advances only past seen events), U-06
  * load degrades (absent/corrupt → empty), and never storing full bodies
- * (§19.7: count + a length-bounded, single-line preview only).
+ * (transport-and-state.md: count + a length-bounded, single-line preview only).
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-/** A one-line, length-bounded preview (never the full body, §19.7). */
+/** A one-line, length-bounded preview (never the full body, transport-and-state.md). */
 export const PREVIEW_LIMIT = 80;
 
 export const API_VERSION = 'pi-matrix/v1';
@@ -84,7 +84,7 @@ export class UnreadModel {
     this.room(roomId).since = since;
   }
 
-  /** D1 bump (TRANSPORT-DECISION D1, §3.3):
+  /** D1 bump (TRANSPORT-DECISION D1, transport-and-state.md):
    * - a thread root (content carries `m.thread`) keys under its own event
    *   id — a new conversation, one unit;
    * - a reply (`threadRoot` set) keys under its root — the first reply

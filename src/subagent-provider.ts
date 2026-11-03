@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration — SubagentProvider contract (DESIGN-SUBAGENT-PROVIDER §3).
+ * Pi Matrix Integration — SubagentProvider contract .
  *
  * The single seam between this extension and the sub-agent provider package
  * installed alongside pi (`@tintinweb/pi-subagents` today, `pi-subagents`
@@ -7,9 +7,9 @@
  * dialect-compatible fallback). Providers are reached ONLY through the
  * injected `pi.events` bus — never an import (different install roots; a
  * hard import is not guaranteed to resolve from a local extension,
- * DESIGN-ROOM-SUMMARIZER §7).
+ * threads-and-summaries.md).
  *
- * Rules (DESIGN-SUBAGENT-PROVIDER §3):
+ * Rules :
  *  - Only the composition root (`integration.ts` buildStack) resolves a
  *    provider. The bus, lifecycle, watchers and posting code consume the
  *    normalized `AgentSpawnInput` shape and never learn who provided it.
@@ -51,7 +51,7 @@ export interface SubagentProviderDeps {
 
 /**
  * Tool-call names that register bus spawns + the input normalizers
- * (DESIGN-SUBAGENT-TRACKING §4.5/§4.6; DESIGN-SUBAGENT-PROVIDER §5). The
+ * . The
  * watchers route a `tool_call` whose name matches `agentToolNames` (resp.
  * `workflowToolNames`) through the matching normalizer and hand the result
  * to the bus; the bus only ever sees `AgentSpawnInput`.
@@ -69,7 +69,7 @@ export interface SubagentProvider {
   isAvailable(): Promise<boolean>;
   /**
    * Isolated, tool-less one-shot run (the room-summarizer use,
-   * DESIGN-THREADING-SUMMARIZE). Resolves the final text, or null when
+   * threads-and-summaries.md). Resolves the final text, or null when
    * unavailable / spawn failed / run failed / timed out — the caller keeps
    * the last summary and never clobbers the root. The result is consumed so
    * no completion notification lands on top of it.
@@ -79,7 +79,7 @@ export interface SubagentProvider {
   /**
    * Optional provider-side completion signal that can settle bus records
    * for children this process does not host (detached-runner posture,
-   * DESIGN-SUBAGENT-PROVIDER §6). Returns the unsubscribe.
+   * configuration-and-room-behaviour.md). Returns the unsubscribe.
    */
   completionChannel?(onSettle: (name: string, result: string) => void): () => void;
 }
@@ -103,5 +103,5 @@ export function unref<T>(timer: T): T {
   return timer;
 }
 
-/** Config value for `subagents.provider` (DESIGN-SUBAGENT-PROVIDER §4). */
+/** Config value for `subagents.provider` . */
 export type SubagentProviderSetting = "auto" | SubagentProviderId;

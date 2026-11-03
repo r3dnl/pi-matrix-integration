@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration - Thread-summary prompts (DESIGN-ROOM-SUMMARIZER §5/§6)
+ * Pi Matrix Integration - Thread-summary prompts 
  *
  * Pure, network-free helpers for the room-sourced summarizer. The summary is a
  * pure function of the room artifact — the current root summary (baseline) plus
@@ -23,7 +23,7 @@ export interface ThreadDeltaMessage {
   body?: string;
   formattedBody?: string;
   timestamp: number;
-  // Thread metadata (DESIGN §2.2): a reply in a thread carries `threadRoot`
+  // Thread metadata (threads-and-summaries.md): a reply in a thread carries `threadRoot`
   // (its root's event id); a thread root itself sets `isThreadRoot`.
   threadRoot?: string;
   isThreadRoot?: boolean;
@@ -35,7 +35,7 @@ export interface ThreadDeltaMessage {
  * trimmed to "after the last summarized event" (`sinceEventId`), and capped to
  * the most recent `cap` (the list is oldest → newest, so the tail is newest).
  *
- * `sinceEventId` is the per-root event-id watermark (DESIGN §3 gap 3): when the
+ * `sinceEventId` is the per-root event-id watermark (threads-and-summaries.md gap 3): when the
  * watermark event is still in the window, everything up to and including it is
  * dropped; when it has scrolled out of the window, the whole (capped) window is
  * kept — the baseline already covers the older history, so over-including a

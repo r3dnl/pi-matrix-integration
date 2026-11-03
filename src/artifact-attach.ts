@@ -1,18 +1,18 @@
 /**
- * Pi Matrix Integration — `@@` artifact attach (R2)
+ * Pi Matrix Integration — `@@` artifact attach 
  *
  * A room message that is ONLY `@@fragment` uploads a work artifact (a
  * `.md` or `.feature` file) OR a media file (image / audio / video) as a
- * real Matrix file attachment, instead of item 10's inline `@` content
+ * real Matrix file attachment, instead of the earlier feature's inline `@` content
  * expansion. `fragment` is fuzzy-matched against the working directory's
  * attachable files (case-sensitive substring, ranked short-first — the
- * same matcher item 10b uses): a fragment that IS one of those paths uploads
+ * same matcher the earlier feature uses): a fragment that IS one of those paths uploads
  * it, anything looser posts a numbered list the user resolves with a
  * follow-up — even a 1-hit search, which is a guess, not a request.
  *
  * All of it is pure except `pickArtifactFiles` (one exec wrapper, `git
  * ls-files` / `find`) and `gitFileCommit` (one exec wrapper) — the impure
- * parts are injected or process-bound exactly like item 10's `pickFiles`.
+ * parts are injected or process-bound exactly like the earlier feature's `pickFiles`.
  */
 
 import { execFileSync } from "node:child_process";
@@ -46,7 +46,7 @@ export const ATTACH_EXTENSIONS = [...ARTIFACT_EXTENSIONS, ...MEDIA_EXTENSIONS];
 
 /**
  * `@@TOKEN` is a lone artifact token: exactly one, and it is the whole
- * message. `@@a b` and `@a` are not. (Distinct from item 10's lone `@`:
+ * message. `@@a b` and `@a` are not. (Distinct from the earlier feature's lone `@`:
  * that regex rejects a leading `@@`, so the two protocols never collide.)
  */
 export function isLoneArtifactToken(body: string, prefix: string = "@@", globs = false): boolean {
@@ -56,7 +56,7 @@ export function isLoneArtifactToken(body: string, prefix: string = "@@", globs =
 /**
  * Candidate matcher backends for `@@` artifact attach:
  * - `builtin` (default): case-sensitive substring, ranked short-first —
- *   pure, deterministic, zero dependencies (item 10's `matchCandidates`).
+ *   pure, deterministic, zero dependencies (the earlier feature's `matchCandidates`).
  * - `fzf`: rank the extension-filtered candidate list through headless
  *   `fzf` (relevance-ranked, subsequence/typo-tolerant). Impure; a
  *   missing or failing binary soft-falls-back to the builtin ranking for
@@ -83,7 +83,7 @@ export function isArtifactPath(
 /**
  * Working-directory artifact files matching `fragment` (case-sensitive
  * substring, ranked short-first, no dupes): the extension-filtered tree
- * fed through item 10's `matchCandidates`. The file listing is the
+ * fed through the earlier feature's `matchCandidates`. The file listing is the
  * shared `listProjectFiles` rule (git ls-files / find fallback) — same
  * rule and cwd as the "@" picker. `mode` picks the ranking backend.
  * Returns ALL ranked matches — the caller decides the 1 / 0 / many decision.

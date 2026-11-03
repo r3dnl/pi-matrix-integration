@@ -1,11 +1,11 @@
 /**
- * Pi Matrix Integration — Outbox seam (ADDENDUM-SDK-HTTP-TRANSPORT §2).
+ * Pi Matrix Integration — Outbox seam .
  *
  * The transport surface `threading.ts` and the composition root code
  * against for room writes + state reads. The single transport
  * implementation is `SdkOutbox` (src/sdk-client.ts) — matrix-js-sdk ops
  * + MSC4125 attach encryption + E2EE (the legacy raw-HTTP matrix-http
- * client is deleted in Slice 6).
+ * client is deleted in phase 6).
  *
  * Every op keeps the `{ success, error }` soft-fail shape: a failed op never
  * throws into the caller (the poller's "no message is ever dropped"
@@ -16,14 +16,14 @@ import type { ThreadDeltaMessage } from "./summarize.js";
 
 /**
  * Soft-fail op result shape shared by every Outbox op. Re-homed from
- * the legacy transport (deleted in Slice 6) — the seam's canonical home
- * owns the type every op signature returns (TO-BE restructure, Slice 1).
+ * the legacy transport (deleted in phase 6) — the seam's canonical home
+ * owns the type every op signature returns .
  */
 export interface MatrixHttpResult {
   success: boolean;
   eventId?: string;
   error?: string;
-  /** Media upload (R2): the mxc uri the file was uploaded to. */
+  /** Media upload: the mxc uri the file was uploaded to. */
   mxc?: string;
 }
 

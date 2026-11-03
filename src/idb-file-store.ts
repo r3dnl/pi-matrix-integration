@@ -1,6 +1,6 @@
 /**
- * Pi Matrix Integration — file-backed IndexedDB shim (ADDENDUM-SDK-HTTP-
- * TRANSPORT §6).
+ * Pi Matrix Integration — file-backed IndexedDB shim (transport-and-state.md-SDK-HTTP-
+ * transport-and-state.md).
  *
  * The js-sdk's Rust crypto (`@matrix-org/matrix-sdk-crypto-wasm`) persists
  * E2EE keys through IndexedDB (`StoreHandle.open(name, passphrase)`). Node

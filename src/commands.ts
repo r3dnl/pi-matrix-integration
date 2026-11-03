@@ -1,10 +1,9 @@
 /**
  * Pi Matrix Integration — /matrix-* commands + matrix_* tools
- * (TO-BE restructure, Slice 5).
  *
  * Thin adapters over the MatrixIntegration composition root: each
  * handler is a config read + a stack call; the stack behavior (connect
- * sequences, switch orchestration, funnel legs) lives in the Slice 3–5
+ * sequences, switch orchestration, funnel legs) lives in the phase 3–5
  * modules (lifecycle / watchers / events / inbound / room-ux). The
  * registrations happen ONCE at extension load (the object-stable rebind
  * discipline — nothing re-registers on /matrix-switch); the handlers
@@ -44,7 +43,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
     },
   });
 
-  // Re-login (R3, DESIGN-LOGIN-ONBOARDING §2): the full dialogue any
+  // Re-login (configuration-and-room-behaviour.md): the full dialogue any
   // time — re-auth, switch account. Cancel writes nothing.
   pi.registerCommand("matrix-login", {
     description: "Log in to Matrix (new account or re-auth) and reconnect",
@@ -57,7 +56,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
       const result = await integration.runLoginFlow(ctx);
       if (result.ok) {
         await integration.completeLogin(ctx);
-        // The tour offer accepted (design §10): run it after connect.
+        // The tour offer accepted (configuration-and-room-behaviour.md): run it after connect.
         if (result.tour) integration.runIntroductionTour();
       } else if (result.cancelled) {
         ctx.ui.notify("Login cancelled — no changes", "info");
@@ -67,7 +66,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
     },
   });
 
-  // Onboarding tour (R3, DESIGN-LOGIN-ONBOARDING §10): one canned prompt via
+  // Onboarding tour (configuration-and-room-behaviour.md): one canned prompt via
   // the [Matrix] directive path, sourced from the /matrix-help text. The agent
   // posts the tour with its normal tools. Re-runnable for updates/reminders.
   pi.registerCommand("matrix-introduction-tour", {
@@ -148,7 +147,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
         lines.push(`  Last Activity: ${new Date(status.lastActivity).toLocaleString()}`);
       }
 
-      // Thread block (DESIGN §2.3): active root + ledger at a glance.
+      // Thread block (threads-and-summaries.md): active root + ledger at a glance.
       if (stack.threadManager.enabled()) {
         const t = stack.threadManager.status();
         if (t.sessionState === "pending") {
@@ -168,7 +167,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
     },
   });
 
-  // Switch env / room / user profile at runtime (DESIGN-ROOM-THREADING §1.7).
+  // Switch env / room / user profile at runtime .
   // No arg → interactive menu of the available profiles (pick one, Esc
   // cancels). With a profile name: load + validate in memory, rebuild the
   // whole stack against it, reconnect, and announce the switch into the
@@ -252,7 +251,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
     },
   });
 
-  // Sub-agent spawns in this process (DESIGN-SUBAGENT-TRACKING §4.7,
+  // Sub-agent spawns in this process (configuration-and-room-behaviour.md,
   // stretch): running + settled records from the owner bus.
   pi.registerCommand("matrix-subagents", {
     description: "List sub-agent spawns (running + settled) with type colors",
@@ -291,7 +290,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
   pi.registerCommand("matrix-help", matrixHelpCommand);
   pi.registerCommand("pi-help", matrixHelpCommand);
 
-  // Thread-summary run on demand (DESIGN §2.7) — alias pair, same handler.
+  // Thread-summary run on demand (threads-and-summaries.md) — alias pair, same handler.
   const matrixThreadSummarizeCommand = {
     description: "Run a thread-summary pass now: the agent rewrites the thread root summary",
     handler: async (_args, ctx) => {
@@ -312,7 +311,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
   // Custom Tools
   // ==========================================================================
 
-  // LLM-controlled thread summary (DESIGN §2.7): every `threadSummaryEvery`
+  // LLM-controlled thread summary (threads-and-summaries.md): every `threadSummaryEvery`
   // ledger sends, the extension injects a summarization directive into this
   // session; the agent rewrites the root summary (baseline + delta) and
   // posts it here. `/matrix-thread-summarize` (alias

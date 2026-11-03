@@ -44,8 +44,8 @@ import { escapeHtml } from "./markdown.js";
  * - "Custom: text"   → custom answer (`Custom:`/`Text:` prefix required, so
  *                      ordinary chat while the mirror is open still falls
  *                      through to normal injection)
- * - Poll taps (MSC3381 responses, extensible wire format, §5 in
- *          DESIGN-DECISIONS.md): each eligible single-select question ALSO
+ * - Poll taps (MSC3381 responses, extensible wire format, configuration-and-room-behaviour.md in
+ *          configuration-and-room-behaviour.md): each eligible single-select question ALSO
  *          ships as a native poll whose answers carry ids ("1", "2", …);
  *          a tap is resolved through the poll's own answer list (id →
  *          label; legacy label refs fall back to label matching) and
@@ -265,7 +265,7 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
    *  changes chain onto it (edit after settle) instead of creating a
    *  second message. Null when no post is in flight / none has been made. */
   let liveFirstPost: Promise<{ success: boolean; eventId?: string; error?: string } | null> | null = null;
-  /** Poll event id per question index (one poll per eligible question, DESIGN-DECISIONS §5). */
+  /** Poll event id per question index (one poll per eligible question, configuration-and-room-behaviour.md). */
   let pollByQuestion = new Map<number, string>();
   /** Question index per poll event id — the reverse map a tap routes
    *  through (the response carries the poll's event id, not the index). */
@@ -312,7 +312,7 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
     questionByPoll = new Map();
     answersByPoll = new Map();
     open = true;
-    // TO-BE §1.5: the mirror ships GFM pipe-table markdown only — no
+    // configuration-and-room-behaviour.md: the mirror ships GFM pipe-table markdown only — no
     // pre-computed HTML (the third copy-pasted conversion site is gone).
     // The pipeline converts markdown → `formatted_body` under the
     // `sendFormatted` gate; plain clients render the pipe table.
@@ -322,7 +322,7 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
       // Stay open: the terminal surface still works, and a later prompt
       // event (or /matrix-connect) re-posts.
     }
-    // Polls (DESIGN-DECISIONS §5): each eligible question ALSO ships as a
+    // Polls: each eligible question ALSO ships as a
     // tappable poll — the tap is a third answer surface for the same
     // reducer (onPollResponse → applyEntries). Multi-select questions
     // post multi-vote polls (max_selections = number of options); the
@@ -953,7 +953,7 @@ function looksLikeReplyAttempt(text: string): boolean {
 
 /**
  * Format the questionnaire as GFM markdown — the single payload the
- * mirror ships (TO-BE §1.5): per-question pipe tables (`| # | Option |
+ * mirror ships: per-question pipe tables (`| # | Option |
  * Description |` + `---` separator + option rows + the "Type something."
  * sentinel row), plain lines for the question text and the reply-grammar
  * hint. The pipeline converts it to `formatted_body` HTML (markdown.ts

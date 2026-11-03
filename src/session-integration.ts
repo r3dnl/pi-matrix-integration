@@ -81,7 +81,7 @@ export class SessionIntegrator {
       timestamp: matrixMessage.timestamp,
       roomId: matrixMessage.roomId,
       type: piMessage.type,
-      // Bookkeeping only (DESIGN §2.4) — carries the user's thread root so
+      // Bookkeeping only (threads-and-summaries.md) — carries the user's thread root so
       // the thread state map can re-attach / adopt; no routing effect.
       threadRoot: matrixMessage.threadRoot,
     };
@@ -104,7 +104,7 @@ export class SessionIntegrator {
    * `details` travels with the message as structured identity — the
    * thread-summary injections tag it `{ kind: "summarize" }` so
    * `isSummarizeDirectiveNotice` can mute its report-out without prose
-   * matching (INCIDENT-2026-10-22-SUMMARY-LOOP, Engine A).
+   * matching (the 2026-10 summary-loop incident, Engine A).
    */
   injectDirective(content: string, details?: unknown): void {
     this.pi.sendMessage(

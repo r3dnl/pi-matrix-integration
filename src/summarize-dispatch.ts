@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration - Thread-summary dispatch (DESIGN-ROOM-SUMMARIZER §5/§6 + source flag)
+ * Pi Matrix Integration - Thread-summary dispatch (threads-and-summaries.md + source flag)
  *
  * Decides how a summary pass runs for a thread root, and who runs it:
  *
@@ -7,7 +7,7 @@
  *    messages (`readDelta`). The isolated `pi-matrix-integration-thread-summarizer` subagent runs the
  *    pass when pi-subagents is present; the in-session directive is the
  *    fallback when it is not. On failure the last summary is kept.
- *  - `source: "session"` (legacy, DESIGN §1): the delta is the main Pi
+ *  - `source: "session"` (legacy, threads-and-summaries.md): the delta is the main Pi
  *    session's own context. That context only exists in the main session,
  *    so the pass runs THERE — a baseline-only directive is injected; no
  *    subagent spawn, no context copy, no room read.
@@ -30,7 +30,7 @@ export interface SummarizeRoot {
   topic: string;
   lastSummary?: string;
   lastSummarizedEventId?: string;
-  /** Persisted milestone ledger — the evergreen fir-tree anchor (§3). */
+  /** Persisted milestone ledger — the evergreen fir-tree anchor . */
   milestones?: readonly string[];
 }
 
@@ -64,7 +64,7 @@ export function createSummarizeDispatcher(deps: SummarizeDispatcherDeps): Summar
   const logger = deps.logger ?? createConsoleLogger();
   return (root: SummarizeRoot) => {
     if (source === "session") {
-      // Legacy (DESIGN §1): the main session's own context is the delta
+      // Legacy (threads-and-summaries.md): the main session's own context is the delta
       // source, so the main session runs the pass — no subagent spawn, no
       // context copy, no room read.
       deps.injectDirective(buildThreadSummarizeDirective(root, [], { limits: deps.limits }), {
@@ -94,7 +94,7 @@ export function createSummarizeDispatcher(deps: SummarizeDispatcherDeps): Summar
       } else {
         // Room-sourced in-session fallback (pi-subagents absent). Warn —
         // silent fallback hid a dead provider binding for a whole session
-        // (auto-detect latches its startup probe; INCIDENT-style debugging
+        // (auto-detect latches its startup probe; incident-style debugging
         // cost). If this fires unexpectedly, check subagents.provider.
         logger.warn("[matrix] summarizer subagent unavailable — in-session directive fallback (check piMatrixSubagents.provider)");
         deps.injectDirective(

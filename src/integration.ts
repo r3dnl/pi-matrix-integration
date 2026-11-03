@@ -1,8 +1,8 @@
 /**
- * Pi Matrix Integration — composition root (TO-BE restructure, Slice 5).
+ * Pi Matrix Integration — composition root .
  *
- * The object-stable composition root (DESIGN-ROOM-THREADING §2.9,
- * TO-BE §1.1): the single object the one-time pi-hook registrations in
+ * The object-stable composition root (threads-and-summaries.md,
+ * transport-and-state.md): the single object the one-time pi-hook registrations in
  * index.ts dispatch through. `reattach(cfg)` re-points the stack
  * internals — it never replaces the instance — so /matrix-switch
  * rebinds the registrations without re-registering (the object-stable
@@ -11,7 +11,7 @@
  *
  * Owns:
  * - `buildStack` (the stack construction — the index.ts buildStack
- *   verbatim, with the Slice 2–4 hunks applied: threadSend delegate,
+ *   verbatim, with the phase 2–4 hunks applied: threadSend delegate,
  *   pipeline outbox, lifecycle/watchers/events, roomUx/inbound).
  * - The factory-scope `PickerState` (the zero-delta move of the two
  *   original factory-scope CandidateListTracker instances — created
@@ -20,7 +20,7 @@
  * - The /matrix-switch orchestration (config persistence + reattach +
  *   reconnect).
  *
- * Test seam (TO-BE §1.11, "Test seam: PI_MATRIX_TEST_OUTBOX"
+ * Test seam (transport-and-state.md, "Test seam: PI_MATRIX_TEST_OUTBOX"
  * decision): when `PI_MATRIX_TEST_OUTBOX` is set to a module path, the
  * outbox is built by that module's `createTestOutbox(cfg)` factory
  * instead of `createSdkOutbox`. The fake writes state-file call logs
@@ -104,7 +104,7 @@ import { basename, dirname, join } from "node:path";
 import { createRequire } from "node:module";
 
 /**
- * The stack (DESIGN-ROOM-THREADING §2.9): client + handler + integrator +
+ * The stack: client + handler + integrator +
  * thread manager + funnel, built as a unit and re-pointed together by
  * /matrix-switch. `config` tracks the active profile (commands read it
  * at call time).
@@ -131,9 +131,9 @@ export interface MatrixStack {
   inbound: Inbound;
   /** The active profile's config (the switch re-pointing, read at call time). */
   config: MatrixConfig;
-  /** The sub-agent bus generation (DESIGN-SUBAGENT-TRACKING §4). */
+  /** The sub-agent bus generation . */
   subagentBus: SubagentBusImpl;
-  /** Teardown of the provider completion-channel subscription (§6). */
+  /** Teardown of the provider completion-channel subscription . */
   unsubCompletion?: () => void;
 }
 
@@ -216,7 +216,7 @@ export function createLoggerAndValidateConfig(
 export class MatrixIntegration {
   private readonly pi: ExtensionAPI;
   private readonly logger: MatrixLogger;
-  /** The factory-scope picker state (TO-BE §1.10): created ONCE per
+  /** The factory-scope picker state: created ONCE per
    *  integration, survives /matrix-switch (the zero-delta move of the
    *  two original factory-scope CandidateListTracker instances,
    *  `index.ts:321/:324`). Ephemeral by design — no state/ persistence
@@ -228,15 +228,15 @@ export class MatrixIntegration {
    *  replacement; guarded at each use. */
   private lastCtx: ExtensionContext | undefined;
   /** This session's current model / thinking level, tracked from
-   *  `model_select` / `thinking_level_select` (DESIGN-SUBAGENT-TRACKING
-   *  §4.3, explicit meta): sub-agent spawn lines show the session's actual
+   *  `model_select` / `thinking_level_select` (configuration-and-room-behaviour.md
+   *  transport-and-state.md, explicit meta): sub-agent spawn lines show the session's actual
    *  model instead of the `(session model)` placeholder. */
   private sessionModel: string | undefined;
   private sessionThinking: string | undefined;
   /** The stack (re-pointed as a unit by reattach — object-stable). */
   stack: MatrixStack;
-  /** The previous owner parked by the factory (DESIGN-SUBAGENT-TRACKING
-   *  §4.1): disposed + replaced by this instance at session_start when this
+  /** The previous owner parked by the factory (configuration-and-room-behaviour.md
+   *  transport-and-state.md): disposed + replaced by this instance at session_start when this
    *  session is the MAIN line; released (the owner stays) when it is a
    *  side chain. */
   private prev: MatrixIntegration | undefined;
@@ -254,7 +254,7 @@ export class MatrixIntegration {
   }
 
   /**
-   * The owner decision at session_start (DESIGN-SUBAGENT-TRACKING §4.1):
+   * The owner decision at session_start :
    * side-chain sessions never dispose the owner (one connection per
    * process); the main line disposes the parked previous owner and claims
    * the pointer.
@@ -275,7 +275,7 @@ export class MatrixIntegration {
     (globalThis as MatrixGlobal)[PI_MATRIX_KEY] = this;
     // The owner's sub-agent registry is the process registry: side-chain
     // instances built their stack in the constructor but never claim, so
-    // only the main line publishes (DESIGN-SUBAGENT-TRACKING §4.2).
+    // only the main line publishes .
     publishOwnerBus(this.stack.subagentBus);
   }
 
@@ -330,17 +330,17 @@ export class MatrixIntegration {
       }
     });
 
-    // Session lifecycle — the hook BODIES live in Lifecycle (TO-BE
-    // Slice 3); the registrations stay here once (dispatch through the
+    // Session lifecycle — the hook BODIES live in Lifecycle (transport-and-state.md
+    // phase 3); the registrations stay here once (dispatch through the
     // current stack at call time — nothing re-registers on
     // /matrix-switch).
     pi.on("session_start", async (event, ctx) => {
       this.trackCtx(ctx);
-      // Owner decision BEFORE the lifecycle hook (DESIGN-SUBAGENT-TRACKING
-      // §4.1): a side-chain session must never dispose the owner's
+      // Owner decision BEFORE the lifecycle hook (configuration-and-room-behaviour.md
+      // transport-and-state.md): a side-chain session must never dispose the owner's
       // connection; the main line takes over the parked previous instance.
       this.claimOwner(isSidechainSession(ctx.sessionManager, event.reason));
-      // Baseline session meta (DESIGN-SUBAGENT-TRACKING §4.3): pi emits
+      // Baseline session meta: pi emits
       // model_select only on CHANGES (not on session start/restore), so
       // seed the spawn-line meta from the live session here — the model
       // and thinking level ride on `ctx` as plain properties.
@@ -366,11 +366,11 @@ export class MatrixIntegration {
     pi.on("session_compact_failed", async (event) => {
       await this.stack.lifecycle.onSessionCompactFailed(event);
     });
-    // Baseline session meta (DESIGN-SUBAGENT-TRACKING §4.3): pi emits
+    // Baseline session meta: pi emits
     // model_select only on CHANGES, so the seed happens in session_start
     // (ctx.getModel()) below; this handler keeps it current afterwards.
     pi.on("model_select", async (event) => {
-      // Explicit meta (DESIGN-SUBAGENT-TRACKING §4.3): the spawn line of the
+      // Explicit meta: the spawn line of the
       // next sub-agent shows the session's current model.
       const fmtModel = (m?: { provider?: string; id?: string; name?: string }) =>
         m ? `${m.provider ?? "?"}/${m.name ?? m.id ?? "?"}` : undefined;
@@ -384,7 +384,7 @@ export class MatrixIntegration {
     pi.on("message_end", async (event) => {
       await this.stack.lifecycle.onMessageEnd(event);
     });
-    // Summarizer-wake loop guard (INCIDENT-2026-10-22-SUMMARY-LOOP): flag a
+    // Summarizer-wake loop guard (the 2026-10 summary-loop incident): flag a
     // run started by a summarizer completion notice so its report-out stays
     // out of the room.
     pi.on("before_agent_start", (event) => {
@@ -396,7 +396,7 @@ export class MatrixIntegration {
     pi.on("input", async (event) => {
       await this.stack.lifecycle.onInput(event);
     });
-    // Sub-agent settle (DESIGN-SUBAGENT-TRACKING §9 Q4): the side-chain
+    // Sub-agent settle (configuration-and-room-behaviour.md transport-and-state.md Q4): the side-chain
     // session's own agent_settled is the single settle source. No-op for
     // the main session (not side-chain mode).
     pi.on("agent_settled", () => {
@@ -404,7 +404,7 @@ export class MatrixIntegration {
     });
 
     // Sub-agent sub-threads — the marker bodies live in ToolWatchers
-    // (TO-BE Slice 3); the registrations dispatch through the CURRENT
+    // (transport-and-state.md phase 3); the registrations dispatch through the CURRENT
     // watcher at call time.
     pi.on("tool_call", (event) => {
       void this.stack.watchers.onToolCall(event);
@@ -413,7 +413,7 @@ export class MatrixIntegration {
       void this.stack.watchers.onToolResult(event);
     });
 
-    // Matrix room-event delivery (TO-BE Slice 6): the outbox delivery
+    // Matrix room-event delivery (transport-and-state.md phase 6): the outbox delivery
     // loop — startDelivery ONCE with the first stack's callbacks
     // bundle (the post-switch rebind lands via reattach →
     // connectAndStart, which startDelivers the CURRENT stack's bundle).
@@ -449,7 +449,7 @@ export class MatrixIntegration {
   }
 
   /**
-   * Rebuild the stack against a new config (DESIGN §2.9): the handlers
+   * Rebuild the stack against a new config (transport-and-state.md): the handlers
    * keep working because the same integration object is re-pointed
    * (the object-stable rebind), and the old client is torn down before
    * the new one connects. A connect failure keeps the failure surface
@@ -477,7 +477,7 @@ export class MatrixIntegration {
     // reattach is the main-line path only (/matrix-switch): the rebuilt
     // bus takes over the process registry.
     publishOwnerBus(this.stack.subagentBus);
-    // Re-issue beginSession against the rebuilt thread manager (DESIGN §2.9):
+    // Re-issue beginSession against the rebuilt thread manager (threads-and-summaries.md):
     // the new ThreadManager starts "flat" (constructor default) and only
     // session_start re-primed it — so a switch would park the whole
     // session flat until a pi restart. "resume": re-attach to this
@@ -487,7 +487,7 @@ export class MatrixIntegration {
   }
 
   /**
-   * First-run gate (R3, DESIGN-LOGIN-ONBOARDING §2): no loadable
+   * First-run gate (configuration-and-room-behaviour.md transport-and-state.md): no loadable
    * credentials → run the login dialogue; success → `completeLogin`
    * (reload + reattach + connect) and true (the caller skips its own
    * connect). Cancel/decline → false (today's warn-and-degrade stands).
@@ -498,7 +498,7 @@ export class MatrixIntegration {
   ): Promise<boolean> {
     if (hasLoadableCredentials(getCredentialsPath(this.config))) return false;
     
-    // First-run project connection prompt (backlog item 3): ask if user wants
+    // First-run project connection prompt: ask if user wants
     // to connect this project to a Matrix room, controlled by promptConnectOnStartup.
     if (this.config.promptConnectOnStartup !== false) {
       const answer = await ctx.ui.select(
@@ -514,13 +514,13 @@ export class MatrixIntegration {
     const result = await this.runLoginFlow(ctx);
     if (!result.ok) return false;
     await this.completeLogin(ctx, milestone);
-    // The tour offer accepted (design §10): run it after connect.
+    // The tour offer accepted (transport-and-state.md): run it after connect.
     if (result.tour) this.runIntroductionTour();
     return true;
   }
 
   /**
-   * The onboarding tour (design §10): inject the one canned prompt through
+   * The onboarding tour (transport-and-state.md): inject the one canned prompt through
    * the [Matrix] directive path, sourced from the /matrix-help text (the
    * same content the room sees from /matrix-help). Re-runnable — the
    * command and the post-login offer both call this. The agent posts the
@@ -531,14 +531,14 @@ export class MatrixIntegration {
   }
 
   /**
-   * The login dialogue body (R3): shared by the first-run trigger and
-   * `/matrix-login` (DESIGN-LOGIN-ONBOARDING §2). Pure flow — the caller
+   * The login dialogue body: shared by the first-run trigger and
+   * `/matrix-login` . Pure flow — the caller
    * decides what a success means for the connection (`completeLogin`).
    */
   async runLoginFlow(ctx: ExtensionContext): Promise<LoginResult> {
     const cfg = this.config;
     // The credentials store the dialogue writes to: the accounts dir of
-    // the CURRENT credentialsPath (design §7 — the file is the SSoT, so
+    // the CURRENT credentialsPath (transport-and-state.md — the file is the SSoT, so
     // the next login lands next to the account dir it replaces).
     const cp = join(getCredentialsPath(cfg));
     const accountParent = dirname(cp);
@@ -552,7 +552,7 @@ export class MatrixIntegration {
         // saveCredentials already derived from user_id) and makes it the
         // active profile. Writing in-place to the bare config is what made
         // login non-profile-aware; per-account profiles isolate each login.
-        // R3.1 (#0): drop the stale identity so the profile re-derives it
+        // phase 3.1: drop the stale identity so the profile re-derives it
         // from the NEW credentials file (baking the old owner = the
         // two-sender identity bug: wrong footer + undecryptable E2EE).
         const credPath = typeof patch.credentialsPath === "string" ? patch.credentialsPath : "";
@@ -569,7 +569,7 @@ export class MatrixIntegration {
         // also stays behind when a later login re-points the profile, so a
         // second account keeps loading the first account's room and toggles.
         // migrateV1toV2 drops userId/homeserver as undefined, so the identity
-        // still derives from the new credentials file (R3.1 #0).
+        // still derives from the new credentials file (phase 3.1 #0).
         const v2 = migrateV1toV2(next) as unknown as MatrixConfig;
         if (profileName) {
           saveConfig(
@@ -587,16 +587,16 @@ export class MatrixIntegration {
       // QR path: the room step runs against the DAG token the flow returned
       // (its login happened on a separate client inside src/qr2025).
       makeLoginClientWithToken: (homeserver, token) => this.makeJsSdkLoginClient(homeserver, token),
-      // Story 3 (design §8/§9): the room step's proposal + e2ee toggle.
+      // issue 3 (transport-and-state.md): the room step's proposal + e2ee toggle.
       configuredRoomId: cfg.roomId,
       e2ee: cfg.e2ee,
-      // QR method (2025 variant, design §16): the toggle only — the probe
+      // QR method (2025 variant, transport-and-state.md): the toggle only — the probe
       // re-checks the server flag + the crypto bindings at login time.
       qr2025: cfg.qr2025,
       stateDir: getStateDir(),
-      // Manifest directory for project room manifest (backlog item 5)
+      // Manifest directory for project room manifest 
       manifestDir: getStateDir(),
-      // Current working directory for .gitignore handling (backlog item 6)
+      // Current working directory for .gitignore handling 
       cwd: process.cwd(),
     });
   }
@@ -621,7 +621,7 @@ export class MatrixIntegration {
   }
 
   /**
-   * The js-sdk login + room surface (design §4/§8): a bare MatrixClient
+   * The js-sdk login + room surface (transport-and-state.md): a bare MatrixClient
    * against the homeserver. The SDK imports lazily (same discipline as
    * sdk-client's loadSdk) and each attempt gets a throwaway client —
    * only the response fields reach saveCredentials. Room ops
@@ -653,13 +653,13 @@ export class MatrixIntegration {
           password,
         });
       },
-      // design §8 step 2: resolve the alias (404 when absent).
+      // transport-and-state.md step 2: resolve the alias (404 when absent).
       resolveRoomAlias: async (alias: string): Promise<{ room_id: string }> => {
         const c = await sdkClient();
         return c.getRoomIdForAlias(alias);
       },
-      // design §8 step 3: create the room (encrypted per e2ee), invite empty.
-      // ponytail: no preset/visibility/topic wiring at creation (design §8
+      // transport-and-state.md step 3: create the room (encrypted per e2ee), invite empty.
+      // ponytail: no preset/visibility/topic wiring at creation (transport-and-state.md
       // note) — the ThreadManager takes over from the normal connect. The
       // encryption initial_state is the only extra, and only when e2ee is on.
       createRoom: async (opts: { name: string; invite: string[]; isEncrypted: boolean }): Promise<{ room_id: string }> => {
@@ -677,7 +677,7 @@ export class MatrixIntegration {
         const c = await sdkClient();
         await c.createAlias(alias, roomId);
       },
-      // invite users to the room (backlog item 1)
+      // invite users to the room 
       invite: async (roomId: string, userId: string): Promise<void> => {
         const c = await sdkClient();
         await c.invite(roomId, userId);
@@ -708,7 +708,7 @@ export class MatrixIntegration {
   }
 
   /**
-   * The shared /matrix-switch body (DESIGN-ROOM-THREADING §1.7). No
+   * The shared /matrix-switch body . No
    * arg → interactive menu of the available profiles (the active one
    * marked) — pick one to switch, Esc to cancel. With a profile
    * name: load + validate in memory, rebuild the whole stack against
@@ -754,8 +754,8 @@ export class MatrixIntegration {
     // Seed the profile file with defaults for any missing parameters
     // (self-healing; no-op once complete).
     seedProfileDefaults(profile);
-    // Remember this profile for the next pi startup (DESIGN-ROOM-THREADING
-    // §1.7 persistence); a failed switch never writes the pointer.
+    // Remember this profile for the next pi startup (threads-and-summaries.md
+    // transport-and-state.md persistence); a failed switch never writes the pointer.
     persistActiveProfile(profile);
 
     // Connectivity events are announced per room: the OLD room gets a
@@ -780,15 +780,15 @@ export class MatrixIntegration {
 
   /**
    * The stack construction (the index.ts buildStack, verbatim with the
-   * Slice 2–4 hunks applied + the PI_MATRIX_TEST_OUTBOX test seam).
+   * phase 2–4 hunks applied + the PI_MATRIX_TEST_OUTBOX test seam).
    */
   private buildStack(cfg: MatrixConfig): MatrixStack {
-    // The Outbox seam (ADDENDUM-SDK-HTTP-TRANSPORT §2, TO-BE Slice 6
+    // The Outbox seam (transport-and-state.md phase 6
     // terminal): the SdkOutbox is the SINGLE transport — the legacy
     // facade + raw-HTTP pair is deleted; the outbox owns all room
     // writes/state reads + the delivery loop.
     //
-    // Test seam (TO-BE §1.11): when `PI_MATRIX_TEST_OUTBOX` names a
+    // Test seam: when `PI_MATRIX_TEST_OUTBOX` names a
     // module, the outbox is built by that module's `createTestOutbox(cfg)`
     // factory instead of `createSdkOutbox` — the fake writes state-file
     // call logs (the fake-mtx precedent, test/fake-mtx.js:92–112) so
@@ -835,11 +835,11 @@ export class MatrixIntegration {
     // integrator (which injects the directive) is created after the
     // manager.
     const summarizeRef: { current?: (root: ThreadRootState) => void | Promise<void> } = {};
-    // Cadence subagent driver (DESIGN-ROOM-SUMMARIZER §5/§6/§7):
+    // Cadence subagent driver :
     // isolated, tool-less `pi-matrix-integration-thread-summarizer` type over the pi-subagents RPC
     // bus. Absent package → isAvailable() is false → the in-session
     // fallback below. The dialect comes from the resolved provider
-    // (DESIGN-SUBAGENT-PROVIDER §4); one provider serves the driver and
+    // ; one provider serves the driver and
     // the spawn watchers below.
     const subagentProvider = resolveSubagentProvider(cfg.subagents?.provider ?? "auto", {
       events: this.pi.events,
@@ -859,7 +859,7 @@ export class MatrixIntegration {
       logger: this.logger,
     });
 
-    // TO-BE §1.5: the ThreadManager is routing + ledger only — its write
+    // threads-and-summaries.md: the ThreadManager is routing + ledger only — its write
     // delegate routes thread posts/edits through the MessageHandler
     // pipeline (format + dedupe live there, markdown.ts is the single
     // formatter); room-topic + timeline reads go straight to the seam.
@@ -904,7 +904,7 @@ export class MatrixIntegration {
       milestoneIcon: cfg.milestoneIcon,
       userMessageIcon: cfg.userMessageIcon,
       threadManager,
-      // TO-BE §1.5: the pipeline's write surface for thread-targeted
+      // threads-and-summaries.md: the pipeline's write surface for thread-targeted
       // posts + edits (postInThread / editInThread).
       outbox,
       logger: this.logger,
@@ -915,7 +915,7 @@ export class MatrixIntegration {
     // Ephemeral by design — no state/ persistence (7fc13e1 check): the
     // snapshot lives in the Lifecycle per stack build.
 
-    // The sub-agent bus (DESIGN-SUBAGENT-TRACKING §4): owner-side records +
+    // The sub-agent bus: owner-side records +
     // type colors, posted through THIS instance's connected pipeline.
     // Re-published on every build (/matrix-switch → the new generation wins).
     const subagentBus = createSubagentBus(
@@ -938,7 +938,7 @@ export class MatrixIntegration {
       },
       // Warn-level, not debug: a dropped spawn line is a lost room message.
       (line) => this.logger.warn(line),
-      // Explicit meta (DESIGN-SUBAGENT-TRACKING §4.3): spawn lines resolve
+      // Explicit meta: spawn lines resolve
       // the session's current model/thinking when the spawn has no override.
       () => ({
         model: this.sessionModel,
@@ -948,7 +948,7 @@ export class MatrixIntegration {
     // No publish here: buildStack runs in the constructor of EVERY session's
     // extension instance (the factory is per-session), so a side chain would
     // displace the owner's registry with its own empty bus. The publish is
-    // ownership-gated: claimOwner (main line) and reattach (§4.2 owner-side
+    // ownership-gated: claimOwner (main line) and reattach (transport-and-state.md owner-side
     // registry — one per process).
 
     const connectionStatusRef: { current?: () => import("./types.js").ConnectionStatus } = {};
@@ -976,7 +976,7 @@ export class MatrixIntegration {
     // `rpiv:ask-user:answer-result`). Terminal input stays authoritative;
     // whichever surface completes the questionnaire first wins. Posts ride
     // the decision ledger (kind "decision").
-    // TO-BE §1.5: the mirror ships markdown; the pipeline routes (thread
+    // threads-and-summaries.md: the mirror ships markdown; the pipeline routes (thread
     // when active), formats (`sendFormatted` gate), and writes. Decision
     // re-issues intentionally skip dedupe — a re-ask is intentional
     // (`dedupe: false` is explicit, not a bypass).
@@ -992,11 +992,11 @@ export class MatrixIntegration {
       // body fallback via stripHtmlTags.
       postResult: async (text) => messageHandler.post(text, "decision", { dedupe: false, html: text }),
       edit: async (targetEventId, text) => messageHandler.editInThread(targetEventId, text, text),
-      // TO-BE Slice 3: the flag moved to the lifecycle — the late-bound
+      // transport-and-state.md phase 3: the flag moved to the lifecycle — the late-bound
       // call-time read keeps the mirror switch-current.
       isEnabled: () => lifecycle.isEnabled(),
       emitAnswer: (payload) => this.pi.events.emit("rpiv:ask-user:answer", payload),
-      // Polls (DESIGN-DECISIONS §5): single-select questions additionally
+      // Polls: single-select questions additionally
       // ship as tappable m.poll events. The active thread root is read at
       // call time (same late-bound style as the decision text posts' thread
       // routing) — a /matrix-switch rebuild stays correct.
@@ -1009,8 +1009,8 @@ export class MatrixIntegration {
       warn: (message) => this.logger.warn(message),
     });
 
-    // The room-sourced delta for the summarizer prompt (DESIGN-ROOM-SUMMARIZER
-    // §5.1): prefer the matrix-http read (no "read clears unread" side
+    // The room-sourced delta for the summarizer prompt (threads-and-summaries.md
+    // transport-and-state.md): prefer the matrix-http read (no "read clears unread" side
     // effect); when the matrix-http read is unavailable or empty, fall
     // back to the `mtx` CLI read (the same source /matrix-messages uses).
     // The summary is a pure function of the room artifact — the Pi session
@@ -1032,7 +1032,7 @@ export class MatrixIntegration {
       }
     };
 
-    // Summarizer firing (DESIGN §2.7 + ROOM-SUMMARIZER §5/§6): the source
+    // Summarizer firing (threads-and-summaries.md + ROOM-SUMMARIZER threads-and-summaries.md): the source
     // flag (threadSummarizeSource) picks the runner — "session"
     // re-introduces the legacy in-session pass (the main session's own
     // context is the delta, so it runs there); "room" (default) is
@@ -1053,7 +1053,7 @@ export class MatrixIntegration {
       logger: this.logger,
     });
 
-    // The minimal event funnel (TO-BE Slice 3): one dispatcher per stack
+    // The minimal event funnel (transport-and-state.md phase 3): one dispatcher per stack
     // build. Ephemeral by design — no state/ persistence (7fc13e1 check):
     // the funnel is call-time dispatch only; the rpiv bus subscription in
     // attach() emits through the CURRENT dispatcher at call time; the
@@ -1082,7 +1082,7 @@ export class MatrixIntegration {
     };
     // The lifecycle owner of the session/connect state the entry point
     // used to hold in closures: the enabled flag, the ConnectionStatus
-    // snapshot (TO-BE §1.2 ownership), the connect + start sequence, the
+    // snapshot (transport-and-state.md ownership), the connect + start sequence, the
     // session hook bodies, and the teardown order (stopDelivery →
     // disconnect).
     lifecycle = createLifecycle({
@@ -1094,18 +1094,17 @@ export class MatrixIntegration {
       threadManager,
       sessionIntegrator,
       subagentBus: () => ownerBus(),
-      // First-run login (R3, DESIGN-LOGIN-ONBOARDING §2): the hook decides
+      // First-run login (configuration-and-room-behaviour.md transport-and-state.md): the hook decides
       // at call time (credentials may appear/disappear between stack
       // builds — /matrix-login re-points the stack).
       onFirstRun: (ctx, milestone) => this.onFirstRunLogin(ctx, milestone),
     });
     connectionStatusRef.current = () => lifecycle.status();
-    // The subagent sub-thread markers (DESIGN §1.5/§2.8) — the
+    // The subagent sub-thread markers (threads-and-summaries.md) — the
     // tool_call/tool_result bodies, extracted. The provider's spawn tools
-    // (names + normalizers from `spawnWatch`, DESIGN-SUBAGENT-PROVIDER §5)
-    // route to the bus (DESIGN-SUBAGENT-TRACKING §4.5): main-line tool_calls
+    // (names + normalizers from `spawnWatch`, configuration-and-room-behaviour.md transport-and-state.md)
+    // route to the bus: main-line tool_calls
     // register spawn records; side-chain tool_calls register nested spawns
-    // (§4.6).
     const coreAgent: CoreAgentDelegate = {
       onAgentTool: (input) => {
         this.logger.debug(`[matrix] spawn → bus (${input.name})`);
@@ -1122,7 +1121,7 @@ export class MatrixIntegration {
       },
       onAgentRunId: (prompt, runId) => subagentBus.attachRunId(prompt, runId),
     };
-    // DESIGN-SUBAGENT-PROVIDER §6: the room's settle line for a detached
+    // configuration-and-room-behaviour.md transport-and-state.md: the room's settle line for a detached
     // child arrives on the provider's completion channel (the child's own
     // agent_settled is silent across processes). Matched by run id —
     // attached from the spawn's tool_result by the watchers above.
@@ -1144,10 +1143,10 @@ export class MatrixIntegration {
       threadManager.noteDecisionClosed();
     });
 
-    // The room-UX aggregation (TO-BE Slice 4): the slash suggestion
+    // The room-UX aggregation (transport-and-state.md phase 4): the slash suggestion
     // reply, both pickers ("@" file / "@@" artifact), and the
     // /matrix-help guide — every room auto-reply posts through the
-    // outgoing pipeline (TO-BE §1.5). The picker instance is factory
+    // outgoing pipeline . The picker instance is factory
     // scope (zero-delta move of the two original trackers — it survives
     // /matrix-switch, as they did).
     const roomUx = createRoomUx({
@@ -1157,7 +1156,7 @@ export class MatrixIntegration {
       post: (text, kind) => messageHandler.post(text, kind),
       picker: this.pickerState,
     });
-    // The single room-event dispatch point (TO-BE Slice 4): mirror
+    // The single room-event dispatch point (transport-and-state.md phase 4): mirror
     // consume → slash relay → attach → decision/inject (index.ts
     // 649–872, 1:1). Rebuilt with the stack on /matrix-switch (the
     // object-stable rebind discipline) — the registrations dispatch

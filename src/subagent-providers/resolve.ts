@@ -1,5 +1,5 @@
 /**
- * Provider selection (DESIGN-SUBAGENT-PROVIDER §4): the one place that
+ * Provider selection: the one place that
  * knows both dialects. `subagents.provider` names the dialect; `auto`
  * binds today's tintinweb dialect synchronously (zero behavior change at
  * startup) and re-binds asynchronously when tintinweb's ping is silent
@@ -35,7 +35,7 @@ export function resolveSubagentProvider(
   // Live completion-channel subscribers (integration.ts wires ONE): on the
   // auto-flip they must be re-issued against the answering dialect — a
   // subscriber that bound the silent primary at startup would otherwise
-  // never hear completions (DESIGN-SUBAGENT-PROVIDER §4/§6).
+  // never hear completions .
   const channels = new Map<(name: string, result: string) => void, () => void>();
   const decided = primary.isAvailable().then(async (ok) => {
     if (ok) return primary;

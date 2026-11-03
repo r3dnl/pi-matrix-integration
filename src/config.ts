@@ -113,7 +113,7 @@ export interface PiMatrixSubagentsConfig {
   colorByType?: Record<string, string>;
   colorPalette?: string[];
   plainMarker: string;
-  /** Provider dialect binding (DESIGN-SUBAGENT-PROVIDER §4). */
+  /** Provider dialect binding . */
   provider?: "auto" | "tintinweb" | "nicobailon";
 }
 
