@@ -82,6 +82,13 @@ The short version of the module map: `src/integration.ts` is the composition roo
 
 Breaking changes to config keys or command names require a major bump. Both are user-facing surface.
 
+### Credentials never ship
+
+The repository and the published tarball contain no credential of any kind.
+`tools/scan-secrets.mjs` enforces that in CI on the checkout and on the
+unpacked tarball; the live test tier reads its password from the
+environment, never from a file. Nothing in this repository or its published history identifies a real deployment. The scan is re-run over the full git object database in the nightly workflow.
+
 ## How to ask for a change
 
 Open an issue with the Pi version, the package version, your homeserver software, and a log excerpt with secrets stripped. `AGENTS.md` documents what an AI coding agent is and is not allowed to change here; read it before letting one edit this repository.
