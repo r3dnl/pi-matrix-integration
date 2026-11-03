@@ -1,0 +1,28 @@
+NOTICE
+
+pi-matrix-integration
+Copyright (c) 2026 Vincent Jansen
+
+This product includes software developed at
+The Matrix.org Foundation C.I.C. (https://matrix.org):
+
+  src/qr2025/ — vendored files implementing QR sign-in (MSC4108 /
+  MSC4388) from the matrix-js-sdk prototype (PR matrix-org/matrix-js-sdk
+  #5219, tip commit 6c78790f, 2026-09-24).
+  Licensed under the Apache License, Version 2.0.
+  The original copyright and license headers are intact in those files.
+
+This product depends on the following Apache-2.0-licensed components:
+
+  matrix-js-sdk (https://github.com/matrix-org/matrix-js-sdk),
+  Matrix.org Foundation C.I.C.
+  @matrix-org/matrix-sdk-crypto-wasm
+  (https://github.com/matrix-org/matrix-rust-sdk-crypto-wasm),
+  Matrix.org Foundation C.I.C.
+  jsqr (https://github.com/cozmo/jsQR), copyright Cozmo.
+  matrix-encrypt-attachment
+  (https://github.com/matrix-org/matrix-encrypt-attachment),
+  Matrix.org Foundation C.I.C.
+
+No source code from these dependencies is copied into this package; they are
+used as npm dependencies.
