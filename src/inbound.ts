@@ -17,10 +17,9 @@
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { findCommand, fuzzyCommandCandidates, parseCommandLine } from "./command-relay.js";
-import { isPiMachineTraffic } from "./message-handler.js";
 import { escapeHtml } from "./markdown.js";
 import { isAgentHelp } from "./matrix-help.js";
-import { localpartOf } from "./classify.js";
+import { isPiMachineTraffic, localpartOf } from "./classify.js";
 import type { RoomUx } from "./room-ux.js";
 import type { MessageHandler } from "./message-handler.js";
 import type { ThreadManager } from "./threading.js";
@@ -146,7 +145,7 @@ export function createInbound(deps: InboundDeps): Inbound {
       // session into the sibling's thread nor become a prompt. The body
       // prefix is the only reliable marker. A genuine human reply never opens
       // with one of pi's own broadcast prefixes.
-      if (isPiMachineTraffic(matrixMessage.body ?? "")) {
+      if (isPiMachineTraffic(matrixMessage.body ?? "", cfg)) {
         logger.debug(
           `[matrix] ${matrixMessage.eventId} dropped: pi machine traffic (sibling session broadcast)`,
         );

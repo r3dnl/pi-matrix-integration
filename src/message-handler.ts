@@ -16,6 +16,7 @@ import type {
   PiMessageType,
   MatrixSendResult,
 } from './types.js';
+import { DEFAULT_OUTGOING_ICONS, normalizeDedupeKey } from './classify.js';
 import type { OutboxResult, Outbox } from './outbox.js';
 import type { ThreadManager, SendKind } from './threading.js';
 import { convertMarkdown, htmlToMarkdown, looksLikeHtml, removeTableBlocks, stripHtmlTags } from './markdown.js';
@@ -46,60 +47,6 @@ export interface MessageHandlerOptions {
 }
 
 const DEFAULT_DEDUPE_WINDOW_MS = 600_000;
-
-// Outgoing-type prefixes (see getMessagePrefix below) plus the bare marker
-// words the heuristics strip ("Milestone: ", "TODO progress: "). Stripping
-// them from the dedupe key makes "🎯 Milestone: X" (sent at message_end)
-// collide with the same line re-embedded in "💬 Pi: …" (final broadcast),
-// which is exactly the duplication pair the earlier feature fixes.
-const DEDUPE_PREFIXES = [
-  '🎯 Milestone: ',
-  '💬 Pi: ',
-  '🧑 User: ',
-  '📋 TODO: ',
-  '📊 Status: ',
-  '❔ Question: ',
-  '❌ Error: ',
-  '🤖 Pi: ',
-  'Milestone: ',
-  'TODO progress: ',
-];
-
-/** Collapse whitespace and strip outgoing prefixes — the dedupe key. */
-function normalizeDedupeKey(text: string): string {
-  let key = text.replace(/\s+/g, ' ').trim();
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const prefix of DEDUPE_PREFIXES) {
-      if (key.startsWith(prefix)) {
-        key = key.slice(prefix.length).trimStart();
-        changed = true;
-        break;
-      }
-    }
-  }
-  return key;
-}
-
-/** Machine-traffic prefixes: the outgoing-type prefixes plus the thread
- *  root and decision-post markers (machine-generated, never typed). An
- *  INBOUND body starting with one is pi's own broadcast or a SIBLING pi
- *  session's (shared account: the sender match can't tell them apart —
- *  everything surviving the send-record guards is forced isFromPi=false),
- *  and it must never become a prompt in this session. */
-const MACHINE_TRAFFIC_PREFIXES = [
-  ...DEDUPE_PREFIXES,
-  "🧵 New Conversation",
-  "🤖 Pi decision",
-];
-
-/** True when `body` opens with a pi machine-traffic prefix. */
-export function isPiMachineTraffic(body: string): boolean {
-  const text = (body ?? "").trimStart();
-  if (text.length === 0) return false;
-  return MACHINE_TRAFFIC_PREFIXES.some((prefix) => text.startsWith(prefix));
-}
 
 /**
  * Message handler for Pi-Matrix integration
@@ -197,7 +144,7 @@ export class MessageHandler {
     const flat = opts?.flat === true;
     const html = opts?.html;
     const now = Date.now();
-    const key = normalizeDedupeKey(text);
+    const key = normalizeDedupeKey(text, this.opts);
 
     // Content-level dedupe: identical outgoing content within the window is
     // skipped (no send call). Logged, silent in the room. `dedupe: false`
@@ -489,12 +436,14 @@ export class MessageHandler {
   }
 
   /**
-   * Get message prefix based on type
+   * Get message prefix based on type. classify.ts rebuilds these strings for
+   * the dedupe key and the sibling-session guard, so the icon defaults come
+   * from DEFAULT_OUTGOING_ICONS.
    */
   private getMessagePrefix(type: PiMessageType): string {
     switch (type) {
       case 'milestone':
-        return `${this.opts.milestoneIcon ?? '🎯'} Milestone: `;
+        return `${this.opts.milestoneIcon ?? DEFAULT_OUTGOING_ICONS.milestone} Milestone: `;
       case 'question':
         return '❔ Question: ';
       case 'status':
@@ -506,7 +455,7 @@ export class MessageHandler {
       case 'final':
         return '💬 Pi: ';
       case 'user':
-        return `${this.opts.userMessageIcon ?? '🧑'} User: `;
+        return `${this.opts.userMessageIcon ?? DEFAULT_OUTGOING_ICONS.user} User: `;
       default:
         return '🤖 Pi: ';
     }
