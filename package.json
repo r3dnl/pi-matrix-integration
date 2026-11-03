@@ -37,10 +37,10 @@
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
     "@earendil-works/pi-tui": "*",
-    "typebox": "*",
     "@juicesharp/rpiv-voice": "*",
     "@tintinweb/pi-subagents": "*",
-    "pi-subagents": "*"
+    "pi-subagents": "*",
+    "typebox": "*"
   },
   "peerDependenciesMeta": {
     "@earendil-works/pi-coding-agent": {
@@ -97,6 +97,7 @@
     "@types/node": "^26.6.6",
     "@types/qrcode": "^1.5.6",
     "eslint": "^10.14.0",
+    "jiti": "^2.7.0",
     "typebox": "^1.4.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.1"
