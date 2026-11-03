@@ -5,7 +5,7 @@
  * manages its set/clear lifecycle.
  *
  * Layout:
- *   `[💬 (env) user:domain/#room 🧵 on]`
+ *   `[💬 user:domain/#room 🧵 on]`
  *
  *   💬 = connected, ✗ = down, … = connecting.
  *
