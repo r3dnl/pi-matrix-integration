@@ -41,10 +41,10 @@ fs.writeFileSync(
   readFixture,
   JSON.stringify(
     [
-      { eventId: "$r1", sender: "@vincent:matrix.example.org", body: "", timestamp: 1700000000000 + 4000, reactionKey: "👍\uFE0F", parentEventId: "$tgt" },
+      { eventId: "$r1", sender: "@vincent:test.example.org", body: "", timestamp: 1700000000000 + 4000, reactionKey: "👍\uFE0F", parentEventId: "$tgt" },
       { eventId: "$m1", sender: config.userId, body: "self message", timestamp: 1700000000000 + 4100, isFromPi: true },
-      { eventId: "$t1", sender: "@vincent:matrix.example.org", body: "root", timestamp: 1700000000000 + 4300, isThreadRoot: true },
-      { eventId: "$t2", sender: "@vincent:matrix.example.org", body: "reply", timestamp: 1700000000000 + 4400, threadRoot: "$t1" },
+      { eventId: "$t1", sender: "@vincent:test.example.org", body: "root", timestamp: 1700000000000 + 4300, isThreadRoot: true },
+      { eventId: "$t2", sender: "@vincent:test.example.org", body: "reply", timestamp: 1700000000000 + 4400, threadRoot: "$t1" },
     ],
     null,
     1,
@@ -730,7 +730,7 @@ const writePhase0 = (obj) => {
 }
 
 // 7) unknown-key guard still catches csSelfUserId (never in the schema), and
-//    the prd2-shaped config no longer carries it.
+//    the production-shaped config no longer carries it.
 {
   const p = writePhase0({ userId: "@pi_user:matrix.example.org", homeserver: "matrix.example.org", csSelfUserId: "@pi_user:matrix.example.org" });
   const warns = [];
@@ -1285,8 +1285,8 @@ check(
   "isAgentHelp: mention of the agent + help is agent-directed",
   isAgentHelp("@pi_agent help", AGENT) &&
     isAgentHelp("@pi_agent: help", AGENT) &&
-    isAgentHelp("@pi_agent:matrix.example.org help", AGENT) &&
-    isAgentHelp("@pi_agent:matrix.example.org: help", AGENT),
+    isAgentHelp("@pi_agent:test.example.org help", AGENT) &&
+    isAgentHelp("@pi_agent:test.example.org: help", AGENT),
   "@pi_agent[...] help variants -> true",
 );
 check(

@@ -2,7 +2,7 @@
  * Project-provisioning test: per-project credentials under
  * ~/.config/mtx/projects/<project>/ (the flat ~/.config/mtx/accounts/ is the
  * pre-per-project default). Verifies:
- *   1. getProjectName() slugs the cwd (example.org→r3d-nl, Strata→strata) and
+ *   1. getProjectName() slugs the cwd (example.org→example-org, Strata→strata) and
  *      honours the PI_MATRIX_PROJECT override.
  *   2. getProjectCredentialsPath() emits the per-project `~`-form path.
  *   3. ensureProjectConfig() creates the project-local config seeded with the
@@ -41,7 +41,7 @@ function chdirTo(name) {
 
 // ---- 1. getProjectName ---------------------------------------------------
 chdirTo("example.org");
-check("slug: example.org → r3d-nl", cfg.getProjectName() === "r3d-nl", `got ${cfg.getProjectName()}`);
+check("slug: example.org → example-org", cfg.getProjectName() === "example-org", `got ${cfg.getProjectName()}`);
 chdirTo("Strata");
 check("slug: Strata → strata", cfg.getProjectName() === "strata", `got ${cfg.getProjectName()}`);
 process.env.PI_MATRIX_PROJECT = "tennisplanner";
@@ -56,8 +56,8 @@ delete process.env.PI_MATRIX_PROJECT;
 chdirTo("example.org");
 const credPath = cfg.getProjectCredentialsPath();
 check(
-  "path shape: projects/r3d-nl/accounts/<leaf>/credentials.json",
-  credPath.startsWith("~/.config/mtx/projects/r3d-nl/accounts/") &&
+  "path shape: projects/example-org/accounts/<leaf>/credentials.json",
+  credPath.startsWith("~/.config/mtx/projects/example-org/accounts/") &&
     credPath.endsWith("/credentials.json"),
   `got ${credPath}`,
 );

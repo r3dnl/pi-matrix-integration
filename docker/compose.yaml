@@ -12,11 +12,19 @@ services:
         PI_VERSION: ${PI_VERSION:-1.5.0}
     volumes:
       - ../:/workspace:ro
+      # scenario evidence lands here: the harness copies the repo into
+      # ~/work, and the live tier writes artifacts/live-<run-id>/ there.
+      # This mount brings the evidence out of the ephemeral container for
+      # `make e2e` and the nightly upload step.
+      - ../artifacts:/home/node/work/artifacts
     environment:
       SOURCE: ${SOURCE:-tarball}
       PI_MATRIX_HOMESERVER: ${PI_MATRIX_HOMESERVER:-}
       PI_MATRIX_USERNAME: ${PI_MATRIX_USERNAME:-}
       PI_MATRIX_PASSWORD: ${PI_MATRIX_PASSWORD:-}
+      PI_MATRIX_SECOND_TOKEN: ${PI_MATRIX_SECOND_TOKEN:-}
+      PI_MATRIX_SECOND_USER: ${PI_MATRIX_SECOND_USER:-}
+      PI_MATRIX_SECOND_PASSWORD: ${PI_MATRIX_SECOND_PASSWORD:-}
 
   # Same image, no network at all: stricter than "only the homeserver
   # reachable", and it proves the offline tier is really offline. The host

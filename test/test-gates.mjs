@@ -43,7 +43,7 @@ process.env.PI_MATRIX_THREADS = "false";
 const fakeCreds = path.join(tmp, "credentials.json");
 fs.writeFileSync(
   fakeCreds,
-  JSON.stringify({ user_id: "@pi_agent:matrix.example.org", homeserver: "matrix.example.org" }, null, 2),
+  JSON.stringify({ user_id: "@pi_agent:test.example.org", homeserver: "test.example.org" }, null, 2),
 );
 process.env.PI_MATRIX_CREDENTIALS_PATH = fakeCreds;
 process.env.PI_MATRIX_LOG_PATH = path.join(tmp, "gates-matrix.log");
@@ -140,7 +140,7 @@ let evtSeq = 0;
 function addRoomEvent(stateDir, body) {
   getActiveOutbox().pushRoomEvent({
     eventId: `$evt-X${++evtSeq}-${Date.now()}`,
-    sender: "@vincent:matrix.example.org",
+    sender: "@vincent:test.example.org",
     timestamp: Date.now(),
     body,
     isFromPi: false,

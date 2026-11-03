@@ -34,7 +34,8 @@ Two gates are being added in this release and are not wired yet: a strict typech
 |---------|--------------|---------------|----------------|
 | `npm test` | no | no | units and the full cycle against `test/fake-outbox.mjs` — milestone out, message in, question mirror reply, thread summary write (`test/e2e-stub-cycle.mjs`). Budget: under 120 s wall time; the runner fails the tier past it |
 | `npm run test:logic` | no | no | the deep behavioural suite, split by subsystem: `test/logic/00-core` (funnel, config, attach), `01-threading`, `02-transport-footer`, `03-sdk-crypto` |
-| `npm run test:live` | yes | yes | real homeserver, real model, real room state assertions. `PI_MATRIX_HOMESERVER`, `PI_MATRIX_USERNAME`, `PI_MATRIX_PASSWORD` from the environment only — missing ones fail the run by name |
+| `npm run test:live` | yes | yes | the 13 named scenarios in `test/live/scenarios.mjs` against a real homeserver, asserting on room state fetched over the client-server API (never internal variables). `PI_MATRIX_HOMESERVER`, `PI_MATRIX_USERNAME`, `PI_MATRIX_PASSWORD` from the environment only — missing ones fail the run by name — plus a second room actor: `PI_MATRIX_SECOND_TOKEN`, or `PI_MATRIX_SECOND_USER` + `PI_MATRIX_SECOND_PASSWORD` |
+| `npm run test:live:judge` | yes | yes | per-release LLM judge on the thread-summary the scenario run rewrote into the thread root; verdict saved next to the run evidence, not part of any gate |
 | `npm run test:perf` | yes | yes | latency and context-size budgets; lands with the performance stories and fails loudly until then |
 | `npm run test:repro` | varies | varies | a single bug reproduction, not part of any gate |
 
@@ -52,8 +53,20 @@ The live scripts read the homeserver and the agent's credentials from the enviro
 export PI_MATRIX_HOMESERVER=https://matrix.example.org
 export PI_MATRIX_USERNAME=pi_agent
 export PI_MATRIX_PASSWORD='<from your secret store>'
+# the scenarios need a second actor — "the human" who posts into the room:
+export PI_MATRIX_SECOND_TOKEN='<access token>'            # either this, or
+export PI_MATRIX_SECOND_USER=you
+export PI_MATRIX_SECOND_PASSWORD='<from your secret store>'
 npm run test:live
 ```
+
+The scenario suite creates one fresh room per run, drives the real extension
+seams, and writes per-scenario evidence to `artifacts/live-<run-id>/` (the
+docker harness captures it; the live-nightly workflow uploads it). Once per
+release, judge the summary quality too: point `PI_MATRIX_JUDGE_BASE_URL` /
+`PI_MATRIX_JUDGE_MODEL` at any OpenAI-compatible server and run
+`npm run test:live:judge`. The human confirmation pass for each scenario is
+`test/live/README.md`.
 
 A test homeserver that only speaks `http://` on a non-local address needs
 an explicit opt-in as well: `PI_MATRIX_ALLOW_INSECURE_HTTP=1`. Without it

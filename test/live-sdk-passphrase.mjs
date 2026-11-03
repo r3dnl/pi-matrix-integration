@@ -14,24 +14,32 @@ import { createPiJiti, EXT_DIR, requireLiveEnv } from "./_harness.mjs";
 
 requireLiveEnv();
 
+/**
+ * The live account the environment names: homeserver + username from
+ * PI_MATRIX_*, identity read from the credentials file /matrix-login writes
+ * for that server, room from PI_MATRIX_ROOM (default #pi-updates).
+ */
+function liveAccountFromEnv() {
+  const homeserver = process.env.PI_MATRIX_HOMESERVER;
+  const domain = new URL(homeserver).host;
+  const credentialsPath = path.join(process.env.HOME, ".config", "mtx", "accounts", `${process.env.PI_MATRIX_USERNAME}--${domain}`, "credentials.json");
+  const userId = JSON.parse(fs.readFileSync(credentialsPath, "utf-8")).user_id;
+  const room = process.env.PI_MATRIX_ROOM ?? "#pi-updates";
+  return { homeserver, userId, roomId: room.includes(":") ? room : `${room}:${domain}`, credentialsPath };
+}
+
 const jiti = await createPiJiti(import.meta.url);
 const { SdkOutbox } = await jiti.import(path.join(EXT_DIR, "src/sdk-client.ts"));
 
 const storeDir = process.argv[2] ?? path.join(os.tmpdir(), "pi-sdk-pw-smoke");
 const goodPass = process.argv[3] ?? "pw-smoke-test";
 const logger = { info: () => {}, warn: (...a) => console.warn("[pw][warn]", ...a), error: () => {}, debug: () => {} };
+const envCreds = liveAccountFromEnv();
 const base = {
-  homeserver: "matrix.example.org",
-  userId: "@pi-agent:matrix.example.org",
-  roomId: "#pi-updates:matrix.example.org",
-  credentialsPath: path.join(
-    process.env.HOME,
-    ".config",
-    "mtx",
-    "accounts",
-    "pi_agent--matrix.example.org",
-    "credentials.json",
-  ),
+  homeserver: envCreds.homeserver,
+  userId: envCreds.userId,
+  roomId: envCreds.roomId,
+  credentialsPath: envCreds.credentialsPath,
   e2ee: "on",
   cryptoStoreDir: storeDir,
   syncTimeoutMs: 60000,

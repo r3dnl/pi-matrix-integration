@@ -14,8 +14,8 @@
  *                        whole offline tier (npm test) with npm forced to
  *                        its cache. Proves the offline tier is offline.
  *
- * The scenario suite it runs is the live tier; story 13 replaces the
- * single live-check run with the named scenario scripts.
+ * The scenario suite it runs is the live tier: the 13 named scenarios in
+ * test/live/scenarios.mjs (story 13), asserting on fetched room state.
  */
 import fs from "node:fs";
 import os from "node:os";

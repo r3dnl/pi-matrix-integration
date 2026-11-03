@@ -132,7 +132,7 @@ console.log("== footer: matrix URI + thread indicator ==");
   check(
     "user/domain/room each carry their own ANSI color",
     withUser?.includes("\u001b[36mpi_agent\u001b[39m") === true &&
-      withUser?.includes("\u001b[38;5;matrix.example.org\u001b[39m") === true &&
+      withUser?.includes("\u001b[38;5;208mmatrix.example.org\u001b[39m") === true &&
       withUser?.includes("\u001b[32m#pi-updates\u001b[39m") === true,
     JSON.stringify(withUser),
   );

@@ -351,7 +351,7 @@ Three test tiers, declared in `package.json`:
 | Command | What it is |
 |---------|------------|
 | `npm test` | the offline tier — deterministic units and the full conversation cycle against a fake outbox, no homeserver, no network, under a 120-second budget. This is the gate on every push |
-| `npm run test:live` | a real homeserver and room; needs `PI_MATRIX_HOMESERVER`, `PI_MATRIX_USERNAME`, `PI_MATRIX_PASSWORD` and refuses to run without them |
+| `npm run test:live` | the 13 named live scenarios against a real homeserver, asserting on room state fetched over the client-server API; needs `PI_MATRIX_HOMESERVER`, `PI_MATRIX_USERNAME`, `PI_MATRIX_PASSWORD` plus a second room actor (see Developing) and refuses to run without them |
 | `npm run test:perf` | latency and context-size budgets; reserved for the performance work and fails loudly until it lands |
 
 - [Developing](docs/dev/developing.md) — setup, the loop, the test tiers, releasing
