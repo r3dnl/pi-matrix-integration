@@ -32,9 +32,10 @@ Two gates are being added in this release and are not wired yet: a strict typech
 
 | Command | Needs network | Needs a model | What it proves |
 |---------|--------------|---------------|----------------|
-| `npm test` | no | no | units and the full send/receive cycle against `test/fake-outbox.mjs` |
-| `npm run test:logic` | no | no | the deep behavioural suite: threading, outbox, config, question mirror |
-| `npm run test:live` | yes | yes | real homeserver, real model, real room state assertions |
+| `npm test` | no | no | units and the full cycle against `test/fake-outbox.mjs` — milestone out, message in, question mirror reply, thread summary write (`test/e2e-stub-cycle.mjs`). Budget: under 120 s wall time; the runner fails the tier past it |
+| `npm run test:logic` | no | no | the deep behavioural suite, split by subsystem: `test/logic/00-core` (funnel, config, attach), `01-threading`, `02-transport-footer`, `03-sdk-crypto` |
+| `npm run test:live` | yes | yes | real homeserver, real model, real room state assertions. `PI_MATRIX_HOMESERVER`, `PI_MATRIX_USERNAME`, `PI_MATRIX_PASSWORD` from the environment only — missing ones fail the run by name |
+| `npm run test:perf` | yes | yes | latency and context-size budgets; lands with the performance stories and fails loudly until then |
 | `npm run test:repro` | varies | varies | a single bug reproduction, not part of any gate |
 
 The tiers are a policy, not a preference: deterministic checks belong in the offline tier because they have to run on every push and must never be flaky. Anything that reads the room belongs in `test:live`, and `test:live` must assert on what actually landed in the room — fetched over the client-server API — not on internal variables. An assertion on internal state can pass while the room shows nothing, and that has already happened once here.

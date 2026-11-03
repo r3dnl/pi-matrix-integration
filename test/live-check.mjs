@@ -17,7 +17,7 @@
  */
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { createPiJiti, EXT_DIR } from "./_harness.mjs";
+import { createPiJiti, EXT_DIR, requireLiveEnv } from "./_harness.mjs";
 
 const pexecFile = promisify(execFile);
 
@@ -32,12 +32,13 @@ function check(name, cond, extra = "") {
 }
 
 const jiti = await createPiJiti(import.meta.url);
-const { getValidConfig } = await jiti.import(`${EXT_DIR}/src/config.ts`);
+const { resolveStartupConfig } = await jiti.import(`${EXT_DIR}/src/config.ts`);
 const { createSdkOutbox } = await jiti.import(`${EXT_DIR}/src/sdk-client.ts`);
 const { createMessageHandler } = await jiti.import(`${EXT_DIR}/src/message-handler.ts`);
 
 // ---- load the real config the extension would load --------------------------
-const { config, valid, errors } = getValidConfig();
+requireLiveEnv();
+const { config, valid, errors } = resolveStartupConfig();
 check("real config is valid", valid === true, JSON.stringify(errors));
 console.log(`  config: user=${config.userId} room=${config.roomId} server=${config.homeserver}`);
 

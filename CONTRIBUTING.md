@@ -19,7 +19,7 @@ extension, not a standalone app.
 node tools/scan-secrets.mjs          # credential scan; --self-check proves it bites
 npm run typecheck                    # strict TypeScript, noEmit
 npm run lint                         # ESLint, minimal agreed baseline
-npm test                             # offline unit + stubbed e2e tier (23 suites)
+npm test                             # offline unit + stubbed e2e tier (29 suites, < 120 s)
 node test/docs-consistency.mjs       # docs links, surface and identifier checks
 ```
 
@@ -29,9 +29,10 @@ Everything above runs offline; CI is green when all of it is green.
 
 | Command | Proves |
 | --- | --- |
-| `npm test` | offline units plus the full send/receive cycle against the fake outbox — the gate on every push |
-| `npm run test:logic` | the deep behavioural suite: threading, outbox, config, question mirror |
+| `npm test` | offline units plus the full cycle against the fake outbox — the gate on every push, under a 120-second budget |
+| `npm run test:logic` | the deep behavioural suite, split by subsystem under `test/logic/` |
 | `npm run test:live` | a real homeserver, a real model, assertions on what actually landed in the room |
+| `npm run test:perf` | latency and context-size budgets; reserved until the performance stories land |
 
 The live tier reads `PI_MATRIX_HOMESERVER`, `PI_MATRIX_USERNAME` and
 `PI_MATRIX_PASSWORD` from the environment and refuses to run without them.

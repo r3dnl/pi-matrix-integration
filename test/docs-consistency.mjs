@@ -213,6 +213,9 @@ for (const file of OUR_SOURCE) {
   for (const f of walk('src').filter(f => f.endsWith('.ts'))) {
     for (const m of fs.readFileSync(path.join(ROOT, f), 'utf8').matchAll(/process\.env\.(PI_MATRIX_[A-Z0-9_]+)/g)) envMap.add(m[1])
   }
+  // the live-tier guard names its required variables in a literal list and
+  // reads them dynamically — those literals are reads
+  for (const m of fs.readFileSync(path.join(ROOT, 'test/_harness.mjs'), 'utf8').matchAll(/"(PI_MATRIX_[A-Z0-9_]+)"/g)) envMap.add(m[1])
   // test seams and developer-facing keys are documented under docs/dev, not
   // in the user configuration reference
   const devDocs = walk('docs/dev').filter(f => f.endsWith('.md'))
