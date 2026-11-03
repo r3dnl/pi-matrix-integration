@@ -444,14 +444,6 @@ export class MessageHandler {
     switch (type) {
       case 'milestone':
         return `${this.opts.milestoneIcon ?? DEFAULT_OUTGOING_ICONS.milestone} Milestone: `;
-      case 'question':
-        return '❔ Question: ';
-      case 'status':
-        return '📊 Status: ';
-      case 'todo':
-        return '📋 TODO: ';
-      case 'error':
-        return '❌ Error: ';
       case 'final':
         return '💬 Pi: ';
       case 'user':

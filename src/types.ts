@@ -455,7 +455,10 @@ export type ConnectionStatus = {
 // Pi Message Types
 // ============================================================================
 
-export type PiMessageType = 'milestone' | 'question' | 'response' | 'status' | 'todo' | 'error' | 'final' | 'user';
+/** The kinds this package produces. `response` is an incoming room chat
+ *  message; the `user` kind is pi's OUTGOING user broadcast (`getMessagePrefix`
+ *  renders it "🧑 User: "). */
+export type PiMessageType = 'milestone' | 'response' | 'final' | 'user';
 
 export interface PiMessage {
   type: PiMessageType;
@@ -478,7 +481,6 @@ export interface MatrixMessageDetails {
   eventId?: string;
   timestamp?: number;
   roomId?: string;
-  type?: PiMessageType;
   // Thread metadata carried through for bookkeeping (threads-and-summaries.md — no routing
   // effect: one Pi session per instance).
   threadRoot?: string;

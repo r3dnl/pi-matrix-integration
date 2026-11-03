@@ -80,7 +80,6 @@ export class SessionIntegrator {
       eventId: matrixMessage.eventId,
       timestamp: matrixMessage.timestamp,
       roomId: matrixMessage.roomId,
-      type: piMessage.type,
       // Bookkeeping on the injected payload (threads-and-summaries.md): which
       // thread this message belongs to, kept with the message identity. No
       // routing effect, and nothing in this package reads it back — the thread
