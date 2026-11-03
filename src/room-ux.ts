@@ -97,17 +97,17 @@ export class RoomUx {
   handleArtifactAttach(matrixMessage: MatrixMessage): boolean {
     if (!this.deps.cfg.fileAttach || matrixMessage.isFromPi) return false;
     const aBody = (matrixMessage.body ?? "").trim();
-    const http = this.deps.outbox;
+    const outbox = this.deps.outbox;
     // When the request came from a thread, the auto-replies ride that
     // thread (the `m.relates_to` reply relation); otherwise flat room
     // (the pipeline post).
     const threadRoot = matrixMessage.threadRoot;
-    // `http?.available()` instead of `http.available()`: the plain call threw a
+    // `outbox?.available()` instead of `outbox.available()`: the plain call threw a
     // TypeError on the no-outbox path, before the note could display. The
     // optional chain is what makes the guard live.
     const note = (message: string) => {
-      if (threadRoot && http?.available()) {
-        http.postThreadReply(message, threadRoot).catch((error: unknown) => {
+      if (threadRoot && outbox?.available()) {
+        outbox.postThreadReply(message, threadRoot).catch((error: unknown) => {
           this.deps.logger.warn(`[matrix] artifact reply failed: ${error}`);
         });
         return;
@@ -132,7 +132,7 @@ export class RoomUx {
         note(`@@${relPath} is ${data.length} bytes, over the ${cap}-byte attach cap`);
         return;
       }
-      void http
+      void outbox
         .sendFile(
           basename(relPath),
           data,
@@ -148,7 +148,7 @@ export class RoomUx {
     // list posted in this session (the artifact picker).
     const picked = this.picker.artifact.resolveReply(aBody);
     if (picked) {
-      if (!http?.available()) note("File attachments need a live Matrix connection (the transport is the sdk outbox; check the connection status / credentials).");
+      if (!outbox?.available()) note("File attachments need a live Matrix connection (the transport is the sdk outbox; check the connection status / credentials).");
       else uploadArtifact(picked);
       return true;
     }
@@ -168,7 +168,7 @@ export class RoomUx {
       // non-artifact file still lands in the "no matches" nudge, as before.
       if (matches.length === 1 && matches[0] === fragment) {
         this.picker.artifact.post(matches);
-        if (http?.available()) uploadArtifact(matches[0]);
+        if (outbox?.available()) uploadArtifact(matches[0]);
         else unavailable();
         return true;
       }
