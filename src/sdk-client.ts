@@ -57,9 +57,15 @@ type SdkMatrixEvent = InstanceType<SdkModule["MatrixEvent"]>;
 type SdkRoom = InstanceType<SdkModule["Room"]>;
 type SdkSyncState = SdkModule["SyncState"];
 
-/** MSC1767 thread marker (the shape the homeserver retained live, kept
- *  identical across rewrites so events written before and after render the
- *  same). */
+/** Marks a thread root. This package writes it and reads it back:
+ *  `extractThreadMeta` (src/thread-meta.ts) sets `isThreadRoot` from its
+ *  presence, the unread model keys a new conversation on it
+ *  (src/unread-model.ts:113), and the summarizer keeps the root event inside
+ *  its own thread delta with it (src/summarize.ts:51). The name is historical
+ *  (MSC1767). Threads themselves ride `m.relates_to`, and spec-following
+ *  clients such as Element do not write this field — so a root that was
+ *  started elsewhere is not detected as a root here. Deleting the write means
+ *  giving those two read paths another way to recognise a root. */
 const THREAD_MARKER = { "m.topological_ordering": 1, "m.message_count": 1 };
 
 /** The js-sdk default `initialSyncLimit` (10) backfills too few events
