@@ -15,7 +15,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import type { OutboxResult } from "./outbox.js";
+import type { Outbox, OutboxResult } from "./outbox.js";
 import type { MatrixLogger } from "./logger.js";
 import { createConsoleLogger } from "./logger.js";
 import { filterThreadDelta, type ThreadDeltaMessage } from "./summarize.js";
@@ -76,17 +76,15 @@ export type SessionStartReason = "startup" | "reload" | "new" | "resume" | "fork
  * to the MessageHandler pipeline (format + dedupe live there; markdown.ts
  * is the single formatter). The manager holds no transport reference —
  * writes soft-fail (`{ success: false }`) when the delegate is absent.
- * Structurally a subset of the Outbox seam; the production delegate routes
+ * The five Outbox ops the manager calls, named on the seam so the
+ * signatures cannot drift: the production delegate routes
  * `postThread*`/`editMessage` through the handler, and `setRoomTopic` /
  * `readTimeline` straight at the seam.
  */
-export interface ThreadSend {
-  postThreadRoot(body: string, html?: string): Promise<OutboxResult>;
-  postThreadReply(body: string, rootId: string, nestedRoot?: boolean, html?: string): Promise<OutboxResult>;
-  editMessage(targetEventId: string, text: string, opts?: { threadRoot?: boolean; html?: string }): Promise<OutboxResult>;
-  setRoomTopic(topic: string): Promise<OutboxResult>;
-  readTimeline(limit?: number): Promise<{ success: boolean; messages: ThreadDeltaMessage[]; error?: string }>;
-}
+export type ThreadSend = Pick<
+  Outbox,
+  "postThreadRoot" | "postThreadReply" | "editMessage" | "setRoomTopic" | "readTimeline"
+>;
 
 export interface ThreadManagerOptions {
   /** `config.threads` master gate. */
