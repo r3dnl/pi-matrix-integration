@@ -48,7 +48,7 @@ function append(logPath: string, level: string, message: string, fallback: (line
 
 /** Create a file-backed logger. `logPath` must already be home-expanded. */
 export function createMatrixLogger(logPath: string, logLevel?: string): MatrixLogger {
-  const target = logPath || '~/.pi/logs/pi-matrix.log';
+  const target = logPath || '.pi/matrix/logs/pi-matrix.log';
   const level = logLevel?.toLowerCase();
   return {
     debug: (m) => append(target, 'debug', m, console.debug, level),
