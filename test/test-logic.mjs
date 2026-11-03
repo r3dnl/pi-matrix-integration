@@ -3627,7 +3627,7 @@ console.log("== thread-meta (shared helper, §3.3) ==");
 
 console.log("== machine-traffic guard (sibling session broadcasts) ==");
 {
-  const { isPiMachineTraffic } = await jiti.import(path.join(EXT_DIR, "src/message-handler.ts"));
+  const { isPiMachineTraffic } = await jiti.import(path.join(EXT_DIR, "src/classify.ts"));
   check("final broadcast prefix drops", isPiMachineTraffic("💬 Pi: hello") === true, "");
   check("milestone prefix drops", isPiMachineTraffic("🎯 Milestone: Pi session started") === true, "");
   check("user broadcast prefix drops", isPiMachineTraffic("🧑 User: how was it fixed?") === true, "");
@@ -3635,6 +3635,14 @@ console.log("== machine-traffic guard (sibling session broadcasts) ==");
   check("decision post drops", isPiMachineTraffic("🤖 Pi decision (RPIV) — 1 question.") === true, "");
   check("genuine human chat passes", isPiMachineTraffic("how was it fixed?") === false, "");
   check("empty body passes", isPiMachineTraffic("") === false, "");
+  // A configured icon must not disarm the guard (finding 7): the operator
+  // sends "✅ Milestone: …", the sibling's body opens with it, and a miss
+  // would inject it as a prompt.
+  const icons = { milestoneIcon: "✅", userMessageIcon: "🙋", threadIcon: "🧶" };
+  check("custom milestone icon drops", isPiMachineTraffic("✅ Milestone: done", icons) === true, "");
+  check("custom user icon drops", isPiMachineTraffic("🙋 User: hello", icons) === true, "");
+  check("custom thread icon drops", isPiMachineTraffic("🧶 New Conversation: t", icons) === true, "");
+  check("default icon still drops with custom config", isPiMachineTraffic("🎯 Milestone: done", icons) === true, "");
 }
 
 // The matrix-http poll gate region (watermark / D1 / degrade / shadow-diff-

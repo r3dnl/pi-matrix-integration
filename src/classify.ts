@@ -4,8 +4,9 @@
  *
  * Module-level pure functions per the "constants → module, state → class"
  * rule: message → milestone/TODO extraction, Pi message text joining +
- * truncation, Matrix-id localpart, sub-agent name/role detection. No
- * state, no I/O.
+ * truncation, Matrix-id localpart, sub-agent name/role detection, the pi
+ * broadcast prefixes behind the dedupe key and the sibling-session guard.
+ * No state, no I/O.
  */
 
 /** "@user:domain" → "user" (plain IDs pass through) */
@@ -235,4 +236,95 @@ export const SUMMARIZE_DIRECTIVE_KIND = "summarize";
 export function isSummarizeDirectiveNotice(message: unknown): boolean {
   const msg = message as { customType?: unknown; details?: { kind?: unknown } } | undefined;
   return msg?.customType === MATRIX_DIRECTIVE_CUSTOM_TYPE && msg?.details?.kind === SUMMARIZE_DIRECTIVE_KIND;
+}
+
+// ===========================================================================
+// Pi broadcast prefixes (the dedupe key + the sibling-session guard)
+// ===========================================================================
+
+/** The icons pi writes into its outgoing prefixes. These values are the
+ *  icon defaults in config-utils.ts `DEFAULT_CONFIG`. */
+export const DEFAULT_OUTGOING_ICONS = { milestone: "🎯", user: "🧑", thread: "🧵" };
+
+/** The icons a pi broadcast can open with, resolved. See `iconChoices`. */
+export interface OutgoingIcons {
+  milestoneIcon?: string;
+  userMessageIcon?: string;
+  threadIcon?: string;
+}
+
+/** Both spellings of one icon: the configured one plus the default. Two pi
+ *  sessions sharing a room can be configured differently, and each one's
+ *  broadcast has to be recognised by the other. */
+function iconChoices(configured: string | undefined, fallback: string): string[] {
+  return configured === undefined || configured === fallback ? [fallback] : [configured, fallback];
+}
+
+/** Every prefix a pi broadcast can open with, plus the bare marker words the
+ *  heuristics strip ("Milestone: ", "TODO progress: "). Stripping them makes
+ *  "🎯 Milestone: X" (sent at message_end) collide with the same line
+ *  re-embedded in "💬 Pi: X" (the final broadcast) — the duplication pair this
+ *  window exists for. MessageHandler.getMessagePrefix posts these strings, so
+ *  they are built from the configured icons: a custom icon must not silently
+ *  disarm the dedupe key or the guard. */
+function outgoingPrefixes(icons: OutgoingIcons): string[] {
+  const configurable: string[] = [];
+  for (const icon of iconChoices(icons.milestoneIcon, DEFAULT_OUTGOING_ICONS.milestone)) {
+    configurable.push(`${icon} Milestone: `);
+  }
+  for (const icon of iconChoices(icons.userMessageIcon, DEFAULT_OUTGOING_ICONS.user)) {
+    configurable.push(`${icon} User: `);
+  }
+  return [
+    ...configurable,
+    "💬 Pi: ",
+    "📋 TODO: ",
+    "📊 Status: ",
+    "❔ Question: ",
+    "❌ Error: ",
+    "🤖 Pi: ",
+    "Milestone: ",
+    "TODO progress: ",
+  ];
+}
+
+/** Collapse whitespace and strip outgoing prefixes — the dedupe key. */
+export function normalizeDedupeKey(text: string, icons: OutgoingIcons = {}): string {
+  let key = text.replace(/\s+/g, ' ').trim();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const prefix of outgoingPrefixes(icons)) {
+      if (key.startsWith(prefix)) {
+        key = key.slice(prefix.length).trimStart();
+        changed = true;
+        break;
+      }
+    }
+  }
+  return key;
+}
+
+/** The dedupe prefixes plus the thread root and decision-post markers. An
+ *  INBOUND body opening with one of these is pi's own broadcast or a SIBLING
+ *  pi session's (shared account: the sender match cannot tell them apart —
+ *  everything surviving the send-record guards arrives isFromPi=false), and it
+ *  must never become a prompt in this session. */
+function machineTrafficPrefixes(icons: OutgoingIcons): string[] {
+  const rootLabels = iconChoices(icons.threadIcon, DEFAULT_OUTGOING_ICONS.thread).map(
+    (icon) => `${icon} New Conversation`,
+  );
+  return [
+    ...outgoingPrefixes(icons),
+    // The root label ThreadManager `postThreadRoot` posts, icon included.
+    ...rootLabels,
+    "🤖 Pi decision",
+  ];
+}
+
+/** True when `body` opens with a pi machine-traffic prefix. */
+export function isPiMachineTraffic(body: string, icons: OutgoingIcons = {}): boolean {
+  const text = (body ?? "").trimStart();
+  if (text.length === 0) return false;
+  return machineTrafficPrefixes(icons).some((prefix) => text.startsWith(prefix));
 }
