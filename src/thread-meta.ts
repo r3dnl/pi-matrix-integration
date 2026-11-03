@@ -6,7 +6,7 @@
  * root/reply is").
  *
  * That divergence guard still holds trivially: the mtx and matrix-http
- * poll transports are gone  and the one remaining transport
+ * poll transports are gone, and the one remaining transport
  * — the SdkOutbox sync pipeline — normalizes every raw timeline event
  * through `parseMatrixEvent` (this file), so the whole inbound stream
  * (including `m.reaction`) shares one definition of root/reply/flat and

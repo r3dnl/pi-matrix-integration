@@ -769,7 +769,7 @@ export class ThreadManager {
     return this.opts.sessionHint ? `\`${this.opts.sessionHint}\`` : "";
   }
 
-  /** Heuristic root text  — zero LLM cost, plain English, no timestamp. */
+  /** Heuristic root text — zero LLM cost, plain English, no timestamp. */
   composeSummary(root?: ThreadRootState): string {
     const r = root ?? this.activeRoot();
     const icon = this.opts.threadIcon ?? "🧵";

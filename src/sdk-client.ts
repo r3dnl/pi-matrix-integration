@@ -10,10 +10,9 @@
  *   per server; no hand-rolled HTTP.
  * - **Reads**: `client.startClient()`'s long-poll sync delivers
  *   `Room.timeline` events; they are normalized through the shared
- *   `parseMatrixEvent` (the same pipeline the poller feeds) —
+ *   `parseMatrixEvent` (the one pipeline every inbound event takes) —
  *   thread metadata, reactions, `isFromPi` marking — and the initial
- *   sync's backfill is the seed round (baselined, never emitted, the
- *   poller's seed rule).
+ *   sync's backfill is the seed round (baselined, never emitted).
  * - **Attachments**: MSC4125 sender-side encryption (`matrix-encrypt-
  *   attachment`, AES-256-CTR v2) so VectorIM Element Web's
  *   `isEncrypted === !!content.file` bug no longer breaks `@@` opens.
@@ -924,9 +923,9 @@ export class SdkOutbox implements Outbox {
   /**
    * Start sync-based delivery: `Room.timeline` events for the configured
    * room, normalized through the shared `parseMatrixEvent` and fed to
-   * the same callbacks the poll loop feeds. The initial sync's backfill
-   * is the seed round (baselined, never emitted — the poller's seed
-   * semantics); live events emit. Idempotent.
+   * `SdkDeliveryCallbacks` the rest of the code already consumes. The
+   * initial sync's backfill is the seed round (baselined, never emitted);
+   * live events emit. Idempotent.
    */
   startDelivery(callbacks: SdkDeliveryCallbacks): void {
     if (this.deliveryStarted || this.client === null) return;

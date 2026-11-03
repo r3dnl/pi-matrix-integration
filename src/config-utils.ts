@@ -989,7 +989,7 @@ export function validateConfig(config: MatrixConfig): { valid: boolean; errors: 
     if (sa.postMode !== undefined && sa.postMode !== 'turn-end' && sa.postMode !== 'all') {
       errors.push(`subagents.postMode must be "turn-end" or "all" (got ${JSON.stringify(sa.postMode)})`);
     }
-    // Provider dialect binding  — an env
+    // Provider dialect binding — an env
     // alias arrives untyped, so this is its only gate.
     if (
       sa.provider !== undefined &&

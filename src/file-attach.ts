@@ -234,7 +234,7 @@ export class CandidateListTracker {
 
 /**
  * Both protocol pickers in one object (configuration-and-room-behaviour.md): the
- * "@" file-attach picker  and the "@@" artifact-attach picker
+ * "@" file-attach picker and the "@@" artifact-attach picker
  * . The "never share a posted list" invariant is now a type-level
  * fact — each protocol owns a distinct tracker instance; no shared
  * mutable state. The polls-based picker tag (configuration-and-room-behaviour.md open question)

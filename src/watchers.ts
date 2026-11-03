@@ -29,7 +29,7 @@ import type { AgentSpawnInput } from "./subagent-bus.js";
 import type { SpawnWatch } from "./subagent-provider.js";
 
 /** The core Agent-tool delegate (wired by the composition root). Inputs are
- *  provider-normalized by the watcher  — the
+ *  provider-normalized by the watcher — the
  *  delegate only ever sees the bus's `AgentSpawnInput` shape. */
 export interface CoreAgentDelegate {
   /** An agent-spawn tool_call in THIS session (owner spawn or nested spawn). */
