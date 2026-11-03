@@ -39,10 +39,10 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 // store relative to this file (the layout both extensions ship in), and
 // ~/.pi/agent/npm (a different install location, e.g. a relocated home).
 type VoiceModules = {
-  stt: typeof import("../../../npm/node_modules/@juicesharp/rpiv-voice/audio/stt-engine.js");
-  model: typeof import("../../../npm/node_modules/@juicesharp/rpiv-voice/audio/model-download.js");
-  pcm: typeof import("../../../npm/node_modules/@juicesharp/rpiv-voice/audio/pcm.js");
-  hal: typeof import("../../../npm/node_modules/@juicesharp/rpiv-voice/audio/hallucination-filter.js");
+  stt: typeof import("@juicesharp/rpiv-voice/audio/stt-engine.js");
+  model: typeof import("@juicesharp/rpiv-voice/audio/model-download.js");
+  pcm: typeof import("@juicesharp/rpiv-voice/audio/pcm.js");
+  hal: typeof import("@juicesharp/rpiv-voice/audio/hallucination-filter.js");
 };
 type SttEngine = VoiceModules["stt"]["SttEngine"];
 
