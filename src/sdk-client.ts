@@ -39,7 +39,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import type { MatrixEvent, MatrixMessage } from "./types.js";
 import type { ThreadDeltaMessage } from "./summarize.js";
-import type { OutboxResult, Outbox } from "./outbox.js";
+import type { OutboxResult, Outbox, TimelineRead } from "./outbox.js";
 import { parseMatrixEvent } from "./thread-meta.js";
 import type { MatrixLogger } from "./logger.js";
 import {
@@ -1181,9 +1181,7 @@ export class SdkOutbox implements Outbox {
   }
 
   /** The summarizer's thread-delta read: newest-first, the caller filters to a thread. */
-  async readTimeline(
-    limit = 100,
-  ): Promise<{ success: boolean; messages: ThreadDeltaMessage[]; error?: string }> {
+  async readTimeline(limit = 100): Promise<TimelineRead> {
     if (!this.available() || this.client === null || !this.resolvedRoomId) {
       return {
         success: false,

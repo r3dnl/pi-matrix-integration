@@ -21,6 +21,14 @@ import type { ThreadDeltaMessage } from "./summarize.js";
  * Named for the seam that owns it; every op signature returns this, and the
  * transport behind every one of them is matrix-js-sdk.
  */
+/** The thread-delta read: a soft-fail answers with `error` and an empty list
+ *  (a read on this seam never throws). */
+export interface TimelineRead {
+  success: boolean;
+  messages: ThreadDeltaMessage[];
+  error?: string;
+}
+
 export interface OutboxResult {
   success: boolean;
   eventId?: string;
@@ -55,9 +63,7 @@ export interface Outbox {
   ): Promise<OutboxResult>;
 
   /** Read the room's recent timeline (newest-first, the summarizer's delta). */
-  readTimeline(
-    limit?: number,
-  ): Promise<{ success: boolean; messages: ThreadDeltaMessage[]; error?: string }>;
+  readTimeline(limit?: number): Promise<TimelineRead>;
 
   /** Update the room topic state event. */
   setRoomTopic(topic: string): Promise<OutboxResult>;
