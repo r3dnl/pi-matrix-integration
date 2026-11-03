@@ -24,7 +24,6 @@ import {
   formatArtifactCaption,
   gitFileCommit,
   isLoneArtifactToken,
-  isMediaPath,
   mimeFor,
   pickArtifactFiles,
 } from "./artifact-attach.js";
@@ -64,18 +63,6 @@ export interface RoomUxDeps {
   picker: PickerState;
 }
 
-export interface RoomUx {
-  /** The slash-relay suggestion reply (plain-text room send via the pipeline). */
-  replySuggestion(name: string, candidates: string[]): void;
-  /** `@@` artifact attach. True when the message was consumed (the funnel stops). */
-  handleArtifactAttach(message: MatrixMessage): boolean;
-  /** `@` file attach (10a expansion + 10b picker). `inject` lands the
-   *  expanded body on the normal-injection path. True when consumed. */
-  handleFileAttach(message: MatrixMessage, inject: (expanded: string) => void): boolean;
-  /** Post the /matrix-help end-user guide into the room (the pipeline). */
-  postHelp(): Promise<void>;
-}
-
 export class RoomUx {
   private readonly deps: RoomUxDeps;
   private readonly picker: PickerState;
@@ -86,11 +73,13 @@ export class RoomUx {
   }
 
   replySuggestion(name: string, candidates: string[]): void {
+    // The slash-relay suggestion reply (plain-text room send via the pipeline).
     this.deps.post(formatCommandSuggestion(name, candidates), "other").catch((error: unknown) => {
       this.deps.logger.warn(`[matrix] command suggestion reply failed: ${error}`);
     });
   }
 
+  // `@@` artifact attach. True when the message was consumed (the funnel stops).
   handleArtifactAttach(matrixMessage: MatrixMessage): boolean {
     if (!this.deps.cfg.fileAttach || matrixMessage.isFromPi) return false;
     const aBody = (matrixMessage.body ?? "").trim();
@@ -186,6 +175,8 @@ export class RoomUx {
     return false;
   }
 
+  // `@` file attach (10a expansion + 10b picker). `inject` lands the
+  // expanded body on the normal-injection path. True when consumed.
   handleFileAttach(matrixMessage: MatrixMessage, inject: (expanded: string) => void): boolean {
     if (!this.deps.cfg.remoteFilePicker || matrixMessage.isFromPi) return false;
     const rawBody = matrixMessage.body ?? "";
@@ -255,6 +246,7 @@ export class RoomUx {
     return false;
   }
 
+  // Post the /matrix-help end-user guide into the room (the pipeline).
   async postHelp(): Promise<void> {
     const result = await this.deps.post(buildMatrixHelp(this.deps.cfg), "other");
     if (!result.success && !result.deduped) {

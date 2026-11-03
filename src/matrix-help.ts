@@ -82,7 +82,7 @@ export function buildMatrixHelp(config: MatrixConfig): string {
 export function isAgentHelp(body: string, agentLocalParts: string[]): boolean {
   const m = String(body ?? "")
     .trim()
-    .match(/^(@([A-Za-z0-9_]+)(?::[\w.-]+)?)?\s*[:\-]?\s*help[!?.]?\s*$/i);
+    .match(/^(@([A-Za-z0-9_]+)(?::[\w.-]+)?)?\s*[:-]?\s*help[!?.]?\s*$/i);
   if (!m) return false;
   const mention = m[2];
   if (!mention) return true; // bare "help"

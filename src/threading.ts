@@ -646,9 +646,16 @@ export class ThreadManager {
     if (this.summaryInFlight) return false;
     this.summaryInFlight = true;
     try {
-      Promise.resolve(this.opts.onSummarizeRequest(root)).finally(() => {
-        this.summaryInFlight = false;
-      });
+      // Fire-and-forget by design (the inject path must not await a model
+      // turn); the settle happens in .finally. The warn keeps a rejected
+      // summarize run from vanishing silently.
+      Promise.resolve(this.opts.onSummarizeRequest(root))
+        .finally(() => {
+          this.summaryInFlight = false;
+        })
+        .catch((error: unknown) => {
+          this.logger.warn(`[matrix] thread summary run failed: ${error}`);
+        });
     } catch (error) {
       this.summaryInFlight = false;
       throw error;

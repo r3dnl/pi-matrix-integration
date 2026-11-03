@@ -109,7 +109,7 @@ export function createNicobailonProvider(deps: SubagentProviderDeps): SubagentPr
     return { runId, text: stripped.trim() };
   }
 
-  async function runIsolated(prompt: string, description?: string): Promise<string | null> {
+  async function runIsolated(prompt: string, _description?: string): Promise<string | null> {
     if (!(await isAvailable())) return null;
 
     // 1) Spawn (async mode — the ack carries the run id in `data.details`)

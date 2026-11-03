@@ -48,13 +48,18 @@ export function resolveSubagentProvider(
     }
     return primary;
   });
-  decided.then((p) => {
-    rebound = p;
-    for (const [cb] of channels) {
-      channels.get(cb)?.();
-      channels.set(cb, p.completionChannel?.(cb) ?? (() => {}));
-    }
-  });
+  // Side branch: rebind + re-issue channels once decided. The main path
+  // awaits `decided` itself; this branch swallows rejections so a probe
+  // failure cannot surface as an unhandled rejection here.
+  decided
+    .then((p) => {
+      rebound = p;
+      for (const [cb] of channels) {
+        channels.get(cb)?.();
+        channels.set(cb, p.completionChannel?.(cb) ?? (() => {}));
+      }
+    })
+    .catch(() => {});
   const live = () => rebound ?? primary;
   return {
     get id() {
