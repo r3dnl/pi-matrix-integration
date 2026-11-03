@@ -162,10 +162,13 @@ export interface SdkDeliveryCallbacks {
 }
 
 /**
- * Resolve the device id for a connection.
- * The credentials file's own `device_id` wins (the token is device-bound —
- * the spike's 400 M_BAD_JSON root cause was a hardcoded id that didn't match
- * the device the token was minted for). The fresh-login default is
+ * Resolve the device id for a connection. An explicitly configured
+ * `deviceId` wins — it is an operator override. With nothing configured, the
+ * credentials file's own `device_id` is used, because the token is
+ * device-bound (the spike's 400 M_BAD_JSON root cause was a hardcoded id that
+ * didn't match the device the token was minted for). Note the override can
+ * itself cause that mismatch: a configured id that is not the device the
+ * token belongs to is rejected by the homeserver (D-R4-23). The fresh-login default is
  * `PI_AGENT_1`: it keeps the `PI_AGENT` identity AND satisfies the MAS
  * device-scope policy (MAS 1.15.0, `policies/authorization_grant/
  * authorization_grant.rego`), which requires the scope's device id to match
