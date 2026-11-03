@@ -327,10 +327,12 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
     questionByPoll = new Map();
     answersByPoll = new Map();
     open = true;
-    // configuration-and-room-behaviour.md: the mirror ships GFM pipe-table markdown only — no
-    // pre-computed HTML (the third copy-pasted conversion site is gone).
-    // The pipeline converts markdown → `formatted_body` under the
-    // `sendFormatted` gate; plain clients render the pipe table.
+    // configuration-and-room-behaviour.md: the questionnaire ships as GFM
+    // pipe-table markdown — the mirror does not pre-compute HTML for it (the
+    // third copy-pasted conversion site is gone). The pipeline converts
+    // markdown → `formatted_body` under the `sendFormatted` gate; plain
+    // clients render the pipe table. The review message is the one deliberate
+    // exception: `formatReview` ships raw HTML, see its comment.
     const result = await deps.post(formatQuestionnaireMd(questions));
     if (!result.success) {
       deps.warn?.(`[matrix] ask-user mirror post failed: ${result.error || "unknown error"}`);
