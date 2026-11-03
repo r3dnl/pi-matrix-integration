@@ -1,17 +1,26 @@
 name: CI
 
-# Quality gate on every push and pull request (stories 4 + 7). Order is
-# the agreed chain: credential scan → typecheck → lint → unit tier, plus
-# the same scan over the unpacked `npm pack` tarball so a stray `files`
-# entry cannot publish what the checkout scan missed.
+# The required PR gate (story 16): the same commands as the local loop,
+# in the agreed order — credential scan → typecheck → lint → offline test
+# tier → docs consistency. A second job proves the package manifest and
+# the packed tarball. No job in this workflow touches secrets; that is
+# what makes "the offline tier really runs offline" provable.
 
 on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  quality:
+  gate:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,21 +30,34 @@ jobs:
       - run: npm ci
       - name: Credential scan (tree)
         run: node tools/scan-secrets.mjs
-      - name: Credential scan (self-check: the gate can bite)
+      - name: "Credential scan (self-check: the gate can bite)"
         run: node tools/scan-secrets.mjs --self-check
-      - name: Dependency audit (production tree)
-        run: npm audit --omit=dev
-      - name: Registry signature check (production tree)
-        run: npm audit signatures --omit=dev
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
         run: npm run lint
-      - name: Unit + stubbed e2e tier (offline)
+      - name: Offline tier (npm test, no network needed)
         run: npm test
+      - name: Docs consistency
+        run: node test/docs-consistency.mjs
+
+  manifest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --omit=dev
+      - name: Dependency contract (clean install, tree, peers, WASM)
+        run: node test/deps-contract.mjs
       - name: Credential scan (unpacked tarball)
         run: |
           mkdir -p /tmp/pack
           npm pack --pack-destination /tmp/pack >/dev/null
           tar xzf /tmp/pack/*.tgz -C /tmp/pack
           node tools/scan-secrets.mjs --dir /tmp/pack/package
+      - name: Tarball content gate (files allowlist, license set)
+        run: node tools/check-tarball.mjs

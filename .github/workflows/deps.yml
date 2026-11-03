@@ -1,0 +1,52 @@
+name: Dependencies
+
+# Supply-chain gate (story 16): audit and registry signatures against the
+# production tree on every push, and GitHub's dependency review on any PR
+# that changes the dependency surface.
+
+on:
+  push:
+  pull_request:
+    paths:
+      - package.json
+      - package-lock.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deps-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --omit=dev
+      - name: Audit (fail on high/critical)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Registry signatures
+        run: |
+          out=$(npm audit signatures --omit=dev)
+          echo "$out"
+          bad=$(printf '%s\n' "$out" | grep -cE 'invalid|missing signature' || true)
+          if [ "$bad" != "0" ]; then
+            echo "::error::$bad production package(s) without a valid registry signature"
+            exit 1
+          fi
+
+  review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high

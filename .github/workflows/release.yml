@@ -1,0 +1,56 @@
+name: Release
+
+# Tag v* (story 16): pack, prove the tarball is clean and complete, publish
+# to npm with provenance, and cut the GitHub release from the CHANGELOG
+# section for that version.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: npm # holds NPM_TOKEN; auditable, approvable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - name: "Gate first: every check the PR gate runs"
+        run: |
+          node tools/scan-secrets.mjs
+          node tools/scan-secrets.mjs --self-check
+          npm run typecheck
+          npm run lint
+          npm test
+          node test/docs-consistency.mjs
+      - name: Pack and gate the tarball
+        run: |
+          mkdir -p /tmp/pack
+          npm pack --pack-destination /tmp/pack >/dev/null
+          tar xzf /tmp/pack/*.tgz -C /tmp/pack
+          node tools/scan-secrets.mjs --dir /tmp/pack/package
+          node tools/check-tarball.mjs
+      - name: Publish
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: GitHub release with the CHANGELOG section
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          body=$(awk -v v="## \\[$version\\]" '
+            $0 ~ v {found=1; next}
+            found && /^## \[/ {exit}
+            found {print}' CHANGELOG.md)
+          if [ -z "$body" ]; then body="Release $GITHUB_REF_NAME"; fi
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes "$body"

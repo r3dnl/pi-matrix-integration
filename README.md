@@ -3,6 +3,10 @@
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![npm version](https://img.shields.io/npm/v/pi-matrix-integration.svg)](https://www.npmjs.com/package/pi-matrix-integration)
 [![npm downloads](https://img.shields.io/npm/dm/pi-matrix-integration.svg)](https://www.npmjs.com/package/pi-matrix-integration)
+[![CI](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/ci.yml/badge.svg)](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/ci.yml)
+[![Dependencies](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/deps.yml/badge.svg)](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/deps.yml)
+[![Live nightly](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/live-nightly.yml/badge.svg)](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/live-nightly.yml)
+[![Release](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/release.yml/badge.svg)](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/release.yml)
 
 A Pi coding agent extension that connects a Pi session to a Matrix chat room. Pi reports what it is doing into the room, and you drive it from the room — from your phone, without touching the terminal.
 
