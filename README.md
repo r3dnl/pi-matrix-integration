@@ -194,6 +194,8 @@ PI_MATRIX_SEND_FINAL_MESSAGES=true
 
 The full key reference — every key, default, effect, and environment
 override — is [docs/user/configuration.md](docs/user/configuration.md).
+Security posture — what the room can do, what it cannot, how to report a
+vulnerability — is [SECURITY.md](SECURITY.md).
 
 One trap worth knowing early: a profile-suffixed config file
 (`matrix-config.<profile>.jsonc`) is only read when that profile is active.

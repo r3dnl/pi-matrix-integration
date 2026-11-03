@@ -6,8 +6,10 @@ Every rule below names its gate: the command, test or review step that enforces 
 
 | Rule | Gate |
 |------|------|
-| TypeScript, strict mode, `noEmit`. Pi executes the sources, so there is no build output to keep in sync | `npm run typecheck` (being added in this release; until then **(judgement)**) |
-| No `any` without a one-line reason next to it | review — no linter ships in this package, so an eslint-disable comment is not a substitute for the reason |
+| TypeScript, strict mode, `noEmit`. Pi executes the sources, so there is no build output to keep in sync | `npm run typecheck` |
+| No `any` without a one-line reason next to it | review — `npm run lint` catches other defects, but a justified `any` stays a human call |
+| An `eslint-disable` comment names the rule it silences and documents why the file needs the exemption; a directive that quiets nothing is deleted | `npm run lint` parses the directives; review catches hollow ones |
+| Console output is deliberate, never ambient — the logging table below states the one console policy that is enforced | **(judgement)** |
 | Async work is awaited, or explicitly fire-and-forget with a comment saying why | review — the deliberate cases are prefixed `void` |
 | No new module loads a second Matrix client. One identity, one writer | review, against the transport invariant |
 
