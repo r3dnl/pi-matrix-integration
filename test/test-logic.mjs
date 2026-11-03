@@ -223,7 +223,7 @@ const integrator = createSessionIntegrator(
   () => ({
     connected: connOk,
     connecting: false,
-    roomUri: config.roomId,
+    roomId: config.roomId,
     userId: config.userId,
     lastError: undefined,
   }),
@@ -3656,7 +3656,7 @@ console.log("== footer: matrix URI + thread indicator ==");
 {
   const baseStatus = {
     connected: true, connecting: false,
-    roomUri: "#pi-updates:matrix.r3d.nl", lastError: undefined,
+    roomId: "#pi-updates:matrix.r3d.nl", lastError: undefined,
   };
   const plain = (s) => (s ?? "").replace(/\u001b\[[0-9;]*m/g, "");
   const footer = (status, threadStatus) => {
@@ -3693,7 +3693,7 @@ console.log("== footer: matrix URI + thread indicator ==");
     JSON.stringify(noUser),
   );
   const roomId = footer(
-    { ...baseStatus, roomUri: "!abcdefgh1234567:matrix.r3d.nl", userId: "@pi_agent:matrix.r3d.nl" },
+    { ...baseStatus, roomId: "!abcdefgh1234567:matrix.r3d.nl", userId: "@pi_agent:matrix.r3d.nl" },
     undefined,
   );
   check(
@@ -3720,7 +3720,7 @@ console.log("== footer: matrix URI + thread indicator ==");
   const f = createTuiFooter({ getThreadStatus: () => ({ icon: "🧵", enabled: true }) });
   const status = {
     connected: true, connecting: false,
-    roomUri: "#pi-updates:matrix.r3d.nl", userId: "@pi_agent:matrix.r3d.nl",
+    roomId: "#pi-updates:matrix.r3d.nl", userId: "@pi_agent:matrix.r3d.nl",
   };
   check(
     "TuiFooter.formatStatus → [💬 user:domain/#room 🧵 on]",

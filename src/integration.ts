@@ -948,7 +948,7 @@ export class MatrixIntegration {
     // registry — one per process).
 
     const connectionStatusRef: { current?: () => import("./types.js").ConnectionStatus } = {};
-    const sessionIntegrator = createSessionIntegrator(this.pi, () => connectionStatusRef.current?.() ?? { connected: false, connecting: false, roomUri: cfg.roomId, userId: cfg.userId ?? "" }, {
+    const sessionIntegrator = createSessionIntegrator(this.pi, () => connectionStatusRef.current?.() ?? { connected: false, connecting: false, roomId: cfg.roomId, userId: cfg.userId ?? "" }, {
       piTerminalMatrixMessagePrefix: cfg.piTerminalMatrixMessagePrefix,
       showInFooter: cfg.showInFooter,
       footerIcon: cfg.footerIcon,
