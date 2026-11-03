@@ -15,7 +15,7 @@
  * the four pieces.
  */
 
-import { mkdirSync, renameSync, readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
+import { mkdirSync, renameSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { basename, join } from "node:path";
 import { Input, Text } from "@earendil-works/pi-tui";
 import { domainOf, localpartOf } from "./classify.js";
