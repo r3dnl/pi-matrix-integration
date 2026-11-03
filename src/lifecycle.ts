@@ -645,8 +645,11 @@ export class Lifecycle {
    */
   async onTurnEnd(event: TurnEndEvent): Promise<void> {
     if (this.subagent) return this.onSubagentTurnEnd(event);
-    // Consumed per turn (before any early return): a turn that dies without
-    // reaching the broadcast below must not mute the NEXT, real turn.
+    // Consumed before any early return below, so a turn that dies without
+    // reaching the broadcast cannot mute the NEXT, real turn. The side-chain
+    // branch above is not one of those returns: a side-chain instance never
+    // sets this flag, because `onBeforeAgentStart` exits as soon as `subagent`
+    // is bound.
     const wakeTurn = this.summaryPassTurn;
     this.summaryPassTurn = false;
     if (!this.isEnabled()) {
@@ -720,7 +723,8 @@ export class Lifecycle {
     if (this.subagent) return this.onSubagentInput(event);
     if (!this.isEnabled() || !this.deps.cfg.sendUserMessages) return;
     // Only genuine terminal-typed input; Matrix-relayed messages are
-    // source === "extension" (sendUserMessage) or absent (custom injection).
+    // source === "extension" (sendUserMessage) or never fire this event at
+    // all (custom injection).
     if (event.source !== "interactive") return;
     try {
       const text = (event.text ?? "").trim();
