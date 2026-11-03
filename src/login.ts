@@ -694,6 +694,8 @@ export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
 
   // Both methods produce the same login response; the tail (room → toggles
   // → save → config) is shared and runs exactly once.
+  // The matrix-js-sdk login response (`access_token`, `device_id`,
+  // `user_id`); the SDK type is not imported because the SDK loads lazily.
   let response: any;
   let roomClient: LoginClient | undefined; // the room step's authenticated client
 

@@ -7,8 +7,8 @@ Every rule below names its gate: the command, test or review step that enforces 
 | Rule | Gate |
 |------|------|
 | TypeScript, strict mode, `noEmit`. Pi executes the sources, so there is no build output to keep in sync | `npm run typecheck` (being added in this release; until then **(judgement)**) |
-| No `any` without a one-line reason next to it. Count reported in the PR body, never silenced by a rule disable | lint + review |
-| Async work must be awaited or explicitly fire-and-forget with a comment saying why | `no-floating-promises` |
+| No `any` without a one-line reason next to it | review — no linter ships in this package, so an eslint-disable comment is not a substitute for the reason |
+| Async work is awaited, or explicitly fire-and-forget with a comment saying why | review — the deliberate cases are prefixed `void` |
 | No new module loads a second Matrix client. One identity, one writer | review, against the transport invariant |
 
 ## Logging and errors
