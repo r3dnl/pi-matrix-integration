@@ -7,7 +7,8 @@
  * - Adaptive config consumer that handles both v1 and v2
  * - Single responsibility: All v2 config schema logic lives here
  *
- * The existing config.ts continues to handle v1 loading.
+ * V1 loading stays in config-utils.ts (loadConfig, saveConfig, validateConfig,
+ * DEFAULT_CONFIG).
  * This module provides the bridge between v1, v2, and the code that consumes config.
  */
 
