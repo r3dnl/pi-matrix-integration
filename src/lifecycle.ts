@@ -5,8 +5,9 @@
  * (index.ts): the `enabled` flag, the shared connect + start sequence,
  * the session hook bodies, and the teardown order. The "constants →
  * module, state → class" rule: this class owns the state; index.ts keeps
- * only the hook REGISTRATIONS (the object-stable rebind discipline,
- * index.ts:300 — nothing re-registers or deregisters on /matrix-switch;
+ * only the hook REGISTRATIONS (the object-stable rebind discipline, stated
+ * in the index.ts header — nothing re-registers or deregisters on
+ * /matrix-switch;
  * the registrations dispatch through the current stack at call time).
  *
  * `ConnectionStatus` ownership: this class owns the
@@ -153,7 +154,7 @@ export function buildMatrixToLink(roomId: string | undefined): string {
 
 export class Lifecycle {
   private readonly deps: LifecycleDeps;
-  // Ephemeral by design — no state/ persistence (7fc13e1 check): the
+  // Ephemeral by design — no state/ persistence: the
   // snapshot lives in memory per stack build; /matrix-switch rebuilds it.
   private enabled = false;
   private snapshot: ConnectionStatus;
@@ -331,8 +332,8 @@ export class Lifecycle {
   /**
    * The teardown order (the decision): stopDelivery → disconnect — the
    * delivery pipeline detaches BEFORE the sync loop stops (the facade's
-   * stopPolling stops the sdk delivery; `SdkOutbox.disconnect`
-   * self-stops delivery at sdk-client.ts:322). Used by
+   * stopPolling stops the sdk delivery; `SdkOutbox.disconnect` calls
+   * `stopDelivery` itself). Used by
    * `session_shutdown`; the disconnect/toggle commands keep their
    * lighter 4-line variant until the terminal slice unifies them.
    */
@@ -811,8 +812,8 @@ export class Lifecycle {
 }
 
 /**
- * Build the lifecycle owner (the one-line factory per the
- * message-handler.ts:433 pattern).
+ * Build the lifecycle owner (one-line factory, the `createMessageHandler`
+ * shape).
  */
 export function createLifecycle(deps: LifecycleDeps): Lifecycle {
   return new Lifecycle(deps);

@@ -59,9 +59,10 @@ type SdkSyncState = SdkModule["SyncState"];
 
 /** Marks a thread root. This package writes it and reads it back:
  *  `extractThreadMeta` (src/thread-meta.ts) sets `isThreadRoot` from its
- *  presence, the unread model keys a new conversation on it
- *  (src/unread-model.ts:113), and the summarizer keeps the root event inside
- *  its own thread delta with it (src/summarize.ts:51). The name is historical
+ *  presence, the unread model keys a new conversation on it (in `bump()`,
+ *  unread-model.ts), and the summarizer keeps the root event inside its own
+ *  thread delta with it (`filterThreadDelta()`, summarize.ts). The name is
+ *  historical
  *  (MSC1767). Threads themselves ride `m.relates_to`, and spec-following
  *  clients such as Element do not write this field — so a root that was
  *  started elsewhere is not detected as a root here. Deleting the write means

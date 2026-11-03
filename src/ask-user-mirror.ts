@@ -957,7 +957,7 @@ function looksLikeReplyAttempt(text: string): boolean {
  * Description |` + `---` separator + option rows + the "Type something."
  * sentinel row), plain lines for the question text and the reply-grammar
  * hint. The pipeline converts it to `formatted_body` HTML (markdown.ts
- * renders GFM pipe tables, `markdown.ts:159–171`); the semantic accent-color
+ * renders GFM pipe tables in `renderTableBlock`); the semantic accent-color
  * palette is dropped by design — Element's GFM rendering carries the
  * structure.
  */

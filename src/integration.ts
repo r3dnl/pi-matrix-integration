@@ -13,9 +13,8 @@
  * - `buildStack` (the stack construction — the index.ts buildStack
  *   verbatim, with the stack hunks applied: threadSend delegate,
  *   pipeline outbox, lifecycle/watchers/events, roomUx/inbound).
- * - The factory-scope `PickerState` (the zero-delta move of the two
- *   original factory-scope CandidateListTracker instances — created
- *   ONCE per integration, survives /matrix-switch as they did).
+ * - The composition-root `PickerState` — created ONCE per integration, so
+ *   the picker memory outlives /matrix-switch.
  * - The footer ctx tracker (lastCtx + updateFooter).
  * - The /matrix-switch orchestration (config persistence + reattach +
  *   reconnect).
@@ -24,9 +23,10 @@
  * decision): when `PI_MATRIX_TEST_OUTBOX` is set to a module path, the
  * outbox is built by that module's `createTestOutbox(cfg)` factory
  * instead of `createSdkOutbox`. The fake writes state-file call logs
- * (the fake-mtx precedent, test/fake-mtx.js:92–112) so spawned-suite
+ * (the fake-mtx precedent) so spawned-suite
  * assertions read the logs without shared-process assumptions.
- * Call-time `process.env` read (the idb-file-store.ts:173 idiom); the
+ * Call-time `process.env` read (the `fire()` idiom in
+ * idb-file-store.ts); the
  * fake is a plain .mjs/.cjs module loaded through the native `require`
  * (no jiti transform), which keeps the seam synchronous inside the
  * synchronous extension factory.
@@ -113,12 +113,12 @@ export interface MatrixStack {
   outbox: SdkOutbox;
   /** Per-thread unread model (was owned by the deleted facade) — per-env path.
    *  Ephemeral by design — no state/ persistence beyond its own
-   *  `unread-<env>.json` load/save (7fc13e1 check). */
+   *  `unread-<env>.json` load/save. */
   unreadModel: UnreadModel;
   unreadPath: string;
   /** The delivery-callback bundle (the outbox's read-side legs +
    *  unread bump + sync-error feed). Ephemeral by design — no state/
-   *  persistence (7fc13e1 check). */
+   *  persistence. */
   deliveryCallbacks: SdkDeliveryCallbacks;
   messageHandler: MessageHandler;
   sessionIntegrator: SessionIntegrator;
@@ -216,12 +216,10 @@ export function createLoggerAndValidateConfig(
 export class MatrixIntegration {
   private readonly pi: ExtensionAPI;
   private readonly logger: MatrixLogger;
-  /** The factory-scope picker state: created ONCE per
-   *  integration, survives /matrix-switch (the zero-delta move of the
-   *  two original factory-scope CandidateListTracker instances,
-   *  `index.ts:321/:324`). Ephemeral by design — no state/ persistence
-   *  (7fc13e1 check): the posted-list ledger lives in memory per
-   *  integration. */
+  /** The composition-root picker state: created ONCE per integration, so
+   *  picker memory survives /matrix-switch. Ephemeral by design — nothing
+   *  goes under state/: the posted-list ledger lives in memory per
+   *  integration and is rebuilt on restart. */
   private readonly pickerState = new PickerState();
   /** Most recent event ctx — footer updates for Matrix client events
    *  that don't carry a ctx of their own. Stale after session
@@ -464,9 +462,8 @@ export class MatrixIntegration {
     // old client stops and RELEASES the account lock before the new stack
     // is built and pointed at. This closes the window where a new SdkOutbox
     // could connect against a lock the old one still held (same pid → the
-    // misleading "another live pi session" error). NO unread save point (the
-    // f84c4b8 no-delta rule — the facade saved unread only inside its poll
-    // rounds, never on disconnect).
+    // misleading "another live pi session" error). NO unread save point: the
+    // unread model is saved inside poll rounds only, never on disconnect.
     oldOutbox.stopDelivery();
     await oldOutbox.disconnect();
     oldHandler.cleanup();
@@ -791,10 +788,10 @@ export class MatrixIntegration {
     // Test seam: when `PI_MATRIX_TEST_OUTBOX` names a
     // module, the outbox is built by that module's `createTestOutbox(cfg)`
     // factory instead of `createSdkOutbox` — the fake writes state-file
-    // call logs (the fake-mtx precedent, test/fake-mtx.js:92–112) so
+    // call logs (the fake-mtx precedent) so
     // spawned-suite assertions read the logs without shared-process
-    // assumptions. Call-time `process.env` read (the idb-file-store.ts:173
-    // idiom); the fake is a plain .mjs/.cjs module loaded through the
+    // assumptions. Call-time `process.env` read (the `fire()` idiom in
+    // idb-file-store.ts); the fake is a plain .mjs/.cjs module loaded through the
     // native `require` (no jiti transform), which keeps the seam
     // synchronous inside the synchronous extension factory. The fake
     // satisfies the SdkOutbox surface (seam ops + delivery verbs).
@@ -824,8 +821,7 @@ export class MatrixIntegration {
         seenPath: join(getStateDir(), `sdk-seen-${stateServer}.json`),
         logger: this.logger,
       });
-    // The per-thread unread model (was owned by the deleted facade, the per-server
-    // path under state/ — 7fc13e1: day-0 persistence).
+    // The per-thread unread model, with a per-server path under state/.
     // getStateDir(): project-local `.pi/matrix/state` when the project
     // config is active, the historical extension-local state/ otherwise.
     const unreadPath = join(getStateDir(), `unread-${stateServer}.json`);
@@ -912,7 +908,7 @@ export class MatrixIntegration {
 
     // The footer's live snapshot provider (late-bound: the lifecycle is
     // built below; the buildStack summarizeRef/messageHandler discipline).
-    // Ephemeral by design — no state/ persistence (7fc13e1 check): the
+    // Ephemeral by design — no state/ persistence: the
     // snapshot lives in the Lifecycle per stack build.
 
     // The sub-agent bus: owner-side records +
@@ -1054,7 +1050,7 @@ export class MatrixIntegration {
     });
 
     // The minimal event funnel (transport-and-state.md): one dispatcher per stack
-    // build. Ephemeral by design — no state/ persistence (7fc13e1 check):
+    // build. Ephemeral by design — no state/ persistence:
     // the funnel is call-time dispatch only; the rpiv bus subscription in
     // attach() emits through the CURRENT dispatcher at call time; the
     // dispatcher itself holds no persisted state.
@@ -1064,7 +1060,7 @@ export class MatrixIntegration {
     // (call-time read — a /matrix-switch rebind stays wired, no
     // re-registration), the per-thread unread bump, the seed log line, and the
     // sync-error feed into the Lifecycle snapshot. Ephemeral by design —
-    // no state/ persistence (7fc13e1 check). Declared BEFORE the
+    // no state/ persistence. Declared BEFORE the
     // lifecycle (which takes it as a dep); its legs read `inbound` /
     // `lifecycle` at call time (both constructed later — closures, not
     // immediate calls, so the late reads are TDZ-safe).
