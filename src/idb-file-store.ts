@@ -699,7 +699,7 @@ class IdIndex {
 
   openCursor(range?: unknown, direction?: string): IdRequest {
     const req = makeRequest();
-    let rows = this.ordered(this.matches(range));
+    const rows = this.ordered(this.matches(range));
     if (direction === "prev" || direction === "prevopen") rows.reverse();
     const cursor = new IdCursor(this.store, rows, false);
     fulfill(req, cursor);
@@ -765,7 +765,7 @@ class IdDatabase {
     return this.readMeta().indexes[store]?.find((i) => i.name === name);
   }
 
-  createObjectStore(storeName: string, options?: { autoIncrement?: boolean }): IdObjectStore {
+  createObjectStore(storeName: string, _options?: { autoIncrement?: boolean }): IdObjectStore {
     const meta = this.readMeta();
     if (meta.stores.includes(storeName)) throw new Error(`ConstraintError: store "${storeName}" already exists`);
     meta.stores.push(storeName);

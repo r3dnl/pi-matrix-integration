@@ -1,3 +1,6 @@
+/* eslint-disable no-control-regex -- U+0000 is the code-span placeholder
+ * sentinel in this converter (NUL cannot occur in Matrix event text, so it
+ * is safe as an internal marker); every flagged regex is that sentinel. */
 /**
  * Pi Matrix Integration — outgoing Markdown → HTML converter.
  *

@@ -360,7 +360,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
       milestone: Type.String({ description: "Milestone text to send" }),
       details: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
     }),
-    async execute(toolCallId, params, signal, onUpdate, ctx) {
+    async execute(toolCallId, params, _signal, _onUpdate, _ctx) {
       if (!integration.stack.lifecycle.isEnabled()) {
         return {
           content: [{ type: "text", text: "Matrix not connected (use /matrix-connect first)" }],
@@ -397,7 +397,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
     parameters: Type.Object({
       limit: Type.Optional(Type.Number({ default: 10, description: "Number of messages to retrieve" })),
     }),
-    async execute(toolCallId, params, signal, onUpdate, ctx) {
+    async execute(toolCallId, params, _signal, _onUpdate, _ctx) {
       if (!integration.stack.lifecycle.isEnabled()) {
         return {
           content: [{ type: "text", text: "Matrix not connected (use /matrix-connect first)" }],

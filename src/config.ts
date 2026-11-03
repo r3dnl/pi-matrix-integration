@@ -538,7 +538,7 @@ export function getEffectiveConfig(): MatrixConfig {
   // false` would silently get the channel back, because the merged object
   // already carries sendSessionStartStopMilestones: true.
   if (configPath && configPath.endsWith('.json')) {
-    let fileConfig: Record<string, unknown> | null = null;
+    let fileConfig: Record<string, unknown> | null;
     try {
       fileConfig = parseJsonc(readFileSync(configPath, "utf-8"));
     } catch {

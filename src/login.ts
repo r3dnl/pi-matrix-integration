@@ -256,9 +256,17 @@ export interface LoginDeps {
   cwd?: string;
 }
 
+/** The login response tail the shared tail below consumes. Typed locally:
+ *  matrix-js-sdk loads lazily at runtime, so its own type is not imported. */
+export interface LoginResponse {
+  user_id: string;
+  device_id: string;
+  access_token: string;
+}
+
 /** The js-sdk surface the login + room steps drive (configuration-and-room-behaviour.md). */
 export interface LoginClient {
-  loginWithPassword(user: string, password: string): Promise<any>;
+  loginWithPassword(user: string, password: string): Promise<LoginResponse>;
   /** GET /directory/room/{alias} — resolves the alias; 404 when absent. */
   resolveRoomAlias(alias: string): Promise<{ room_id: string }>;
   createRoom(opts: { name: string; invite: string[]; isEncrypted: boolean }): Promise<{ room_id: string }>;
@@ -698,9 +706,7 @@ export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
 
   // Both methods produce the same login response; the tail (room → toggles
   // → save → config) is shared and runs exactly once.
-  // The matrix-js-sdk login response (`access_token`, `device_id`,
-  // `user_id`); the SDK type is not imported because the SDK loads lazily.
-  let response: any;
+  let response: LoginResponse | undefined;
   let roomClient: LoginClient | undefined; // the room step's authenticated client
 
   // QR method (2025 variant, MSC4108/MSC4388) — feature toggle `qr2025`

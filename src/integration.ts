@@ -38,7 +38,6 @@ import {
   getActiveConfigDir,
   getActiveProfileName,
   getConfigDir,
-  loadConfig,
   loadProfile,
   listProfiles,
   persistActiveProfile,
@@ -63,6 +62,7 @@ import {
   buildTourPrompt,
   homeserverDomain,
   type LoginResult,
+  type LoginResponse,
 } from "./login.js";
 import { buildMatrixHelp } from "./matrix-help.js";
 import { createSdkOutbox, type SdkOutbox, type SdkDeliveryCallbacks } from "./sdk-client.js";
@@ -643,7 +643,7 @@ export class MatrixIntegration {
       return client;
     };
     return {
-      loginWithPassword: async (user: string, password: string): Promise<unknown> => {
+      loginWithPassword: async (user: string, password: string): Promise<LoginResponse> => {
         const c = await sdkClient();
         return c.login("m.login.password", {
           identifier: { type: "m.id.user", user },
@@ -861,7 +861,8 @@ export class MatrixIntegration {
     // formatter); room-topic + timeline reads go straight to the seam.
     // Late binding: the delegate closures read `messageHandler` at call
     // time (constructed below) — the same discipline as the late-bound
-    // messageHandler itself.
+    // messageHandler itself. const cannot late-bind, so the rule is waived.
+    // eslint-disable-next-line prefer-const
     let messageHandler: MessageHandler;
     const threadManager: ThreadManager = createThreadManager({
       enabled: !!cfg.threads,
@@ -976,6 +977,7 @@ export class MatrixIntegration {
     // when active), formats (`sendFormatted` gate), and writes. Decision
     // re-issues intentionally skip dedupe — a re-ask is intentional
     // (`dedupe: false` is explicit, not a bypass).
+    // eslint-disable-next-line prefer-const -- late binding, as above.
     let lifecycle: Lifecycle;
     const askUserMirror = createAskUserMirror({
       post: async (text) => messageHandler.post(text, "decision", { dedupe: false }),
