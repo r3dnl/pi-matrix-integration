@@ -52,7 +52,7 @@ Everything the extension remembers is in its `state/` directory, which is gitign
 | File | Written by | Contents |
 |------|-----------|----------|
 | `state/thread-map.json` | `src/threading.ts` | session-to-thread mapping, thread roots and their summary state |
-| `state/unread-<env>.json` | `src/unread-model.ts` | per-room read markers and thread previews; `apiVersion` is `pi-matrix/v1` |
+| `state/unread-<homeserver>.json` | `src/unread-model.ts` | per-room read markers and thread previews; `apiVersion` is `pi-matrix/v1` |
 | `state/sdk-seen-<homeserver>.json` | `src/sdk-client.ts` | event ids already processed, so a restart does not replay the room |
 | `state/project-room-manifest.json` | project room resolution | which room belongs to this project |
 
