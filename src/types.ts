@@ -261,11 +261,12 @@ export interface PartialMatrixConfig {
   slashRelay?: boolean;
   mirrorAskUser?: boolean;
   mirrorAskUserPolls?: boolean;
+  // `@` remote file picker (triggered from Matrix).
+  remoteFilePicker?: boolean;
   fileAttach?: boolean;
-  artifactAttach?: boolean;
-  artifactSearch?: "builtin" | "fzf";
+  // How the `@@` artifact picker ranks: "builtin" or "fzf".
+  fileSearchMethod?: "builtin" | "fzf";
   attachMaxBytes?: number;
-  mediaAttachMaxBytes?: number;
   pickerLimit?: number;
   threads?: boolean;
   // QR login (2025 variant, MSC4108/MSC4388) method offer in the login
@@ -307,9 +308,12 @@ export interface PartialMatrixConfig {
   milestoneIcon?: string;
   userMessageIcon?: string;
   fileAttachPrefix?: string;
+  // Prefix for the remote file picker (triggered from Matrix)
+  filePickerPrefix?: string;
+  // Prefix for the relayed slash command (default "/")
+  slashCommandPrefix?: string;
   matrixLoginEnabled?: boolean;
   displayStdoutOnStartup?: boolean;
-  artifactAttachPrefix?: string;
   maxBytesUpload?: number;
 }
 
