@@ -173,7 +173,54 @@ for (const file of OUR_SOURCE) {
   })
 }
 
-console.log(`checked ${markdown.length} markdown files (${linkCount} internal links); identifier scan: ${STRICT.length} files strict (${strictHits.length} hits); ticket-label scan: ${SOURCE_FILES.length} files (${labelHits} hits); stale-reference scan: ${OUR_SOURCE.length} files (${staleHits} hits)`) 
+// --- 5. the documented surface equals the registered surface ---
+// The README command table and the alias line must name exactly what
+// src/commands.ts registers (commands + aliases), and every PI_MATRIX_*
+// environment name in the docs must exist in the code — and every key of
+// the code's env mapping must appear in the configuration reference.
+{
+  const commandsSrc = fs.readFileSync(path.join(ROOT, 'src/commands.ts'), 'utf8')
+  const registered = new Set()
+  for (const m of commandsSrc.matchAll(/registerCommand\(\s*"([^"]+)"/g)) registered.add(m[1])
+
+  const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8')
+  const cmdSection = readme.split(/^### Commands$/m)[1]?.split(/^### /m)[0] ?? ''
+  const documented = new Set()
+  for (const m of cmdSection.matchAll(/`(\/(?:matrix-[a-z-]+|pi-help))(?:[^`]*)`/g)) documented.add(m[1].slice(1))
+  for (const name of registered) {
+    if (!documented.has(name)) fail(`README documents no /${name} though src/commands.ts registers it`)
+  }
+  for (const name of documented) {
+    if (!registered.has(name)) fail(`README documents /${name} but src/commands.ts does not register it`)
+  }
+
+  const configUtils = fs.readFileSync(path.join(ROOT, 'src/config-utils.ts'), 'utf8')
+  const envMap = new Set()
+  for (const m of configUtils.matchAll(/^\s*(PI_MATRIX_[A-Z0-9_]+): '/gm)) envMap.add(m[1])
+  // raw reads outside the mapping table (e.g. the sub-agent provider override)
+  for (const f of walk('src').filter(f => f.endsWith('.ts'))) {
+    for (const m of fs.readFileSync(path.join(ROOT, f), 'utf8').matchAll(/process\.env\.(PI_MATRIX_[A-Z0-9_]+)/g)) envMap.add(m[1])
+  }
+  // test seams and developer-facing keys are documented under docs/dev, not
+  // in the user configuration reference
+  const devDocs = walk('docs/dev').filter(f => f.endsWith('.md'))
+    .map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n')
+
+  const ref = fs.readFileSync(path.join(ROOT, 'docs/user/configuration.md'), 'utf8')
+  const readmeEnv = new Set()
+  for (const f of ['README.md', 'QUICKSTART.md', 'docs/user/configuration.md', 'docs/user/troubleshooting.md', 'docs/user/ask-user-pairing.md']) {
+    const text = fs.readFileSync(path.join(ROOT, f), 'utf8')
+    for (const m of text.matchAll(/\bPI_MATRIX_[A-Z0-9_]+\b/g)) {
+      if (!envMap.has(m[0])) fail(`${f}: documents ${m[0]} which no code reads`)
+      readmeEnv.add(m[0])
+    }
+  }
+  for (const name of envMap) {
+    if (!readmeEnv.has(name) && !devDocs.includes(name)) fail(`docs/user/configuration.md does not document ${name}`)
+  }
+}
+
+console.log(`checked ${markdown.length} markdown files (${linkCount} internal links); identifier scan: ${STRICT.length} files strict (${strictHits.length} hits); ticket-label scan: ${SOURCE_FILES.length} files (${labelHits} hits); stale-reference scan: ${OUR_SOURCE.length} files (${staleHits} hits); surface: README commands + PI_MATRIX_* keys cross-checked against src/`) 
 if (failures > 0) {
   console.log(`\n${failures} documentation-consistency failure(s)`)
   process.exit(1)
