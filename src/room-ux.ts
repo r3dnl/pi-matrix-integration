@@ -1,9 +1,9 @@
 /**
- * Pi Matrix Integration — RoomUx .
+ * Pi Matrix Integration — RoomUx.
  *
- * The room-facing auto-reply surface: the slash-relay suggestion reply
- * , the `@@` artifact-attach picker + uploads , the `@`
- * file-attach picker , and the /matrix-help guide. Every room
+ * The room-facing auto-reply surface: the slash-relay suggestion reply, the
+ * `@@` artifact-attach picker + uploads, the `@` file-attach picker, and the
+ * /matrix-help guide. Every room
  * auto-reply posts through the outgoing pipeline (`post` =
  * MessageHandler.post — configuration-and-room-behaviour.md: MessageHandler is the only writer;
  * auto-replies ride the dedupe window, declared delta from phase 2).

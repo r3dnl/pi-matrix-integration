@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration — ToolWatchers .
+ * Pi Matrix Integration — ToolWatchers.
  *
  * The sub-agent sub-thread markers (threads-and-summaries.md, review round 4 verdict:
  * event-based), extracted verbatim from index.ts: the shipped
@@ -114,7 +114,7 @@ export class ToolWatchers {
   }
 
   /** The `subagent` tool_result → the completion marker per agent name;
-   *  also the run-id attach point for detached children . */
+   *  also the run-id attach point for detached children. */
   async onToolResult(event: ToolResultEvent): Promise<void> {
     const cfg = this.deps.cfg;
     const spawnWatch = this.deps.getSpawnWatch?.() ?? DEFAULT_SPAWN_WATCH;

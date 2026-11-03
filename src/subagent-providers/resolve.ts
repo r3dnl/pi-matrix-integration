@@ -35,7 +35,7 @@ export function resolveSubagentProvider(
   // Live completion-channel subscribers (integration.ts wires ONE): on the
   // auto-flip they must be re-issued against the answering dialect — a
   // subscriber that bound the silent primary at startup would otherwise
-  // never hear completions .
+  // never hear completions.
   const channels = new Map<(name: string, result: string) => void, () => void>();
   const decided = primary.isAvailable().then(async (ok) => {
     if (ok) return primary;

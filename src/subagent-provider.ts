@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration — SubagentProvider contract .
+ * Pi Matrix Integration — SubagentProvider contract.
  *
  * The single seam between this extension and the sub-agent provider package
  * installed alongside pi (`@tintinweb/pi-subagents` today, `pi-subagents`
@@ -9,7 +9,7 @@
  * hard import is not guaranteed to resolve from a local extension,
  * threads-and-summaries.md).
  *
- * Rules :
+ * Rules:
  *  - Only the composition root (`integration.ts` buildStack) resolves a
  *    provider. The bus, lifecycle, watchers and posting code consume the
  *    normalized `AgentSpawnInput` shape and never learn who provided it.

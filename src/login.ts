@@ -92,7 +92,7 @@ function warnIfHttp(ui: LoginUi, raw: string): void {
  * GET `{baseUrl}/_matrix/client/v3/login` and report capability:
  * `reachable` (the endpoint answered) + `password` (an `m.login.password`
  * flow exists). Network or parse errors → `{reachable: false, password: false}`
- * — never throws .
+ * — never throws.
  */
 export async function probeLoginCapability(
   baseUrl: string,
@@ -247,7 +247,7 @@ export interface LoginDeps {
   qr2025?: boolean;
   /** The `state/` dir — the QR flow persists its registered client id there. */
   stateDir?: string;
-  /** Directory to save the project room manifest . */
+  /** Directory to save the project room manifest. */
   manifestDir?: string;
   /** Current working directory for the project. */
   cwd?: string;
@@ -350,7 +350,7 @@ export type InviteStepResult =
 /**
  * The room selection step (configuration-and-room-behaviour.md): propose → check + status → autocreate
  * when absent. Enter re-runs the resolution after an edit; a creation failure
- * (403/429) notifies and asks again . The alias is returned for the
+ * (403/429) notifies and asks again. The alias is returned for the
  * config `roomId` (persisted by the caller).
  */
 export async function runRoomStep(deps: RoomStepDeps): Promise<RoomStepResult> {
@@ -460,7 +460,7 @@ export async function runInviteStep(
 }
 
 /**
- * Generate and save a project room manifest .
+ * Generate and save a project room manifest.
  * Captures the room setup for the Pi agent project following a simplified
  * version of the matrix-accounts-py schema.
  */
@@ -477,7 +477,7 @@ export function saveProjectRoomManifest(
 }
 
 /**
- * Add .pi/ directories to .gitignore .
+ * Add .pi/ directories to .gitignore.
  * Checks if .gitignore exists, and if not, creates it.
  * Adds the rules if not already present.
  * Returns true if changes were made.
@@ -509,7 +509,7 @@ export function addPiToGitignore(projectDir: string = process.cwd()): boolean {
 }
 
 /**
- * Ask user if they want to add .pi/ directories to .gitignore .
+ * Ask user if they want to add .pi/ directories to .gitignore.
  * Returns true if the user agreed and the rules were added.
  */
 export async function promptAddPiToGitignore(
@@ -631,9 +631,9 @@ export function buildTourPrompt(helpContent: string): string {
 }
 
 /**
- * Run the credentials login dialogue . Esc/null at any step, or
+ * Run the credentials login dialogue. Esc/null at any step, or
  * "cancel" on the retry prompt, closes with `{ok:false, cancelled:true}` and
- * writes nothing. Login errors notify and re-ask the password only .
+ * writes nothing. Login errors notify and re-ask the password only.
  */
 export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
   const { ui } = deps;

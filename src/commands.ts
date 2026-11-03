@@ -167,7 +167,7 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
     },
   });
 
-  // Switch env / room / user profile at runtime .
+  // Switch env / room / user profile at runtime.
   // No arg → interactive menu of the available profiles (pick one, Esc
   // cancels). With a profile name: load + validate in memory, rebuild the
   // whole stack against it, reconnect, and announce the switch into the

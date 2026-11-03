@@ -199,7 +199,7 @@ export function formatNumberedMatches(header: string, matches: string[], outOf =
   return [header, ...lines, footer].join("\n");
 }
 
-/** Numbered list for the `@` picker . `prefix` is the configured
+/** Numbered list for the `@` picker. `prefix` is the configured
  *  token prefix — the header shows the token as the user typed it. */
 export function formatCandidateList(fragment: string, matches: string[], outOf = matches.length, prefix = "@"): string {
   return formatNumberedMatches(`Matches for ${prefix}${fragment}:`, matches, outOf);

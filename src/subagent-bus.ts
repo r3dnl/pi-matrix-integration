@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration — sub-agent bus .
+ * Pi Matrix Integration — sub-agent bus.
  *
  * Side-chain (sub-agent) sessions each run their OWN extension instance in
  * the same process; only the main session's instance owns the single Matrix

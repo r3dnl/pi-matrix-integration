@@ -36,7 +36,7 @@ export interface SubagentSummarizerOptions {
   spawnTimeoutMs?: number;
   logger?: MatrixLogger;
   /**
-   * Resolved provider . Omit → the tintinweb
+   * Resolved provider. Omit → the tintinweb
    * adapter, preserving today's behavior for every existing caller.
    */
   provider?: SubagentProvider;
