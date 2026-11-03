@@ -7,8 +7,8 @@
  * + MSC4125 attach encryption + E2EE (the legacy raw-HTTP matrix-http
  * client was deleted; this seam is all that remains).
  *
- * No op throws into the caller — the poller's "no message is ever dropped"
- * contract. Result-returning ops report the soft-fail shape
+ * No op throws into the caller — the "no message is ever dropped" contract
+ * this seam owns. Result-returning ops report the soft-fail shape
  * `{ success, error }`; the collection reads answer with an empty value
  * instead (`readMessages` and `roomMembers` -> `[]`, `roomInfo` ->
  * `{ rooms: [] }`).

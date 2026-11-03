@@ -19,7 +19,7 @@
  * fail at runtime inside Pi. It emits only the restricted tag subset
  * Element's sanitizer keeps (headings, p, strong, em, code, pre, a,
  * ul/ol/li, blockquote, br) plus table/th/td using the md2htmx reference
- * styling  — table rendering is client-dependent; where a client
+ * styling — table rendering is client-dependent; where a client
  * strips tables, the plain `body` fallback keeps the content readable.
  * Inline code spans ship as `<font color="#3385ff">` around the <code> —
  * see INLINE_CODE_STYLE; where a client strips the tag the span still
