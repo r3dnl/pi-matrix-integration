@@ -60,13 +60,14 @@ type SdkSyncState = SdkModule["SyncState"];
  *  `extractThreadMeta` (src/thread-meta.ts) sets `isThreadRoot` from its
  *  presence, the unread model keys a new conversation on it (in `bump()`,
  *  unread-model.ts), and the summarizer keeps the root event inside its own
- *  thread delta with it (`filterThreadDelta()`, summarize.ts). The name is
- *  historical
- *  (MSC1767). Threads themselves ride `m.relates_to`, and spec-following
+ *  thread delta with it (`filterThreadDelta()`, summarize.ts). The marker is
+ *  the `m.thread` key itself — this object is only its value, and neither of
+ *  its two fields carries thread data (those names are MSC1767 history).
+ *  Threads themselves ride `m.relates_to`, and spec-following
  *  clients such as Element do not write this field — so a root that was
  *  started elsewhere is not detected as a root here. Deleting the write means
  *  giving those two read paths another way to recognise a root. */
-const THREAD_MARKER = { "m.topological_ordering": 1, "m.message_count": 1 };
+const THREAD_ROOT_MARKER_VALUE = { "m.topological_ordering": 1, "m.message_count": 1 };
 
 /** The js-sdk default `initialSyncLimit` (10) backfills too few events
  *  for the thread-delta read, so it is raised to 50. */
@@ -646,7 +647,7 @@ export class SdkOutbox implements Outbox {
         msgtype: "m.text",
         body,
         ...(html !== undefined ? { format: "org.matrix.custom.html", formatted_body: html } : {}),
-        "m.thread": THREAD_MARKER,
+        "m.thread": THREAD_ROOT_MARKER_VALUE,
       }),
     );
   }
@@ -674,7 +675,7 @@ export class SdkOutbox implements Outbox {
           msgtype: "m.text",
           body,
           ...(html !== undefined ? { format: "org.matrix.custom.html", formatted_body: html } : {}),
-          ...(nestedRoot ? { "m.thread": THREAD_MARKER } : {}),
+          ...(nestedRoot ? { "m.thread": THREAD_ROOT_MARKER_VALUE } : {}),
         },
         rootId,
       ),
@@ -696,7 +697,7 @@ export class SdkOutbox implements Outbox {
           ...(opts?.html !== undefined
             ? { format: "org.matrix.custom.html", formatted_body: opts.html }
             : {}),
-          ...(opts?.threadRoot ? { "m.thread": THREAD_MARKER } : {}),
+          ...(opts?.threadRoot ? { "m.thread": THREAD_ROOT_MARKER_VALUE } : {}),
         },
         "m.relates_to": { rel_type: "m.replace", event_id: targetEventId },
       }),
