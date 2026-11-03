@@ -78,6 +78,9 @@ session with an unexplained `400` — remove the key to fix it.
 | `attachmentEncryption` | `true` | `PI_MATRIX_ATTACH_ENCRYPTION` (`off` to disable) | Encrypt file attachments at rest (Matrix spec attachment encryption). |
 
 The crypto store is a file-backed store with `0700`/`0600` permissions.
+Credentials are written the same way. What the room can and cannot do with
+this extension — including who can drive the agent — is in
+[SECURITY.md](../../SECURITY.md).
 Device identity stays stable across restarts, which keeps E2EE history
 readable.
 
