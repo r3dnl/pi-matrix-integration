@@ -139,11 +139,13 @@ export interface LifecycleDeps {
  * The connect-announcement room link (matrix.to). matrix.to is the standard
  * HTTPS deep-link that opens the installed Matrix app on phones/tablets via
  * Universal Links / App Links, and falls back to the web client when no app
- * is installed. There is no standard `matrix://` custom URI scheme — the
+  * is installed. There is no standard `matrix://` custom URI scheme — the
  * spec only defines `mxc://` (media) — so matrix.to is the open-in-app
  * vehicle. Format: `https://matrix.to/#/<roomId>` where roomId is a room
  * alias (`#name:domain`) or a room ID (`!id:domain`). Returns "" when roomId
- * is absent (the announcement then is the bare status line).
+ * is absent (the announcement then is the bare status line). The link carries a
+ * leading space because its only caller appends it straight after the status
+ * text; drop the space here if it ever feeds a markdown link.
  */
 export function buildMatrixToLink(roomId: string | undefined): string {
   return roomId ? ` https://matrix.to/#/${roomId}` : "";
