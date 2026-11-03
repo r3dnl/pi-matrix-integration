@@ -11,8 +11,8 @@
  * This module provides the bridge between v1, v2, and the code that consumes config.
  */
 
-import type { MatrixConfig, PartialMatrixConfig } from "./types.js";
-import { DEFAULT_CONFIG, getActiveConfigDir, getConfigDir, getProjectConfigPath, getProjectCredentialsPath, loadConfig, parseJsonc, resolveConfigPath, saveConfig, seedConfigFile, getActiveProfileName, loadProfile, getValidConfig, validateConfig, getStateDir } from "./config-utils.js";
+import type { MatrixConfig } from "./types.js";
+import { DEFAULT_CONFIG, getActiveConfigDir, getConfigDir, getProjectConfigPath, getProjectCredentialsPath, loadConfig, parseJsonc, resolveConfigPath, saveConfig, seedConfigFile, getActiveProfileName, loadProfile, getValidConfig } from "./config-utils.js";
 import { existsSync, readFileSync, readdirSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { homedir } from "node:os";

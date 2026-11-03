@@ -23,7 +23,6 @@
  *   package docs/background-work.md — runner env + provider seams
  *   configuration-and-room-behaviour.md (this adapter), configuration-and-room-behaviour.md (watch names)
  */
-import type { AgentSpawnInput } from "../subagent-bus.js";
 import {
   newRequestId,
   unref,
