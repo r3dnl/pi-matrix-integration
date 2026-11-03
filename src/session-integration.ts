@@ -81,8 +81,10 @@ export class SessionIntegrator {
       timestamp: matrixMessage.timestamp,
       roomId: matrixMessage.roomId,
       type: piMessage.type,
-      // Bookkeeping only (threads-and-summaries.md) — carries the user's thread root so
-      // the thread state map can re-attach / adopt; no routing effect.
+      // Bookkeeping on the injected payload (threads-and-summaries.md): which
+      // thread this message belongs to, kept with the message identity. No
+      // routing effect, and nothing in this package reads it back — the thread
+      // state map takes the root from the MatrixMessage, not from this copy.
       threadRoot: matrixMessage.threadRoot,
     };
 
