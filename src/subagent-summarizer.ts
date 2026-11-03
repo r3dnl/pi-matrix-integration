@@ -9,7 +9,7 @@
  * directive"; `run(prompt)` resolves the new summary body or null (never
  * clobber the root).
  *
- * phase 1 of configuration-and-room-behaviour.md: the default provider is the tintinweb
+ * Per configuration-and-room-behaviour.md: the default provider is the tintinweb
  * adapter holding the original bodies verbatim; the existing fake-bus tests
  * replay unchanged (the refactor's correctness gate, G2).
  */

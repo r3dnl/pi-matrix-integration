@@ -263,7 +263,7 @@ export class MessageHandler {
       }
     }
 
-    // Flat send: the single outbox write surface (transport-and-state.md phase 6 — the
+    // Flat send: the single outbox write surface (transport-and-state.md; the
     // facade pair is deleted; the PI_MATRIX_TEST_OUTBOX seam stands in
     // for the SdkOutbox in the spawned suites).
     let result: MatrixSendResult;

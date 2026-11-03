@@ -13,7 +13,7 @@
  * snapshot — fed by the connect() outcomes and the sdk transport's
  * `onSyncError` delivery callback. The footer's `() => ConnectionStatus` callback
  * reads this snapshot via the session-integration provider (the
- * transport deletion landed in phase 6).
+ * transport is the SdkOutbox).
  */
 
 import type {

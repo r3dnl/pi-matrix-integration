@@ -12,7 +12,7 @@
  * thread root is a new conversation, so it counts as one unit like a flat
  * message. `clear()` wipes the flat counter AND the thread map.
  *
- * Structural deltas vs the Python model (phase 6 option A, documented):
+ * Structural deltas vs the Python model (the port is not a copy):
  * - `since` is **per-room** (this extension is single-account, single-room
  *   per config), not account-level; it is a `number` (ms), matching
  *   Python's `int` so the cross-language shadow diff type-joins.

@@ -13,7 +13,7 @@
  *   `parseMatrixEvent` (the same pipeline the poller feeds) —
  *   thread metadata, reactions, `isFromPi` marking — and the initial
  *   sync's backfill is the seed round (baselined, never emitted, the
- *   poller's phase 9 semantics).
+ *   poller's seed rule).
  * - **Attachments**: MSC4125 sender-side encryption (`matrix-encrypt-
  *   attachment`, AES-256-CTR v2) so VectorIM Element Web's
  *   `isEncrypted === !!content.file` bug no longer breaks `@@` opens.
@@ -74,7 +74,7 @@ const MAX_SEEN_EVENT_IDS = 1000;
 
 /** Backfill (initial-sync) events newer than this are emitted instead of
  *  baselined — messages sent while this client was down still reach the
- *  session; older backfill stays baselined (phase 9 no-cutover-flood).
+ *  session; older backfill stays baselined, so a cutover cannot flood the room.
  *  ponytail: time-window heuristic; a persisted last-delivered
  *  high-water mark would be the exact version. */
 const BACKFILL_GRACE_MS = 600_000;
@@ -91,7 +91,7 @@ const DECRYPT_WAIT_MS = 5_000;
 export interface SdkOutboxOptions {
   /** Homeserver host ("matrix.example.org" or "https://…"). */
   homeserver: string;
-  /** `@user:domain` — the Phase-0 single identity (`isFromPi`). */
+  /** `@user:domain` — the single identity this extension logs in as (`isFromPi`). */
   userId: string;
   /** Room alias or id from config. */
   roomId: string;
@@ -915,7 +915,7 @@ export class SdkOutbox implements Outbox {
    * Start sync-based delivery: `Room.timeline` events for the configured
    * room, normalized through the shared `parseMatrixEvent` and fed to
    * the same callbacks the poll loop feeds. The initial sync's backfill
-   * is the seed round (baselined, never emitted — the poller's phase 9
+   * is the seed round (baselined, never emitted — the poller's seed
    * semantics); live events emit. Idempotent.
    */
   startDelivery(callbacks: SdkDeliveryCallbacks): void {

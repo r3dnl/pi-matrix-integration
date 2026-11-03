@@ -124,11 +124,12 @@ pendingHits.slice(0, 8).forEach(h => console.log(`warn  ${h.file}:${h.line}: int
 if (pendingHits.length > 8) console.log(`warn  … and ${pendingHits.length - 8} more pending internal-identifier cleanups`)
 
 // --- 3. review-ticket labels in source comments ---
-// Ids like FINDING-<n>, a BUG-<NAME> branch tag, a reviewer-table row or a
-// backlog number resolve to nothing for anyone outside the tree that minted
-// them. The reason behind the id is public; the id is not.
+// Ids like FINDING-<n>, a BUG-<NAME> branch tag, a reviewer-table row, a
+// backlog number or a migration phase number resolve to nothing for anyone
+// outside the tree that minted them. The reason behind the id is public; the
+// id is not.
 const TICKET_LABEL =
-  /\b(?:FINDING|REVIEW)-\d+\b|\bBUG-[A-Z][A-Z-]{4,}\b|\breviewer row [A-Z]?\d+\b|\bbacklog #\d+/i
+  /\b(?:FINDING|REVIEW)-\d+\b|\bBUG-[A-Z][A-Z-]{4,}\b|\breviewer row [A-Z]?\d+\b|\bbacklog #\d+|\bphase[- –]?\d+\b|\b[A-Z]\d phase \d/i
 
 const SOURCE_FILES = [...walk('src').filter(f => /\.ts$/.test(f)), 'index.ts']
 let labelHits = 0

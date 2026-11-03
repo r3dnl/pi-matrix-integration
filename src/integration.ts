@@ -11,7 +11,7 @@
  *
  * Owns:
  * - `buildStack` (the stack construction — the index.ts buildStack
- *   verbatim, with the phase 2–4 hunks applied: threadSend delegate,
+ *   verbatim, with the stack hunks applied: threadSend delegate,
  *   pipeline outbox, lifecycle/watchers/events, roomUx/inbound).
  * - The factory-scope `PickerState` (the zero-delta move of the two
  *   original factory-scope CandidateListTracker instances — created
@@ -330,8 +330,8 @@ export class MatrixIntegration {
       }
     });
 
-    // Session lifecycle — the hook BODIES live in Lifecycle (transport-and-state.md
-    // phase 3); the registrations stay here once (dispatch through the
+    // Session lifecycle — the hook BODIES live in Lifecycle
+    // (transport-and-state.md); the registrations stay here once (dispatch through the
     // current stack at call time — nothing re-registers on
     // /matrix-switch).
     pi.on("session_start", async (event, ctx) => {
@@ -404,7 +404,7 @@ export class MatrixIntegration {
     });
 
     // Sub-agent sub-threads — the marker bodies live in ToolWatchers
-    // (transport-and-state.md phase 3); the registrations dispatch through the CURRENT
+    // (transport-and-state.md); the registrations dispatch through the CURRENT
     // watcher at call time.
     pi.on("tool_call", (event) => {
       void this.stack.watchers.onToolCall(event);
@@ -413,7 +413,7 @@ export class MatrixIntegration {
       void this.stack.watchers.onToolResult(event);
     });
 
-    // Matrix room-event delivery (transport-and-state.md phase 6): the outbox delivery
+    // Matrix room-event delivery (transport-and-state.md): the outbox delivery
     // loop — startDelivery ONCE with the first stack's callbacks
     // bundle (the post-switch rebind lands via reattach →
     // connectAndStart, which startDelivers the CURRENT stack's bundle).
@@ -552,7 +552,7 @@ export class MatrixIntegration {
         // saveCredentials already derived from user_id) and makes it the
         // active profile. Writing in-place to the bare config is what made
         // login non-profile-aware; per-account profiles isolate each login.
-        // phase 3.1: drop the stale identity so the profile re-derives it
+        // On account switch: drop the stale identity so the profile re-derives it
         // from the NEW credentials file (baking the old owner = the
         // two-sender identity bug: wrong footer + undecryptable E2EE).
         const credPath = typeof patch.credentialsPath === "string" ? patch.credentialsPath : "";
@@ -569,7 +569,7 @@ export class MatrixIntegration {
         // also stays behind when a later login re-points the profile, so a
         // second account keeps loading the first account's room and toggles.
         // migrateV1toV2 drops userId/homeserver as undefined, so the identity
-        // still derives from the new credentials file (phase 3.1 #0).
+        // still derives from the new credentials file.
         const v2 = migrateV1toV2(next) as unknown as MatrixConfig;
         if (profileName) {
           saveConfig(
@@ -780,11 +780,11 @@ export class MatrixIntegration {
 
   /**
    * The stack construction (the index.ts buildStack, verbatim with the
-   * phase 2–4 hunks applied + the PI_MATRIX_TEST_OUTBOX test seam).
+   * stack hunks applied + the PI_MATRIX_TEST_OUTBOX test seam).
    */
   private buildStack(cfg: MatrixConfig): MatrixStack {
-    // The Outbox seam (transport-and-state.md phase 6
-    // terminal): the SdkOutbox is the SINGLE transport — the legacy
+    // The Outbox seam:
+    // the SdkOutbox is the SINGLE transport — the legacy
     // facade + raw-HTTP pair is deleted; the outbox owns all room
     // writes/state reads + the delivery loop.
     //
@@ -992,7 +992,7 @@ export class MatrixIntegration {
       // body fallback via stripHtmlTags.
       postResult: async (text) => messageHandler.post(text, "decision", { dedupe: false, html: text }),
       edit: async (targetEventId, text) => messageHandler.editInThread(targetEventId, text, text),
-      // transport-and-state.md phase 3: the flag moved to the lifecycle — the late-bound
+      // The flag moved to the lifecycle — the late-bound
       // call-time read keeps the mirror switch-current.
       isEnabled: () => lifecycle.isEnabled(),
       emitAnswer: (payload) => this.pi.events.emit("rpiv:ask-user:answer", payload),
@@ -1053,7 +1053,7 @@ export class MatrixIntegration {
       logger: this.logger,
     });
 
-    // The minimal event funnel (transport-and-state.md phase 3): one dispatcher per stack
+    // The minimal event funnel (transport-and-state.md): one dispatcher per stack
     // build. Ephemeral by design — no state/ persistence (7fc13e1 check):
     // the funnel is call-time dispatch only; the rpiv bus subscription in
     // attach() emits through the CURRENT dispatcher at call time; the
@@ -1143,7 +1143,7 @@ export class MatrixIntegration {
       threadManager.noteDecisionClosed();
     });
 
-    // The room-UX aggregation (transport-and-state.md phase 4): the slash suggestion
+    // The room-UX aggregation (transport-and-state.md): the slash suggestion
     // reply, both pickers ("@" file / "@@" artifact), and the
     // /matrix-help guide — every room auto-reply posts through the
     // outgoing pipeline. The picker instance is factory
@@ -1156,7 +1156,7 @@ export class MatrixIntegration {
       post: (text, kind) => messageHandler.post(text, kind),
       picker: this.pickerState,
     });
-    // The single room-event dispatch point (transport-and-state.md phase 4): mirror
+    // The single room-event dispatch point (transport-and-state.md): mirror
     // consume → slash relay → attach → decision/inject (index.ts
     // 649–872, 1:1). Rebuilt with the stack on /matrix-switch (the
     // object-stable rebind discipline) — the registrations dispatch

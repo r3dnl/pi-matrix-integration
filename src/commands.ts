@@ -3,7 +3,7 @@
  *
  * Thin adapters over the MatrixIntegration composition root: each
  * handler is a config read + a stack call; the stack behavior (connect
- * sequences, switch orchestration, funnel legs) lives in the phase 3–5
+ * sequences, switch orchestration, funnel legs) lives in the stack
  * modules (lifecycle / watchers / events / inbound / room-ux). The
  * registrations happen ONCE at extension load (the object-stable rebind
  * discipline — nothing re-registers on /matrix-switch); the handlers
