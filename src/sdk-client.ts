@@ -1122,8 +1122,9 @@ export class SdkOutbox implements Outbox {
   /**
    * Download a media resource (`mxc://server/mediaId[/filename]`) —
    * voice transcription. Plain `fetch` with the access
-   * token instead of the SDK's `http.authedRequest` (that layer JSON
-   * decodes non-error responses; binary media would not survive it).
+   * token instead of the SDK's `http.authedRequest` (that layer
+   * JSON-decodes a successful body unless the caller opts out; binary media
+   * would not survive the default).
    * E2EE rooms: the returned bytes are the SSS ciphertext when the
    * filename is `org.matrix.msc2666.v1` — the caller decides what to do
    * (the voice leg treats that as undecryptable on this device).
@@ -1132,9 +1133,11 @@ export class SdkOutbox implements Outbox {
     if (!this.token) return null;
     if (!mxcUrl.startsWith("mxc://")) return null;
     // mxc://server/mediaId[/filename] — the download endpoint takes
-    // serverName + mediaId only (no filename, no query).
-    // ponytail: prefix-check + split instead of a regex — a regex literal
-    // containing `//` breaks this codebase's jiti transpiler (ParseError).
+    // serverName + mediaId only (no filename, no query), so the first two
+    // path segments are sliced out and any filename is dropped. A regex reads
+    // as well here (checked on jiti 2.7.0); an earlier note at this line
+    // blamed a loader ParseError for `//` inside a regex, and that was wrong:
+    // an unescaped `//` ends a regex literal in any JavaScript parser.
     const path = mxcUrl.slice("mxc://".length).split("/").slice(0, 2).join("/");
     try {
       const res = await fetch(
