@@ -159,13 +159,6 @@ export interface ThreadSendResult {
 export type SendKind = "milestone" | "final" | "user" | "decision" | "other";
 
 /**
- * Thread lifecycle + routing + summarizer + state persistence.
- *
- * One instance per room. `canRoute()` is the choke point: false → callers
- * fall back to the flat send path, so threading is always a
- * non-blocking enhancement.
- */
-/**
  * Summary-cadence gate. Fixed mode: the
  * original modulo check. Fibonacci mode (default): the trigger points are
  * absolute per root — intervals 1, 1, 2, 3, 5, 8, 13… capped at `cap`
@@ -191,6 +184,13 @@ export function summaryDue(msgCount: number, cap: number, useFib: boolean): bool
   }
 }
 
+/**
+ * Thread lifecycle + routing + summarizer + state persistence.
+ *
+ * One instance per room. `canRoute()` is the choke point: false → callers
+ * fall back to the flat send path, so threading is always a
+ * non-blocking enhancement.
+ */
 export class ThreadManager {
   private opts: Required<Pick<ThreadManagerOptions, "enabled" | "roomKey">> & ThreadManagerOptions;
   private threadSend?: ThreadSend;
