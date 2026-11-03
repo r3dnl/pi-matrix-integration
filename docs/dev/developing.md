@@ -54,6 +54,12 @@ export PI_MATRIX_PASSWORD='<from your secret store>'
 npm run test:live
 ```
 
+A test homeserver that only speaks `http://` on a non-local address needs
+an explicit opt-in as well: `PI_MATRIX_ALLOW_INSECURE_HTTP=1`. Without it
+the login dialogue refuses `http://` unless the address is loopback or a
+`.local` name, or a human confirms the risk in the dialogue. Nothing else
+changes; the variable never applies to `https://`.
+
 Create a fresh room per run (the scripts do) so reruns cannot interfere, and expect the suite to write messages to that room.
 
 ## Architecture

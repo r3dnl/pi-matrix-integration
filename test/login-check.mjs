@@ -581,11 +581,12 @@ const dialogDeps = (extra = {}) => {
 }
 
 {
-  // R3.1 (#2): an explicit http:// input raises a stern warning (credentials
-  // travel in the clear) but still tries — the server may legitimately be
-  // http on a test network.
+  // R3.1 (#2) + story 6: an explicit http:// input raises a stern warning
+  // (credentials travel in the clear) AND needs an explicit consent choice
+  // before anything sends credentials — here the user allows it once, which
+  // stands for a legitimately-http test network.
   const ui = makeUi({
-    select: [...DEFAULT_SELECTS],
+    select: ["allow http once", ...DEFAULT_SELECTS],
     input: ["http://hs.example", "vincent", "myroom", ""],
     password: ["correct horse"],
   });
@@ -611,6 +612,9 @@ const dialogDeps = (extra = {}) => {
   check("dialogue: explicit http:// → the probe still tries the http:// URL",
     probed[0] === "http://hs.example/_matrix/client/v3/login",
     JSON.stringify(probed));
+  check("dialogue: explicit http:// → consent asked before credentials are sent",
+    ui.calls.select.some((s) => /http:\/\/|unencrypted/i.test(String(s?.title ?? s?.question ?? ""))),
+    JSON.stringify(ui.calls.select.map((s) => s?.title ?? s)));
   fs.rmSync(deps.credsDir, { recursive: true, force: true });
 }
 

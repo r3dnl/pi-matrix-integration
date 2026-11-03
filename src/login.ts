@@ -89,6 +89,57 @@ function warnIfHttp(ui: LoginUi, raw: string): void {
 }
 
 /**
+ * http:// policy (story 6): loopback and `.local`/`.localhost` names are
+ * local development by definition; anything else in the clear needs an
+ * explicit yes from the user (or the escape hatch below, for scripted
+ * test networks).
+ */
+export function isLocalHomeserver(raw: string): boolean {
+  const m = raw.trim().match(/^http:\/\/([^/]+)/i);
+  if (!m) return false;
+  const host = m[1].replace(/:\d+$/, "").replace(/^\[|\]$/g, "").toLowerCase();
+  return (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host === "::1" ||
+    host.endsWith(".local") ||
+    /^127\./.test(host)
+  );
+}
+
+/** The scripted escape hatch for a local test network that speaks http. */
+export function insecureHttpExplicitlyAllowed(): boolean {
+  return process.env.PI_MATRIX_ALLOW_INSECURE_HTTP === "1";
+}
+
+/**
+ * A fetch wrapper that refuses CROSS-HOST redirects (story 6): credentials
+ * submitted to the homeserver must never be relayed to a different host by
+ * a 3xx. Same-host redirects keep working (they are re-issued with the
+ * caller's original method and body); a hop to another host is an error.
+ */
+export function makeLoginFetch(base: typeof fetch = globalThis.fetch): typeof fetch {
+  return async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    const url = new URL(
+      typeof input === "string" ? input : input instanceof URL ? input.href : (input as Request).url,
+    );
+    const res = await base(input, { ...(init ?? {}), redirect: "manual" });
+    if (res.status >= 300 && res.status < 400) {
+      const loc = res.headers.get("location");
+      if (loc) {
+        const target = new URL(loc, url);
+        if (target.host !== url.host) {
+          throw new Error(`Cross-host redirect refused during login: ${url.host} → ${target.host}`);
+        }
+        // Same host: follow it ourselves, keeping the original request.
+        return base(target.href, init);
+      }
+    }
+    return res;
+  };
+}
+
+/**
  * GET `{baseUrl}/_matrix/client/v3/login` and report capability:
  * `reachable` (the endpoint answered) + `password` (an `m.login.password`
  * flow exists). Network or parse errors → `{reachable: false, password: false}`
@@ -648,7 +699,7 @@ export function buildTourPrompt(helpContent: string): string {
  */
 export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
   const { ui } = deps;
-  const fetchImpl = deps.fetchImpl ?? fetch;
+  const fetchImpl = deps.fetchImpl ?? makeLoginFetch();
 
   // configuration-and-room-behaviour.md: unreachable → one line; retry or cancel. Retry always offers the
   // homeserver input again, with the current value as its placeholder; an
@@ -702,6 +753,29 @@ export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
     const entered = await ui.input("Matrix homeserver", homeserver);
     if (entered == null) return { ok: false, cancelled: true };
     homeserver = entered === "" ? homeserver : applyEntered(entered);
+  }
+
+  // The http:// gate (story 6): right before anything sends credentials,
+  // an unencrypted non-local server needs an explicit yes. Loopback never
+  // asks; PI_MATRIX_ALLOW_INSECURE_HTTP=1 is the scripted test-network
+  // hatch. Choosing "https" re-asks for the address instead of continuing.
+  for (;;) {
+    if (
+      !/^http:\/\//i.test(homeserver) ||
+      isLocalHomeserver(homeserver) ||
+      insecureHttpExplicitlyAllowed()
+    ) {
+      break;
+    }
+    const choice = await ui.select(
+      "This homeserver speaks http:// — your password would travel unencrypted. Proceed?",
+      ["re-enter an https:// address", "allow http once", "cancel"],
+    );
+    if (choice === "cancel" || choice == null) return { ok: false, cancelled: true };
+    if (choice === "allow http once") break;
+    const entered = await ui.input("Matrix homeserver (https://)", homeserver);
+    if (entered == null || entered === "") return { ok: false, cancelled: true };
+    homeserver = applyEntered(entered);
   }
 
   // Both methods produce the same login response; the tail (room → toggles

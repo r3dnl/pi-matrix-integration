@@ -106,6 +106,25 @@ export function createInbound(deps: InboundDeps): Inbound {
       .catch(() => undefined);
   };
 
+  // Flood guard (story 6 trust boundary): the stale guard bounds a message's
+  // AGE; this bounds the RATE. A room flooding events must not enqueue
+  // unbounded work in the session — beyond FLOOD_CAP human messages per
+  // window they are dropped, once visibly. The cap is deliberately not a
+  // config key: it is a safety limit, not a preference.
+  const FLOOD_WINDOW_MS = 60_000;
+  const FLOOD_CAP = 30;
+  let recentHuman: number[] = [];
+  const floodDrops: MatrixMessage[] = [];
+  let floodFlush: ReturnType<typeof setTimeout> | null = null;
+  const flushFloodDrops = () => {
+    floodFlush = null;
+    if (!floodDrops.length) return;
+    const n = floodDrops.length;
+    floodDrops.length = 0;
+    const header = `⚠️ Dropped ${n} message(s) beyond the room rate limit (${FLOOD_CAP} per minute). They were never delivered to Pi — resend if they still matter.`;
+    void messageHandler.post(header, "other", { flat: true }).catch(() => undefined);
+  };
+
   // The file-attach injection helper: same normal-injection
   // path as the fallthrough below — keeps attribution, decision-response
   // detection, and the renderer.
@@ -166,6 +185,23 @@ export function createInbound(deps: InboundDeps): Inbound {
         if (staleFlush !== null) clearTimeout(staleFlush);
         staleFlush = setTimeout(flushStaleDrops, STALE_REPORT_DEBOUNCE_MS);
         return;
+      }
+      // Flood guard: rate, not age (see the guard setup above). Pi's own
+      // broadcasts never count — the limit protects the session from the
+      // room, never from itself.
+      if (!matrixMessage.isFromPi) {
+        const now = Date.now();
+        recentHuman = recentHuman.filter((t) => now - t < FLOOD_WINDOW_MS);
+        if (recentHuman.length >= FLOOD_CAP) {
+          floodDrops.push(matrixMessage);
+          logger.warn(
+            `[matrix] ${matrixMessage.eventId} dropped: room rate limit (${FLOOD_CAP}/min) exceeded`,
+          );
+          if (floodFlush !== null) clearTimeout(floodFlush);
+          floodFlush = setTimeout(flushFloodDrops, STALE_REPORT_DEBOUNCE_MS);
+          return;
+        }
+        recentHuman.push(now);
       }
       // Threading adoption (threads-and-summaries.md): the user's reply carries a
       // thread root (it happened in a thread, e.g. in Element) → that thread
@@ -285,7 +321,7 @@ export function createInbound(deps: InboundDeps): Inbound {
       if (piMessage) {
         sessionIntegrator.injectMatrixMessage(matrixMessage, piMessage);
         logger.debug(
-          `[matrix] injected into session: ${matrixMessage.eventId} "${(matrixMessage.body ?? "").slice(0, 60)}" (followUp, triggerTurn)`,
+          `[matrix] injected into session: ${matrixMessage.eventId} (${(matrixMessage.body ?? "").length} chars, followUp, triggerTurn)`,
         );
       } else {
         logger.debug(`[matrix] ${matrixMessage.eventId} not injected (handleIncomingMessage returned null)`);
