@@ -655,15 +655,9 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
           return true;
         }
       } else {
-        // Multi-select polls: clients (observed on the phone client
-        // 2026-10-13) emit ONE response PER tap instead of a single
-        // multi-id response — the MSC3381 max_selections field does not
-        // make the phone client collect selections into one response. A
-        // new tap must therefore MERGE into the buffered selection, not
-        // replace it (a replace drops the earlier taps and the question
-        // ends up single-answered). The merged union is re-emitted; the
-        // package reducer's per-question replace then converges to the
-        // union.
+        // No toggle-off signal on this path — a multi-ref response is an
+        // exact set (a client collecting selections), or a genuinely new
+        // option — so union the earlier taps with this one.
         for (const label of prevLabels) {
           if (!selected.includes(label)) selected.push(label);
         }
