@@ -9,6 +9,8 @@ import { createPiJiti, makeCheck } from "./_harness.mjs";
 
 const jiti = await createPiJiti(import.meta.url);
 const bus = await jiti.import("../src/subagent-bus.ts");
+// The bus renders through the one escaper, which lives in markdown.ts.
+const { escapeHtml } = await jiti.import("../src/markdown.ts");
 const { check, finish } = makeCheck("SUBAGENT-BUS");
 
 const {
@@ -16,7 +18,6 @@ const {
   agentSpawnMeta,
   fmtDuration,
   firstLine,
-  escapeHtml,
   tintedLine,
   spawnLine,
   settleLine,
@@ -57,7 +58,7 @@ check(
 check("fmtDuration seconds", fmtDuration(45_000) === "45s");
 check("fmtDuration minutes", fmtDuration(125_000) === "2m5s");
 check("firstLine skips blanks", firstLine("\n\n  done here\n") === "done here");
-check("escapeHtml", escapeHtml('a<b>&"c') === "a&lt;b&gt;&amp;&quot;c" || escapeHtml("a<b>&c") === "a&lt;b&gt;&amp;c");
+check("escapeHtml escapes quotes too", escapeHtml('a<b>&"c') === "a&lt;b&gt;&amp;&quot;c");
 
 const plain = tintedLine("⚡ Spawn: x", " (t · m)", "#FF0000", false);
 check("tintedLine plain: no html, marker text", !plain.html && plain.text.startsWith("⚡ Spawn: x"));

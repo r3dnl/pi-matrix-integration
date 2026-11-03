@@ -11,7 +11,7 @@
  * (palette hash, configuration-and-room-behaviour.md), so nothing is persisted.
  */
 
-import { convertMarkdown } from "./markdown.js";
+import { convertMarkdown, escapeHtml } from "./markdown.js";
 
 export interface SubagentSpawnRecord {
   /** Normalized prompt (depth 1) or `${parentName}::${prompt}` (depth 2). */
@@ -133,13 +133,6 @@ export function agentSpawnMeta(input: AgentSpawnInput): {
     model: str(input.model) || "(session model)",
     thinking: typeof input.thinking === "string" && input.thinking ? input.thinking : null,
   };
-}
-
-export function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
 
 export function fmtDuration(ms: number): string {
