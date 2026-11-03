@@ -14,8 +14,44 @@
   ],
   "author": "Vincent Jansen",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/r3dnl/pi-matrix-integration.git"
+  },
+  "homepage": "https://github.com/r3dnl/pi-matrix-integration#readme",
+  "bugs": {
+    "url": "https://github.com/r3dnl/pi-matrix-integration/issues"
+  },
+  "files": [
+    "index.ts",
+    "src",
+    "agents",
+    "docs",
+    "patches",
+    "README.md",
+    "QUICKSTART.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "NOTICE"
+  ],
   "peerDependencies": {
-    "pi-subagents": "^0.80.0"
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*",
+    "@juicesharp/rpiv-voice": "*",
+    "@tintinweb/pi-subagents": "*",
+    "pi-subagents": "*"
+  },
+  "peerDependenciesMeta": {
+    "@juicesharp/rpiv-voice": {
+      "optional": true
+    },
+    "@tintinweb/pi-subagents": {
+      "optional": true
+    },
+    "pi-subagents": {
+      "optional": true
+    }
   },
   "scripts": {
     "test": "node test/run.mjs",
