@@ -72,16 +72,12 @@ export async function createPiJiti(baseUrl = import.meta.url) {
   const { createJiti } = await import("jiti");
 
   const require = createRequire(path.join(pkgDir, "package.json"));
+  // pi-tui resolves canonically (it is hoisted in this repo's tree). A nested
+  // copy under pi-coding-agent is not a seam — npm prunes what the lockfile
+  // does not own; jiti above, same story.
   const alias = {
     "@earendil-works/pi-coding-agent": path.join(pkgDir, "dist", "index.js"),
-    "@earendil-works/pi-tui": path.join(
-      pkgDir,
-      "node_modules",
-      "@earendil-works",
-      "pi-tui",
-      "dist",
-      "index.js",
-    ),
+    "@earendil-works/pi-tui": require.resolve("@earendil-works/pi-tui"),
     typebox: require.resolve("typebox"),
     "typebox/compile": require.resolve("typebox/compile"),
     "typebox/value": require.resolve("typebox/value"),
@@ -136,4 +132,20 @@ export function makeCheck(label = "") {
       process.exit(1);
     },
   };
+}
+
+/**
+ * Live-tier guard: the live scripts talk to a real homeserver and must
+ * never no-op on missing credentials. Call at the top of every live
+ * script: it fails the run naming each missing variable.
+ */
+export function requireLiveEnv(vars = ["PI_MATRIX_HOMESERVER", "PI_MATRIX_USERNAME", "PI_MATRIX_PASSWORD"]) {
+  const missing = vars.filter((v) => !process.env[v]);
+  if (missing.length > 0) {
+    console.error(
+      `live tier refuses to run — missing environment variables: ${missing.join(", ")}\n` +
+        `export them (see docs/dev/developing.md, "Running the live tier").`,
+    );
+    process.exit(1);
+  }
 }

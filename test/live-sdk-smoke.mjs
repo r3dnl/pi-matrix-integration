@@ -13,7 +13,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createPiJiti, EXT_DIR } from "./_harness.mjs";
+import { createPiJiti, EXT_DIR, requireLiveEnv } from "./_harness.mjs";
+
+requireLiveEnv();
 
 const jiti = await createPiJiti(import.meta.url);
 const { SdkOutbox } = await jiti.import(path.join(EXT_DIR, "src/sdk-client.ts"));
