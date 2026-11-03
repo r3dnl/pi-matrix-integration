@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# local machine state — never belongs in this repo
+state/
+config/
+manifests/
+.env
+.env.*
+
+# logs and run artifacts
+*.log
+artifacts/
+.tdd/
+
+# build / packaging leftovers
+*.tsbuildinfo
+package/
+pi-matrix-integration-*.tgz

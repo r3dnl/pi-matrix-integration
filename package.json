@@ -1,0 +1,42 @@
+{
+  "name": "pi-matrix-integration",
+  "version": "1.0.0",
+  "description": "Matrix integration for the Pi coding agent (via the mtx CLI)",
+  "main": "index.ts",
+  "type": "module",
+  "keywords": [
+    "pi",
+    "matrix",
+    "integration",
+    "chat",
+    "messaging"
+  ],
+  "author": "Vincent Jansen",
+  "license": "MIT",
+  "peerDependencies": {
+    "pi-subagents": "^0.80.0"
+  },
+  "scripts": {
+    "test": "node test/run.mjs",
+    "test:repro": "node test/repro.mjs",
+    "test:logic": "node test/test-logic.mjs",
+    "test:live": "node test/live-check.mjs"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "pi-subagents": {
+    "agents": [
+      "./agents"
+    ]
+  },
+  "dependencies": {
+    "jsqr": "^1.4.0",
+    "matrix-encrypt-attachment": "^1.0.3",
+    "matrix-js-sdk": "^42.4.0",
+    "qrcode": "^1.5.4",
+    "@matrix-org/matrix-sdk-crypto-wasm": "^18.9.0"
+  }
+}
