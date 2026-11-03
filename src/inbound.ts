@@ -49,7 +49,7 @@ export interface InboundDeps {
   roomUx: RoomUx;
   messageHandler: MessageHandler;
   sessionIntegrator: SessionIntegrator;
-  /** Voice-message transcription (backlog #4) — the `m.audio`/`m.voice`
+  /** Voice-message transcription — the `m.audio`/`m.voice`
    *  leg hands the message here and stops the funnel. */
   voiceTranscriber: VoiceTranscriber;
 }
@@ -184,7 +184,7 @@ export function createInbound(deps: InboundDeps): Inbound {
       }
 
       // Voice message (m.audio/m.voice, Element): transcribe async →
-      // inject the transcript as the sender's text (backlog #4). Same
+      // inject the transcript as the sender's text. Same
       // leg shape as the file-attach expansion below: the normal
       // injection path keeps attribution, decision-response detection,
       // and the renderer. The async work owns the message — the funnel

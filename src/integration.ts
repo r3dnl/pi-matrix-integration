@@ -1162,7 +1162,7 @@ export class MatrixIntegration {
     // object-stable rebind discipline) — the registrations dispatch
     // through the CURRENT inbound at call time; `pi` is the stable
     // entry-point API.
-    // Voice transcription (backlog #4): the media download rides the
+    // Voice transcription: the media download rides the
     // outbox (token + baseUrl owned there); the transcriber is stateless
     // (the warm engine caches itself in the voice module). The test
     // outbox seam may lack downloadMedia — degrade to a no-op download

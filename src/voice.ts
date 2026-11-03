@@ -1,5 +1,5 @@
 /**
- * Pi Matrix Integration — voice-message transcription (backlog #4).
+ * Pi Matrix Integration — voice-message transcription.
  *
  * An `m.audio`/`m.voice` room message is downloaded, decoded to 16 kHz
  * mono PCM (ffmpeg), transcribed by the local Whisper engine (the
