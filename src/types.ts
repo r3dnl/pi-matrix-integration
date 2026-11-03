@@ -159,7 +159,7 @@ export interface MatrixConfig {
   threadSummarizeLimit?: number;
   threadSummarizeRunTimeoutMs?: number;
   // Fir-tree summary caps: max lines in
-  // `## Milestones` (default 4), max bullets in `## Recent activity`
+  // `## Milestones` (default 8), max bullets in `## Recent activity`
   // (default 5), hard total-line cap on the posted body (default 25).
   threadSummarizeMilestoneMax?: number;
   threadSummarizeRecentMax?: number;

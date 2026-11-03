@@ -18,10 +18,11 @@ import { fmtDuration, ownerBus } from "./subagent-bus.js";
 import type { MatrixIntegration } from "./integration.js";
 
 /**
- * Register the /matrix-* commands (nine, + the pi-help /
- * matrix-summarize-thread alias pairs) and the three matrix_* tools as
- * thin adapters over the composition root. Called ONCE from the
- * extension entry point.
+ * Register the /matrix-* commands and the matrix_* tools as thin adapters
+ * over the composition root. `pi-help` is an alias of `matrix-help`, and
+ * `matrix-summarize-thread` an alias of `matrix-thread-summarize`. Called
+ * ONCE from the extension entry point. No count here on purpose: the
+ * surface grows with each command and a number silently goes stale.
  */
 export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegration): void {
   // Most recent event ctx (footer updates for Matrix client events that

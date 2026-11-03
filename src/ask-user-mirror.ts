@@ -271,8 +271,10 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
    *  message carries the in-flight flow — the status line ("Answer noted
    *  1/2…"), the ⌨️ terminal-progress ack, and the review — each update
    *  EDITS the same message instead of stacking a new one. Reset on
-   *  close/re-prompt; a failed edit falls back to a fresh post (the old
-   *  text stays, cosmetic). */
+   *  close/re-prompt. When an edit cannot be attempted — no edit capability,
+   *  or the first post never landed — the update is posted fresh rather than
+   *  dropped. An edit that is attempted and refused only warns, leaving the
+   *  older text in the room (cosmetic). */
   let liveMsgId: string | null = null;
   /** The living message's first post's settled promise — concurrent
    *  changes chain onto it (edit after settle) instead of creating a
