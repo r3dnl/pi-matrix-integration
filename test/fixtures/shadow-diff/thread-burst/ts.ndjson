@@ -1,0 +1,2 @@
+{"ts":1000,"room":"!r:x","since":0,"events":["$root"],"unread":{"total":0,"threads":{}}}
+{"ts":2000,"room":"!r:x","since":0,"events":["$rep1","$rep2"],"unread":{"total":1,"threads":{"$root":3}}}
