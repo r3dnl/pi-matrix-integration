@@ -5,19 +5,22 @@
  * against for room writes + state reads. The single transport
  * implementation is `SdkOutbox` (src/sdk-client.ts) — matrix-js-sdk ops
  * + MSC4125 attach encryption + E2EE (the legacy raw-HTTP matrix-http
- * client is deleted in phase 6).
+ * client was deleted; this seam is all that remains).
  *
- * Every op keeps the `{ success, error }` soft-fail shape: a failed op never
- * throws into the caller (the poller's "no message is ever dropped"
- * contract).
+ * No op throws into the caller — the poller's "no message is ever dropped"
+ * contract. Result-returning ops report the soft-fail shape
+ * `{ success, error }`; the collection reads answer with an empty value
+ * instead (`readMessages` and `roomMembers` -> `[]`, `roomInfo` ->
+ * `{ rooms: [] }`).
  */
 import type { MatrixMessage } from "./types.js";
 import type { ThreadDeltaMessage } from "./summarize.js";
 
 /**
- * Soft-fail op result shape shared by every Outbox op. Re-homed from
- * the legacy transport (deleted in phase 6) — the seam's canonical home
- * owns the type every op signature returns.
+ * Soft-fail op result shape shared by the result-returning Outbox ops.
+ * Re-homed here when the legacy transport was deleted, so this seam owns the
+ * type every op signature returns. The name still says "Http" for that
+ * history; the transport behind it is matrix-js-sdk.
  */
 export interface MatrixHttpResult {
   success: boolean;
