@@ -1043,6 +1043,21 @@ console.log("\n--- device-id default fix (MAS policy shape) ---");
     resolveDeviceId(undefined, "from-cred") === "from-cred");
   check("device-id: an explicit deviceId beats the credentials file's id",
     resolveDeviceId("custom-device", "from-cred") === "custom-device");
+  check("device-id: a mismatched explicit deviceId reports both ids",
+    (() => {
+      let reported;
+      resolveDeviceId("custom-device", "from-cred",
+        (configured, file) => { reported = `${configured}|${file}`; });
+      return reported === "custom-device|from-cred";
+    })());
+  check("device-id: no mismatch report when the ids agree or one is missing",
+    (() => {
+      let calls = 0;
+      resolveDeviceId("same", "same", () => calls++);
+      resolveDeviceId(undefined, "from-cred", () => calls++);
+      resolveDeviceId("custom", undefined, () => calls++);
+      return calls === 0;
+    })());
   check("device-id: PI_AGENT_1 passes the MAS device-scope policy",
     MAS_DEVICE_SCOPE_RE.test(deviceScopeOf(resolveDeviceId(undefined, undefined))));
 }
