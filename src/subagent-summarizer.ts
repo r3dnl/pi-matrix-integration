@@ -17,23 +17,20 @@
 import type { MatrixLogger } from "./logger.js";
 import { createConsoleLogger } from "./logger.js";
 import { createTintinwebProvider } from "./subagent-providers/tintinweb-provider.js";
-import type { SubagentEvents, SubagentProvider } from "./subagent-provider.js";
+import type { SubagentEvents, SubagentProvider, SubagentProviderDeps } from "./subagent-provider.js";
 
 export type { SubagentEvents } from "./subagent-provider.js";
 
-export interface SubagentSummarizerOptions {
+/**
+ * The provider settings, all optional here: this driver fills the defaults
+ * when it builds the fallback provider itself — agentType
+ * "pi-matrix-integration-thread-summarizer", pingTimeoutMs 1500,
+ * runTimeoutMs 120000, spawnTimeoutMs 30000. Names and types come from
+ * `SubagentProviderDeps` so the two cannot drift apart.
+ */
+export interface SubagentSummarizerOptions
+  extends Partial<Omit<SubagentProviderDeps, "events" | "logger">> {
   events: SubagentEvents;
-  /** Subagent type (an agent file in the agent dir). Default "pi-matrix-integration-thread-summarizer". */
-  agentType?: string;
-  /** Optional model pin ("provider/modelId") for the run. Omit to inherit. */
-  model?: string;
-  /** ms before an unanswered ping is treated as "not available". Default 1500. */
-  pingTimeoutMs?: number;
-  /** ms before a running subagent is abandoned (resolve null). Watchdog
-   *  ceiling for hung children, not a time budget. Default 120000. */
-  runTimeoutMs?: number;
-  /** ms for the spawn ACK (dispatched immediately on accept). Default 30000. */
-  spawnTimeoutMs?: number;
   logger?: MatrixLogger;
   /**
    * Resolved provider. Omit → the tintinweb
