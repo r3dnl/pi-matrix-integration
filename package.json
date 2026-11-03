@@ -24,7 +24,8 @@
     "test:logic": "node test/test-logic.mjs",
     "test:live": "node test/live-check.mjs",
     "typecheck": "tsc -p .",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prepare": "npm run typecheck"
   },
   "pi": {
     "extensions": [
