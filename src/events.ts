@@ -8,7 +8,8 @@
  * decision):
  *
  * - `decision-closed` — an rpiv ask-user questionnaire is no longer
- *   blocked; consumer (registered per stack build in index.ts): the
+ *   blocked; consumer (registered per stack build, in integration.ts via
+ *   `events.on("decision-closed", …)`): the
  *   mirror reset (`onBlocked(false)`) + the thread ledger
  *   (`noteDecisionClosed`).
  *
