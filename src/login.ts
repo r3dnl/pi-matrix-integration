@@ -357,7 +357,7 @@ export async function runRoomStep(deps: RoomStepDeps): Promise<RoomStepResult> {
   const { ui, client } = deps;
   const proposed = proposeRoomAlias(deps.configuredRoomId, deps.cwd ?? process.cwd(), deps.homeserver);
   // config `e2ee` is only the DEFAULT the create question pre-selects — it can
-  // no longer force encryption on an existing room (FINDING-012). The room's
+  // no longer force encryption on an existing room. The room's
   // real `m.room.encryption` state is the source of truth for everything else.
   const defaultEncrypt = (deps.e2ee ?? "on") === "on";
   for (;;) {
@@ -383,7 +383,7 @@ export async function runRoomStep(deps: RoomStepDeps): Promise<RoomStepResult> {
       return { ok: true, roomId: existing, alias, created: false, e2ee };
     }
     ui.notify(`${alias} — does not exist (will be created)`, "info");
-    // Encryption is a creation-time decision (FINDING-012): a config flag
+    // Encryption is a creation-time decision: a config flag
     // cannot enforce it on a room, so ask once, here, only when creating.
     const encChoice = await ui.select("Encrypt this room (end-to-end)?", defaultEncrypt
       ? TOGGLE_E2EE_OPTIONS
@@ -596,7 +596,7 @@ export type ToggleStepsResult =
  * toggle, default first and marked, then the tour offer. Esc/null at any
  * step cancels the whole dialogue (the caller writes nothing). Values are
  * returned for the caller to persist to the live config (existing keys).
- * E2EE is NOT asked here — it is a room-creation decision (FINDING-012),
+ * E2EE is NOT asked here — it is a room-creation decision,
  * asked in runRoomStep only when a room is created, and persisted from there.
  */
 export async function runToggleSteps(ui: LoginUi): Promise<ToggleStepsResult> {
@@ -806,7 +806,7 @@ export async function runLoginDialogue(deps: LoginDeps): Promise<LoginResult> {
     autoConnect: toggles.autoConnect,
     threads: toggles.threads,
     // e2ee now reflects the ROOM's real state (creation answer or joined-room
-    // state), not a free-floating toggle (FINDING-012).
+    // state), not a free-floating toggle.
     e2ee: room.e2ee,
   });
   

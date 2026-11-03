@@ -121,7 +121,7 @@ export class SessionIntegrator {
   /**
    * Quiet sibling of `injectDirective`: `triggerTurn: false` — never starts
    * a run when Pi is idle; absorbed into the live run exactly like the
-   * notice it annotates (BUG-SUMMARIZER-ONFINAL-LOOP, leak variant "wake
+   * notice it annotates (the 2026-10 summary loop, leak variant "wake
    * lands mid-turn"). Lifecycle calls this right after classifying an
    * absorbed summarizer wake, so the instruction rides the same context
    * that already carries the notice's content.
