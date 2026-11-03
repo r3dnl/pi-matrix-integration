@@ -101,12 +101,19 @@ command after each install or update —
 | `/matrix-messages [limit]` | Show recent messages from the Matrix room |
 | `/matrix-thread-toggle` | Toggle threading (footer thread icon: bright = on, faded = off) |
 | `/matrix-thread-summarize` | Run a thread-summary pass now |
-| `/matrix-subagents` | List sub-agent spawns (running + settled) |
+| `/matrix-subagents` | List sub-agent spawns (running + settled) — advanced |
 | `/matrix-introduction-tour` | Walk the room through an introduction tour |
 | `/matrix-help` | Send a concise end-user guide to the room |
 
 Aliases: `/pi-help` (= `/matrix-help`), `/matrix-summarize-thread`
 (= `/matrix-thread-summarize`).
+
+**Every command is reachable from the room.** Any room member can type
+these commands into the room and they run against your session — and the
+room relays slash commands from every installed extension, not just this
+one (`/skill:*` and friends included). There is no per-user allowlist:
+Matrix room membership is the access control. Keep the room invite-only
+and let the agent use its own account.
 
 ### Tools
 
@@ -320,9 +327,14 @@ decryption problems, stale summaries — are walked through in
 Planned, not in 1.0.0:
 
 - Auto-upload of markdown/feature files as attachments for inspection.
-- Command-surface redesign (rename ambiguous toggles, remove commands that
-  duplicate config state) — bound by the rule that commands invoke
-  functionality while config describes behaviour.
+- Command-surface redesign — recorded, not started; tracked as a GitHub
+  issue when the repository is created. Known items: the duplicate
+  `/matrix-summarize-thread` alias, the `matrix-toggle` /
+  `matrix-thread-toggle` naming collision, and several commands that
+  toggle state the config file already owns. Bound by three rules: the
+  config file is the leading declarative description of behaviour;
+  commands invoke functionality and never store preferences; anything a
+  user needs away from the terminal must be a room-reachable command.
 - Activity-based summarizer watchdog: abort runs that stream nothing,
   instead of waiting out the completion budget.
 

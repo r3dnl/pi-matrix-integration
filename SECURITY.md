@@ -15,9 +15,12 @@ room. Two boundaries are worth understanding before you install it.
 
 **A connected room is an input channel to your agent.** Anyone who can
 post in the room can talk to the agent, and everything posted there —
-messages, files, thread replies — becomes model input. Room membership is
-the access control: the extension adds no allowlist of its own. Invite
-only people you want talking to your agent, and prefer invite-only rooms.
+messages, files, thread replies — becomes model input. That includes
+slash commands: every command this extension registers is reachable from
+the room by any room member, as are the commands of every other
+installed extension. Room membership is the access control: the extension
+adds no allowlist of its own. Invite only people you want talking to your
+agent, keep the room invite-only, and let the agent use its own account.
 
 **Credentials live outside the package.** Login tokens and passphrases are
 stored in the local configuration directory (file mode `0600`) or read
