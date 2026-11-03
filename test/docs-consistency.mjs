@@ -1,7 +1,7 @@
 /**
  * Documentation consistency gate.
  *
- * Three checks, all cheap and all catching real mistakes in this tree:
+ * Four checks, all cheap and all catching real mistakes in this tree:
  *
  *   1. Internal links resolve — every relative path and #anchor used in the
  *      markdown actually exists in the shipped tree.
@@ -10,6 +10,9 @@
  *      Examples use matrix.example.org instead.
  *   3. No review-ticket labels in source comments — a comment must name the
  *      event it means, not the id its planning tree minted for it.
+ *   4. No references that go stale in place — a comment that points at a line
+ *      number or a commit sha resolves to nothing once the history or the
+ *      layout moves. Point at a symbol name instead.
  *
  * The denied names are assembled from fragments on purpose: the file that
  * enforces the rule must not itself contain the string it forbids. Do not
@@ -145,9 +148,38 @@ for (const file of SOURCE_FILES) {
   })
 }
 
-console.log(`checked ${markdown.length} markdown files (${linkCount} internal links); identifier scan: ${STRICT.length} files strict (${strictHits.length} hits), ${PENDING.length} files pending (${pendingHits.length} hits); ticket-label scan: ${SOURCE_FILES.length} files (${labelHits} hits)`) 
+// --- 4. references that go stale in place ---
+// `markdown.ts:159` named the right place the day it was written and nothing
+// after. A commit sha is the same failure with a longer fuse: this repo's
+// history starts at its own first commit, so a sha copied in from the tree the
+// code came from resolves to no object here. Symbol names are the durable form.
+// src/qr2025/ is excluded: it is vendored Matrix.org code and its header sha is
+// the upstream spec tip the files were taken from, which is provenance.
+const OUR_SOURCE = SOURCE_FILES.filter((f) => !f.includes('qr2025'))
+const LINE_POINTER = /[\w./-]+\.(?:ts|mjs|js|json):\d+/
+const COMMIT_SHA = /(?![#\w.])[0-9a-f]{7,40}(?![\w.])/gi
+let staleHits = 0
+for (const file of OUR_SOURCE) {
+  const lines = fs.readFileSync(path.join(ROOT, file), 'utf8').split('\n')
+  lines.forEach((line, i) => {
+    if (!/^\s*(\/\/|\/?\*+|\/\*)/.test(line)) return // comments only, never code
+    const pointer = LINE_POINTER.exec(line)
+    if (pointer) {
+      fail(`${file}:${i + 1}: comment points at a line number "${pointer[0]}" — name the symbol instead`)
+      staleHits++
+      return
+    }
+    const sha = COMMIT_SHA.exec(line)
+    if (sha) {
+      fail(`${file}:${i + 1}: comment cites a commit sha "${sha[0]}" — this repo's history does not contain it`)
+      staleHits++
+    }
+  })
+}
+
+console.log(`checked ${markdown.length} markdown files (${linkCount} internal links); identifier scan: ${STRICT.length} files strict (${strictHits.length} hits), ${PENDING.length} files pending (${pendingHits.length} hits); ticket-label scan: ${SOURCE_FILES.length} files (${labelHits} hits); stale-reference scan: ${OUR_SOURCE.length} files (${staleHits} hits)`) 
 if (failures > 0) {
   console.log(`\n${failures} documentation-consistency failure(s)`)
   process.exit(1)
 }
-console.log('OK  links resolve, no internal identifiers in the shipped tree')
+console.log('OK  links resolve, no internal identifiers or stale references in the shipped tree')
