@@ -124,10 +124,11 @@ export function createNicobailonProvider(deps: SubagentProviderDeps): SubagentPr
         // pi-subagents 0.80.0 wakes the parent on EVERY async completion
         // (the 2026-10 summary loop, fix C); notify.js only honors
         // `scheduleOrigin.quiet` on the workflow paths. The
-        // pi-subagents.quiet-single-spawn.patch teaches the single path to
-        // carry it, and this origin makes a successful completion deliver
-        // its notice WITHOUT a parent turn. Unpatched package: the field is
-        // ignored — the wake stays and the lifecycle absorb-guard handles it.
+        // A local patch to pi-subagents (not part of this package) teaches the
+        // single-spawn path to carry the flag, so a successful completion
+        // delivers its notice WITHOUT a parent turn. Without the patch the
+        // field is ignored — the wake stays and the lifecycle absorb-guard
+        // handles it.
         scheduleOrigin: { id: "pi-matrix-thread-summarizer", quiet: true },
       },
       spawnTimeoutMs,
@@ -151,7 +152,7 @@ export function createNicobailonProvider(deps: SubagentProviderDeps): SubagentPr
 
     // 2) Wait for the asyncComplete event, matched by run id. The result
     //    arrives on the bus regardless of wake posture; with the quiet
-    //    spawn origin + quiet-single-spawn.patch no parent turn fires, and
+    //    spawn origin plus that local patch no parent turn fires, and
     //    failures still wake (scheduledCompletionTriggersTurn only quiets
     //    "completed").
     return await new Promise<string | null>((resolve) => {

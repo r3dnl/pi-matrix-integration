@@ -168,9 +168,10 @@ export function firstLine(s: string, max = 200): string {
   return line ? truncateText(line, max) : "";
 }
 
-/** Fixed tint for the `⚡ Agent result:` label — distinct from the agent's
- *  type color so a result reads as "done" against the spawn line (the design doc
- *  configuration-and-room-behaviour.md). */
+/** Fixed tint for the `⚡ Agent result:` label. It is not in
+ *  `DEFAULT_PALETTE`, so a result reads as "done" against its spawn line —
+ *  a `colorByType` pin set to this exact hex is the one way to lose that
+ *  contrast (configuration-and-room-behaviour.md). */
 export const RESULT_LINE_COLOR = "#2E7D32";
 
 /**
