@@ -293,7 +293,7 @@ export interface PartialMatrixConfig {
   threadSummarizeSource?: "room" | "session";
   threadPendingRoute?: "flat" | "latest";
   attachEncryption?: "on" | "off";
-  /** Voice-message transcription (backlog #4): an `m.audio`/`m.voice`
+  /** Voice-message transcription: an `m.audio`/`m.voice`
    *  room message is downloaded, decoded (ffmpeg), transcribed (local
    *  Whisper via the rpiv-voice engine — the dictate-local chain) and
    *  injected as the sender's text message. Default "on". */

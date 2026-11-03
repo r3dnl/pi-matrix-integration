@@ -389,7 +389,7 @@ export const DEFAULT_CONFIG: MatrixConfig = {
   // `@` file attach: @token pre-expansion (10a) + picker
   // auto-replies (10b). Off by default.
   remoteFilePicker: false,
-  // Voice-message transcription (backlog #4): an m.audio/m.voice room
+  // Voice-message transcription: an m.audio/m.voice room
   // message is downloaded, decoded (ffmpeg) and transcribed (local
   // Whisper, the dictate-local chain), then injected as the sender's
   // text. On by default (opt out with false / PI_MATRIX_VOICE_TRANSCRIPTION).

@@ -1111,7 +1111,7 @@ export class SdkOutbox implements Outbox {
 
   /**
    * Download a media resource (`mxc://server/mediaId[/filename]`) —
-   * voice transcription (backlog #4). Plain `fetch` with the access
+   * voice transcription. Plain `fetch` with the access
    * token instead of the SDK's `http.authedRequest` (that layer JSON
    * decodes non-error responses; binary media would not survive it).
    * E2EE rooms: the returned bytes are the SSS ciphertext when the

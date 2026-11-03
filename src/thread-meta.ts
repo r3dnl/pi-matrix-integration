@@ -109,7 +109,7 @@ export function parseMatrixEvent(
   // Thread metadata: shared extraction .
   const meta = extractThreadMeta(event.content);
 
-  // Media fields (voice transcription, backlog #4): carried when present —
+  // Media fields (voice transcription): carried when present —
   // the inbound funnel's voice leg keys on msgtype + mediaUrl. MSC4125
   // (encrypted attachments) puts the media URL in `content.file.url`, so
   // that wins over `content.url` when both exist.
