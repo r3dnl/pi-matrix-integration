@@ -1,8 +1,9 @@
 # Quick Start
 
 Go from install to a working room in about ten minutes. You need: a working
-Pi installation, a Matrix homeserver you can create accounts on, and a
-Matrix account for the agent (its own — never your personal one).
+Pi installation (Node 22 or newer), a Matrix homeserver you can create
+accounts on, and a Matrix account for the agent (its own — never your
+personal one).
 
 ## 1. Install the extension
 

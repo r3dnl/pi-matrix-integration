@@ -1,24 +1,74 @@
-name: Nightly
+name: Live nightly
 
-# Weekly machinery that must not rot silently. Story 16 extends this
-# workflow with the live tier; the vendored-code expiry check is here
-# from day one because `src/qr2025/` is a snapshot with an expiry
-# condition (docs/dev/developing.md, "Vendored code").
+# Scheduled live gate (story 16): main only, never a fork PR — the
+# homeserver credentials must not be reachable from a pull request someone
+# else opened. Runs the container end-to-end against the release tarball,
+# the live scenario tier, and the performance gates. A failing run opens
+# (or updates) one issue.
 
 on:
   schedule:
     - cron: "30 4 * * 1" # Mondays 04:30 UTC
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: live-nightly
+  cancel-in-progress: false
+
 jobs:
-  vendored-expiry:
+  live:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - name: Vendored-code expiry probe
-        run: node tools/check-vendored.mjs
+      - name: Container end-to-end against the packed tarball
+        run: make e2e
+        env:
+          PI_MATRIX_HOMESERVER: ${{ secrets.PI_MATRIX_HOMESERVER }}
+          PI_MATRIX_USERNAME: ${{ secrets.PI_MATRIX_USERNAME }}
+          PI_MATRIX_PASSWORD: ${{ secrets.PI_MATRIX_PASSWORD }}
+      - name: Live scenario tier
+        run: npm run test:live
+        env:
+          PI_MATRIX_HOMESERVER: ${{ secrets.PI_MATRIX_HOMESERVER }}
+          PI_MATRIX_USERNAME: ${{ secrets.PI_MATRIX_USERNAME }}
+          PI_MATRIX_PASSWORD: ${{ secrets.PI_MATRIX_PASSWORD }}
+      # The perf gates fail loudly until the performance suites land; keep
+      # nightly red-free until they exist, then drop the continue-on-error.
+      - name: Performance gates
+        continue-on-error: true
+        run: npm run test:perf
+        env:
+          PI_MATRIX_HOMESERVER: ${{ secrets.PI_MATRIX_HOMESERVER }}
+          PI_MATRIX_USERNAME: ${{ secrets.PI_MATRIX_USERNAME }}
+          PI_MATRIX_PASSWORD: ${{ secrets.PI_MATRIX_PASSWORD }}
+      - name: Upload harness artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-nightly-${{ github.run_number }}
+          path: artifacts/
+          if-no-files-found: ignore
+      - name: Open an issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Nightly live gate failed ($(date -u +%Y-%m-%d))"
+          if gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "Nightly live gate failed in:title" | grep -q .; then
+            echo "an open nightly-failure issue already exists; not opening a second"
+            exit 0
+          fi
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "$title" \
+            --body "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\n\nSee the run log and the uploaded artifacts." \
+            --label ci-nightly
