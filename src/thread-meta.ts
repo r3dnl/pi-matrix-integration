@@ -50,7 +50,7 @@ export function extractThreadMeta(content: MatrixEvent['content']): ThreadMeta {
  * Normalize one raw timeline event to `MatrixMessage` (or null when it
  * carries nothing emittable). The one normalizer of the sync pipeline:
  * - `m.reaction` → a reaction message (`reactionKey`/`parentEventId`,
- *   `04c1963`) that dispatches to `onReaction`, never `onMessage`;
+ *   `reactionKey`/`parentEventId`) that dispatches to `onReaction`, never `onMessage`;
  * - `m.room.message` → the ordinary message shape + thread meta;
  * - everything else (state, membership, ...) → null.
  *
@@ -68,7 +68,7 @@ export function parseMatrixEvent(
 
   // Reactions (annotation relations): no `body` — the emoji is the
   // `m.relates_to` key. They dispatch to `onReaction` handlers, never
-  // `onMessage` (04c1963).
+  // `onMessage`.
   if (event.type === 'm.reaction') {
     const relatesTo = event.content?.['m.relates_to'];
     const key = relatesTo?.key;

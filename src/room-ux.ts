@@ -10,11 +10,10 @@
  *
  * Uses the injected PickerState (configuration-and-room-behaviour.md: the two protocol pickers
  * are distinct tracker instances — the "never share a posted list"
- * invariant is a type-level fact). The instance is factory-scope in
- * index.ts, so picker memory survives /matrix-switch — the zero-delta
- * move of the two original factory-scope CandidateListTracker instances
- * (`index.ts:321/:324`). Stateful → class + one-line factory (the
- * message-handler.ts pattern); the instance itself is rebuilt with the
+ * invariant is a type-level fact). The instance is composition-root scope
+ * (the integration builds it once), so picker memory survives
+ * /matrix-switch. Stateful → class + one-line factory (the
+ * `createMessageHandler` shape); the instance itself is rebuilt with the
  * stack on /matrix-switch (the object-stable rebind discipline).
  */
 
@@ -61,9 +60,7 @@ export interface RoomUxDeps {
    *  lists, the help guide). */
   post: (text: string, kind?: SendKind) => Promise<MatrixSendResult>;
   /** The session-scoped picker state (the two protocol pickers). Injected
-   *  from factory scope in index.ts so it SURVIVES /matrix-switch —
-   *  the zero-delta move of the two original factory-scope
-   *  CandidateListTracker instances (`index.ts:321/:324`). */
+   *  from composition-root scope so it SURVIVES /matrix-switch. */
   picker: PickerState;
 }
 
