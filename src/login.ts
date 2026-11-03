@@ -41,7 +41,7 @@ export function saveCredentials(credsDir: string, creds: Credentials): string {
   const accountDir = join(credsDir, `${localpart}--${domain}`);
   mkdirSync(accountDir, { recursive: true, mode: 0o700 });
   const file = join(accountDir, "credentials.json");
-  // ponytail: mode on the tmp file (not a chmod after rename); umask can only
+  // Mode on the tmp file (not a chmod after rename); umask can only
   // tighten it, never widen it.
   const tmp = join(accountDir, `credentials.json.${process.pid}.tmp`);
   const body: Record<string, string> = {
