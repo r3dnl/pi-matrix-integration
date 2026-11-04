@@ -30,9 +30,14 @@ if (!MODEL) {
 }
 
 const runsRoot = path.resolve(import.meta.dirname, "..", "..", "artifacts");
-const runDir = process.argv[2]
-  ? path.resolve(process.argv[2])
-  : path.join(runsRoot, fs.readdirSync(runsRoot).filter((d) => /^live-\d+$/.test(d)).sort().at(-1));
+const latest = fs.existsSync(runsRoot)
+  ? fs.readdirSync(runsRoot).filter((d) => /^live-\d+$/.test(d)).sort().at(-1)
+  : undefined;
+if (!latest && !process.argv[2]) {
+  console.error(`no live scenario run found under ${runsRoot} — run npm run test:live first (or pass a run dir)`);
+  process.exit(1);
+}
+const runDir = process.argv[2] ? path.resolve(process.argv[2]) : path.join(runsRoot, latest);
 const summaryPath = path.join(runDir, "8-summary-rewrites-root.json");
 if (!fs.existsSync(summaryPath)) {
   console.error(`no scenario-8 evidence at ${summaryPath} — run npm run test:live first (or pass a run dir)`);
@@ -78,7 +83,7 @@ if (!res.ok) {
   console.error(`judge endpoint ${BASE} → ${res.status}: ${(await res.text()).slice(0, 200)}`);
   process.exit(1);
 }
-const body = await res.json();
+const body = /** @type {{ choices?: { message?: { content?: string } }[] }} */ (await res.json());
 const text = body.choices?.[0]?.message?.content ?? "";
 const verdict = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
 
