@@ -26,6 +26,7 @@ export class RoomApi {
   }
 
   async #req(method, path, body, opts = {}) {
+    /** @type {Record<string, string>} */
     const headers = {};
     if (this.token && !opts.noAuth) headers.authorization = `Bearer ${this.token}`;
     if (body !== undefined) headers["content-type"] = "application/json";
@@ -96,9 +97,9 @@ export class RoomApi {
   }
 
   /** Post a plain text message; optionally in-thread. Returns the event id. */
-  async send(roomId, body, { threadRoot } = {}) {
+  async send(roomId, body, opts = {}) {
     const content = { msgtype: "m.text", body };
-    if (threadRoot) content["m.relates_to"] = { rel_type: "m.thread", event_id: threadRoot, is_falling_back: true, "m.in_reply_to": { event_id: threadRoot } };
+    if (opts.threadRoot) content["m.relates_to"] = { rel_type: "m.thread", event_id: opts.threadRoot, is_falling_back: true, "m.in_reply_to": { event_id: opts.threadRoot } };
     const j = await this.#req(
       "PUT",
       `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -219,7 +220,8 @@ export class RoomApi {
       },
     );
     if (!res.ok) throw new Error(`upload: ${res.status} ${await res.text()}`);
-    return (await res.json()).content_uri;
+    const uploaded = /** @type {{ content_uri?: string }} */ (await res.json());
+    return uploaded.content_uri;
   }
 }
 
