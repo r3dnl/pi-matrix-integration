@@ -7,9 +7,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 Breaking changes to configuration keys or `/matrix-*` command names always
 come with a major version bump.
 
-## [1.0.0] - 2026-11-03
+## [0.9.0] - 2026-11-04
 
-First public release.
+First public beta — the 1.0.0 feature set, published for real-world trial.
+Breaking changes between this and 1.0.0 will be recorded here.
 
 ### Added
 

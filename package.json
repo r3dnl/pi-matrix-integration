@@ -1,6 +1,6 @@
 {
   "name": "pi-matrix-integration",
-  "version": "1.0.0",
+  "version": "0.9.0",
   "description": "Matrix integration for the Pi coding agent",
   "main": "index.ts",
   "type": "module",
@@ -30,6 +30,8 @@
     "src",
     "agents",
     "docs",
+    "!docs/assets/*.gif",
+    "!docs/assets/*.png",
     "patches",
     "README.md",
     "QUICKSTART.md",

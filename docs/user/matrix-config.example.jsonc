@@ -1,0 +1,224 @@
+// pi-matrix-integration — complete commented config example.
+//
+// The live config file is `matrix-config.json` (or `.jsonc`) — the first
+// existing of: explicit path, <project>/.pi/matrix/, extension config/,
+// install location, ~/.config/pi-matrix-integration/. Copy this file to
+// that location, keep only the keys you change; everything omitted keeps
+// its default (shown on every key). A profile file
+// (`matrix-config.<profile>.jsonc`) only applies while that profile is
+// active. Every key also has a `PI_MATRIX_<UPPER_SNAKE>` environment
+// override (full list: configuration.md). Credentials never live here —
+// they live in the `credentials.json` file `/matrix-login` writes.
+{
+  "configVersion": "2.0",
+
+  // Identity: where the agent's access token is stored. The token itself,
+  // the device id and the user id are read from that file.
+  "piMatrixIdentity": {
+    // Path template. {pi-matrix-username} and {matrix-domain} are expanded.
+    // Mode 0600; written by /matrix-login.
+    "credentialsPath": "~/.config/mtx/accounts/{pi-matrix-username}--{matrix-domain}/credentials.json"
+  },
+
+  // Connection: how and when the client talks to the homeserver.
+  "piMatrixConnection": {
+    // Connect at session start; /matrix-connect stays the manual retry.
+    "autoConnect": true,
+    // Long-poll timeout of the sync loop, milliseconds.
+    "syncTimeoutMs": 30000,
+    // Target room: alias (#name:domain) or id (!room:domain).
+    "roomId": "#{room-name}:{matrix-server-domain}",
+    // Ask to connect at session start when not connected.
+    "promptConnectOnStartup": true,
+    // Skip an outgoing send whose exact content already went out within
+    // this window (ms) — the anti-echo guard.
+    "dedupeWindowMs": 600000,
+    // Drop inbound room messages older than this many minutes (guards the
+    // reconnect backfill from replaying history). 0 disables the filter.
+    "maxMessageAgeMinutes": 30
+  },
+
+  // Room behaviour and encryption.
+  "piMatrixRoom": {
+    // Let the extension rewrite the room topic.
+    "updateTopic": false,
+    // Encrypt rooms the extension creates (Olm/Megolm, bundled Rust-crypto
+    // WASM). Turning this off trades history privacy for plain traffic.
+    "endToEndEncryption": true,
+    // Encrypt file attachments at rest (Matrix spec attachment encryption).
+    "attachmentEncryption": true
+  },
+
+  // Logging.
+  "piMatrixLogging": {
+    // Extension log. With a project-local config, an unpinned path
+    // co-locates to <project>/.pi/matrix/state/pi-matrix.log.
+    "logPath": ".pi/matrix/logs/pi-matrix.log",
+    // Verbosity. One of: "ERROR" | "WARN" | "INFO" | "DEBUG" | "TRACE".
+    "logLevel": "INFO"
+  },
+
+  // Threads: one session = one 🧵 thread, root kept summarized.
+  "piMatrixThreading": {
+    // Open a thread per session. /matrix-thread-toggle switches at runtime.
+    "enabled": true,
+    // Thread marker icon.
+    "threadIcon": "🧵",
+    // One summary pass every Nth message. 0 = cadence off (session-end only).
+    "summaryCadence": 10,
+    // Ramp trigger points 1, 1, 2, 3, 5, 8… up to the cadence, so young
+    // threads get summarized sooner.
+    "useFibonacciCadence": true,
+    // Run a pass right after each turn's final message lands in the thread.
+    "summarizeOnFinalMessage": true,
+    // false = a zero-cost heuristic line instead of an LLM pass.
+    "useLlmForSummaries": true,
+    // Cap on new messages fed into one pass.
+    "summarizeLimit": 40,
+    // Completion budget (ms) for one summarizer run — sized for slow
+    // models; lower it only when the summarizer model is fast.
+    "summarizeRunTimeoutMs": 1800000,
+    // Milestone lines kept in the summary shape.
+    "summarizeMilestoneMax": 8,
+    // Recent-activity lines kept.
+    "summarizeRecentMax": 5,
+    // Hard line cap of the rewritten root message.
+    "summarizeMaxLines": 25,
+    // What the summarizer reads. "room" = the thread's own Matrix history
+    // (survives /compact and restarts, needs a sub-agent extension);
+    // "session" = the Pi session context (richer, degraded by /compact).
+    "summarizeSource": "room",
+    // Where messages that cannot route to a thread go: "flat" = the room
+    // main line, "latest" = the newest thread.
+    "pendingRoute": "flat",
+    "subThreads": {
+      // Give sub-agent runs their own sub-threads under the session thread.
+      "enabled": false,
+      // Prefix sub-agent lines with their role.
+      "showRolePrefixes": true,
+      // Tool name the spawn detector matches.
+      "toolName": "subagent"
+    }
+  },
+
+  // Sub-agent visibility in the room.
+  "piMatrixSubagents": {
+    // Post sub-agent spawn/result traffic to the room.
+    "enabled": true,
+    // Post a line when a sub-agent spawns.
+    "postSpawnMessages": true,
+    // Fold the result into the spawn line instead of posting a new message.
+    "summarizeResultIntoSpawnLine": true,
+    // When results are posted. One of: "turn-end" | "all".
+    "postMode": "turn-end",
+    // Marker on sub-agent lines.
+    "plainMarker": "⚡",
+    // Which provider dialect to speak. One of: "auto" | "tintinweb" |
+    // "nicobailon". auto detects the installed package.
+    "provider": "auto"
+  },
+
+  // Terminal UI.
+  "piTerminalUi": {
+    // Show the [matrix] connection slot in the Pi footer.
+    "showMatrixStatus": true,
+    // Footer icon: 💬 connected, ✗ down, … connecting.
+    "matrixIcon": "💬",
+    // Print the startup banner to stdout.
+    "displayStdoutOnStartup": false
+  },
+
+  // The /matrix-login command itself.
+  "piTerminalMatrixLoginCommand": {
+    // Register /matrix-login at all.
+    "enabled": true,
+    // QR-based (MSC4388-style) login support. Requires a homeserver with
+    // QR login enabled; see the roadmap for its status.
+    "qr2025": false
+  },
+
+  // Outgoing message formatting.
+  "piMatrixMessageFormatting": {
+    // Marker in front of room-origin messages in the terminal.
+    "prefix": "[Matrix] ",
+    // Convert outgoing markdown to HTML for Matrix rich display.
+    "sendFormatted": true,
+    // Send markdown tables as separate messages.
+    "sendTablesInSeparateMessages": false,
+    // Final-message broadcast cutoff, characters.
+    "maxFinalMessageLength": 8000
+  },
+
+  // What Pi broadcasts.
+  "sendMilestones": {
+    // Master switch for milestone posts (the matrix_send_milestone tool is
+    // not gated by it).
+    "enabled": true,
+    // One line on session start/reload/new.
+    "sendSessionStartStopMilestones": true,
+    // One line on context compaction (/compact or auto-compact).
+    "sendCompactionMilestones": true,
+    // One line when the model or thinking level changes.
+    "sendModelChangeMilestones": true,
+    // Milestone prefix icon.
+    "milestoneIcon": "🎯"
+  },
+  "sendUserMessages": {
+    // Echo terminal-typed prompts to the room as 🧑 User: … Never fires
+    // for room-relayed input.
+    "enabled": true,
+    // Echo prefix icon.
+    "icon": "🧑"
+  },
+  "sendFinalMessages": {
+    // Broadcast each turn's final answer as 💬 Pi: …
+    "enabled": true
+  },
+
+  // Commands typed in the room.
+  "matrixToPiSlashCommands": {
+    // Relay slash commands (this extension's and other extensions',
+    // /skill: included) from the room into the session.
+    "enabled": true,
+    // Prefix that marks a room message as a command.
+    "slashCommandPrefix": "/"
+  },
+
+  // The ask_user_question mirror (see ask-user-pairing.md for the patch).
+  "piToMatrixMirrorAskUserQuestions": {
+    // Mirror questionnaires into the room; first answer wins.
+    "enabled": true,
+    // Also post a poll for yes/no-style questions (MSC3381).
+    "createPollsForAskUserQuestions": true
+  },
+
+  // Files: room pulls from the project (@ prefix).
+  "matrixToPiRemoteFilePicker": {
+    // Let the room pull workspace files into the session.
+    "enabled": false,
+    // Prefix that references a workspace file from the room.
+    "fileAttachPrefix": "@",
+    // Size cap for pulled files, bytes.
+    "maxBytes": 200000,
+    // Entries the picker lists for a fuzzy fragment.
+    "pickerLimit": 10,
+    // Search backend. One of: "builtin" | "fzf".
+    "fileSearchMethod": "builtin"
+  },
+
+  // Files: terminal pushes to the room ( @@ prefix).
+  "piToMatrixFileAttachment": {
+    // Let the terminal attach a file with @@.
+    "enabled": false,
+    // Attach prefix.
+    "prefix": "@@",
+    // Upload size cap, bytes.
+    "maxBytesUpload": 25000000
+  },
+
+  // Voice notes sent to the room.
+  "matrixToPiVoiceTranscription": {
+    // Transcribe voice notes into text for the session.
+    "enabled": true
+  }
+}

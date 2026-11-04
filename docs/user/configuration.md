@@ -42,7 +42,8 @@ The file is versioned. A v2 file looks like this (excerpt):
 A v1 flat file is migrated on read; the keys below name both the v2 section
 key and the flat key. The `subagents` block merges shallowly: a partial block
 cannot drop omitted keys. Config writes are atomic (temporary file plus
-rename).
+rename). The complete file, every key commented with its enum values and
+default: [matrix-config.example.jsonc](matrix-config.example.jsonc).
 
 ## Identity and connection
 
@@ -129,8 +130,7 @@ readable.
 | `matrixToPiVoiceTranscription.enabled` | `true` | `PI_MATRIX_VOICE_TRANSCRIPTION` | Transcribe voice notes sent to the room. |
 
 Anything typed in the room becomes model input for the agent. The room's
-member list is the security boundary — see the Security section in the
-README.
+member list is the security boundary — see [SECURITY.md](../../SECURITY.md).
 
 ## Files between terminal and room
 
