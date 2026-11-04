@@ -5,20 +5,27 @@ Pi installation (Node 22 or newer), a Matrix homeserver you can create
 accounts on, and a Matrix account for the agent (its own — never your
 personal one).
 
+The layout worth following: **one agent account per server (required), one
+project : one Pi session : one Matrix room (recommended)** — each project's
+room is its shared, persistent record. Every Pi session then opens its own
+`🧵` thread inside the room, so the main line stays clean. Giving each
+project its own agent account is optional, for advanced setups. Threads
+render best in Element Desktop; in Element X they are a Labs feature.
+
 ## 1. Install the extension
 
 ```bash
-pi install npm:pi-matrix-integration@1.0.0
+pi install npm:pi-matrix-integration
 ```
 
-(From git: `pi install git:github.com/r3dnl/pi-matrix-integration@v1.0.0`.
+(As a beta from git: `pi install git:github.com/r3dnl/pi-matrix-integration@v0.9.0`.
 From a checkout: `pi install /path/to/pi-matrix-integration`.)
 
 Optional but recommended — room-mode thread summaries and sub-agent
-visibility need the `pi-subagents` extension:
+visibility need a sub-agent extension:
 
 ```bash
-pi install npm:pi-subagents
+pi install npm:@tintinweb/pi-subagents
 ```
 
 Apply the question-mirror patches (one command, idempotent; enables full
@@ -85,6 +92,7 @@ a review step confirms before Pi proceeds.
 | `/matrix-toggle` | Toggle the integration on/off |
 | `/matrix-thread-toggle` | Toggle threading |
 | `/matrix-help` | Post the end-user guide to the room |
+| `/matrix-introduction-tour` | Walk you and the room through every feature |
 
 The full surface (13 commands + 2 aliases) is in the
 [README](README.md#commands).
@@ -99,6 +107,7 @@ decryption problems, stale summaries. The extension log is
 ## Learn more
 
 - [README](README.md) — the full picture
+- [Per-project setup](docs/user/per-project-setup.md) — one project : one room, in detail
 - [Configuration reference](docs/user/configuration.md) — every key, default, env override
 - [Ask-user pairing](docs/user/ask-user-pairing.md) — phone + terminal questionnaires
 - [Architecture](docs/dev/architecture/README.md) — how it is built

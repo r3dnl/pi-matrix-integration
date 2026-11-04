@@ -17,3 +17,7 @@ artifacts/
 *.tsbuildinfo
 package/
 pi-matrix-integration-*.tgz
+
+.pi/
+
+.pi/state

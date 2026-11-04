@@ -29,9 +29,23 @@ if (!dir) {
   dir = path.join(tmp, "package");
 }
 
-const files = pkg.files ?? [];
+const patterns = pkg.files ?? [];
+// npm's `files` also carries `!pattern` negations (art excluded from the
+// tarball but kept in the repo); the gate mirrors that semantics: a
+// negation neither covers a shipped path nor demands an existence check.
+const includes = patterns.filter((f) => !f.startsWith("!"));
+const excludes = patterns.filter((f) => f.startsWith("!")).map((f) => f.slice(1));
+const globRe = (g) =>
+  new RegExp(
+    "^" +
+      (g.match(/\*\*|\*|[^*]+/g) ?? [])
+        .map((p) => (p === "**" ? ".*" : p === "*" ? "[^/]*" : p.replace(/[.+^${}()|[\]\\]/g, "\\$&")))
+        .join("") +
+      "$",
+  );
 const covered = (rel) =>
-  files.some((f) => rel === f || rel === path.dirname(f) || rel.startsWith(`${f}/`));
+  includes.some((f) => rel === f || rel === path.dirname(f) || rel.startsWith(`${f}/`)) &&
+  !excludes.some((g) => globRe(g).test(rel));
 
 const walk = (d, acc = []) => {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
@@ -52,7 +66,7 @@ for (const rel of walk(dir)) {
 
 // 2. the allowlist's own entries really exist (a stale entry means the pack
 //    silently lost a directory that was renamed or deleted)
-for (const f of files) {
+for (const f of includes) {
   if (!fs.existsSync(path.join(dir, f))) problems.push(`allowlisted but missing from the tarball: ${f}`);
 }
 

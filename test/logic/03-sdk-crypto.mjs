@@ -417,11 +417,21 @@ const { tmp, stateDir, TS, config, fakeOutbox, connOk, fakePi, handler, integrat
     if (origLogEnv === undefined) delete process.env.PI_MATRIX_LOG_PATH;
     else process.env.PI_MATRIX_LOG_PATH = origLogEnv;
   }
-  check(
-    "without a project config, state falls back to the extension-local dir (no silent migration)",
-    getStateDir() === path.join(getExtensionDir(), "state"),
-    getStateDir(),
-  );
+  // Hermetic cwd: the checkout itself may carry a real .pi/matrix/ project
+  // config (a live session run from this directory), which would legitimately
+  // activate project-local state and break this extension-fallback assertion.
+  {
+    const cleanCwd = fs.mkdtempSync(path.join(os.tmpdir(), "pi-state-clean-"));
+    const cwdBefore = process.cwd();
+    process.chdir(cleanCwd);
+    check(
+      "without a project config, state falls back to the extension-local dir (no silent migration)",
+      getStateDir() === path.join(getExtensionDir(), "state"),
+      getStateDir(),
+    );
+    process.chdir(cwdBefore);
+    fs.rmSync(cleanCwd, { recursive: true, force: true });
+  }
 }
 
 // F3 regression: the voice leg resolves rpiv-voice lazily UNDER THE
