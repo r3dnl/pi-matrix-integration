@@ -19,5 +19,5 @@ package/
 pi-matrix-integration-*.tgz
 
 .pi/
-
 .pi/state
+.archify
