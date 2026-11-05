@@ -16,28 +16,26 @@ import { createMatrixLogger } from "./src/logger.js";
 import { MatrixIntegration, PI_MATRIX_KEY, type MatrixGlobal, resolveStartupConfigWithMigration, createLoggerAndValidateConfig } from "./src/integration.js";
 import { registerCommands } from "./src/commands.js";
 
-// The tail helpers moved to src/classify.ts (transport-and-state.md); the export
-// stays here for API parity with the pre-restructure index.ts (no live
-// test consumer — the logic tests never imported it; reviewer review finding).
-export { truncateFinalMessage } from "./src/classify.js";
-
-// The owner-instance parking: the previous
-// instance is handed to the new one at session_start (main line → take
-// over; side chain → stay client) instead of disposed up front — a
-// side-chain (sub-agent) session must never tear down the main session's
-// Matrix connection. PI_MATRIX_KEY / MatrixGlobal live in integration.ts.
-
+// Owner-instance parking. Pi runs this function again for every session in
+// the same process, including sub-agent (side-chain) sessions.
+// If a new instance disposed the older instance's Matrix connection at load
+// time, a sub-agent starting up would kill the main session's connection.
+// So the older instance is parked and handed to the new one; the owner
+// question is decided at session_start (claimOwner in
+// src/integration.ts): main line → take over; side chain → stay a client.
 export default function (pi: ExtensionAPI) {
   const g = globalThis as MatrixGlobal;
+  // The previous instance parked by an earlier run of this function — the
+  // sub-agent case above. Undefined on first load.
   const prev = g[PI_MATRIX_KEY] ?? undefined;
   g[PI_MATRIX_KEY] = undefined;
 
   // Thin IoC entry: delegate all config loading to integration.ts
   const configResult = resolveStartupConfigWithMigration();
-  
+
   // Create logger (minimal setup before validation)
   const logger = createMatrixLogger(configResult.config.logPath || "", configResult.config.logLevel);
-  
+
   // Validate config and handle error cases
   const validated = createLoggerAndValidateConfig(configResult, logger);
   if (!validated) {
@@ -49,9 +47,12 @@ export default function (pi: ExtensionAPI) {
   // re-points its internals, never replaces the instance.
   const integration = new MatrixIntegration(pi, validated.config, validated.logger, prev);
 
-  // The one-time registrations (the object-stable rebind discipline):
-  // the pi hooks + the client-event handlers dispatch through the
-  // CURRENT stack at call time — nothing re-registers on /matrix-switch.
+  // Register the pi hooks + client-event handlers ONCE. Pi cannot undo half
+  // of this: registered tools cannot be unregistered, and unsubscribing a
+  // running event handler does not stop a dispatch already in progress. A
+  // re-register per /matrix-switch would double-handle events; a swap of the
+  // internals (this.stack) is one pointer assignment, so the handlers stay
+  // wired and always see the current stack.
   integration.attach(pi);
 
   // The /matrix-* commands + matrix_* tools — thin adapters over the
