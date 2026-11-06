@@ -4,6 +4,8 @@
 [![npm version](https://img.shields.io/npm/v/pi-matrix-integration.svg)](https://www.npmjs.com/package/pi-matrix-integration)
 [![CI](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/ci.yml/badge.svg)](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/ci.yml)
 
+## _Own your agentic stack, also on the road_
+
 A Pi coding agent extension that connects a [Pi](https://pi.dev/) session to a [Matrix](https://matrix.org/) chat room. Pi posts what it is doing into the room — milestones, questions, final answers — as it works. You reply from the room to steer it: from your phone, tablet or PC with [Element](https://element.io/), without touching the terminal (though you can work from both at once).
 
 ![Demo: a Pi session on a laptop posts milestones into a Matrix room; the same session is steered from a phone running Element](https://raw.githubusercontent.com/r3dnl/pi-matrix-integration/main/docs/assets/demo-overview.gif)
