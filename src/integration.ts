@@ -767,7 +767,7 @@ export class MatrixIntegration {
     const sessionTag = `${hostname()}::${basename(ctx.cwd)}`;
     const farewell = `👋 ${this.config.userId} disconnected from Pi terminal session \`${sessionTag}\``;
     try {
-      await this.stack.messageHandler.sendMilestone(farewell, { type: "session", flat: true });
+      await this.stack.messageHandler.sendMilestone(farewell, { flat: true });
     } catch (error) {
       this.logger.warn(`[matrix] switch farewell failed: ${error}`);
     }
