@@ -138,6 +138,55 @@ console.log("== threading: ThreadManager lifecycle (fake cs) ==");
     JSON.stringify(bareCs.calls[0]),
   );
 
+  // Topic sanitization (roadmap 0.9.1): an attached markdown document must
+  // not become a page-long root line.
+  const longCs = makeFakeMatrixHttp();
+  const tmLong = createThreadManager({
+    enabled: true, roomKey: "!room:long", threadSend: longCs,
+    statePath: path.join(stateDir, "thread-map-long.json"),
+  });
+  tmLong.beginSession("new", "s3");
+  await tmLong.ensureThreadRoot("archify this\n" + "attached markdown body ".repeat(60));
+  check(
+    "multi-line topic keeps the first line only",
+    String(longCs.calls[0][1]) === "🧵 New Conversation: archify this",
+    JSON.stringify(longCs.calls[0]),
+  );
+
+  const wrapCs = makeFakeMatrixHttp();
+  const tmWrap = createThreadManager({
+    enabled: true, roomKey: "!room:wrap", threadSend: wrapCs,
+    statePath: path.join(stateDir, "thread-map-wrap.json"),
+  });
+  tmWrap.beginSession("new", "s4");
+  await tmWrap.ensureThreadRoot("word ".repeat(100).trim());
+  const wrapPrefix = "🧵 New Conversation: ";
+  const wrapBody = String(wrapCs.calls[0][1]);
+  check(
+    "long single-line topic is capped at a word boundary with an ellipsis",
+    wrapBody.startsWith(`${wrapPrefix}word word`) && wrapBody.endsWith("…") &&
+      wrapBody.length <= wrapPrefix.length + 121,
+    `len=${wrapBody.length} tail=${JSON.stringify(wrapBody.slice(-20))}`,
+  );
+  check(
+    "sanitized topic lands on the ledger root",
+    tmWrap.activeRoot()?.topic === wrapBody.slice(wrapPrefix.length),
+    JSON.stringify(tmWrap.activeRoot()?.topic),
+  );
+
+  const wsCs = makeFakeMatrixHttp();
+  const tmWs = createThreadManager({
+    enabled: true, roomKey: "!room:ws", threadSend: wsCs,
+    statePath: path.join(stateDir, "thread-map-ws.json"),
+  });
+  tmWs.beginSession("new", "s5");
+  await tmWs.ensureThreadRoot("   \n  ");
+  check(
+    "whitespace-only topic posts the bare label",
+    String(wsCs.calls[0][1]) === "🧵 New Conversation",
+    JSON.stringify(wsCs.calls[0]),
+  );
+
   // posts route into the root
   const p1 = await tm.post("🎯 Milestone: first", "milestone");
   check("post routes into the active root", p1.success === true, JSON.stringify(p1));
