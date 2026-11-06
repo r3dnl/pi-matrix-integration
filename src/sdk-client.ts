@@ -137,6 +137,10 @@ export interface SdkOutboxOptions {
    *  reconnect (new pi session) does not re-emit the previous session's
    *  already-delivered backfill (the 2026-09-18 re-injection bug). */
   seenPath?: string;
+  /** Severity gate for the SDK transport log (the config's `logLevel`).
+   *  Unset writes everything the SDK emits — including its per-sync debug
+   *  chatter, which reaches ~1 MB overnight. */
+  logLevel?: string;
   logger?: MatrixLogger;
 }
 
@@ -286,7 +290,7 @@ export class SdkOutbox implements Outbox {
       dirname(this.opts.logPath || join(homedir(), ".pi", "logs", "pi-matrix.log")),
       "pi-matrix-http-sdk.log",
     );
-    const fileLogger = createJsSdkFileLogger(sdkLogPath);
+    const fileLogger = createJsSdkFileLogger(sdkLogPath, this.opts.logLevel?.toLowerCase());
     // Stdout-capture layers (principle: all SDK console output lands in
     // the logfile, not the Pi terminal):
     //   1. rebind the SDK's module-level logger in place — lib/logger.js
@@ -1360,6 +1364,8 @@ export function createSdkOutbox(config: {
   logPath?: string;
   /** Seen-event-id persistence file (dedupe across reconnects). */
   seenPath?: string;
+  /** Severity gate for the SDK transport log (the config's logLevel). */
+  logLevel?: string;
   logger?: MatrixLogger;
 }): SdkOutbox {
   return new SdkOutbox({
@@ -1375,6 +1381,7 @@ export function createSdkOutbox(config: {
     syncTimeoutMs: config.syncTimeoutMs,
     logPath: config.logPath,
     seenPath: config.seenPath,
+    logLevel: config.logLevel,
     logger: config.logger,
   });
 }

@@ -10,6 +10,11 @@ come with a major version bump.
 ## [Unreleased]
 
 ### Fixed
+- The SDK transport logfile (`pi-matrix-http-sdk.log`) now honours the
+  configured `logLevel`. It previously wrote every line the Matrix SDK
+  emits — its `debug`-per-sync chatter rotated the 1 MB file over
+  overnight — because the SDK logger rebinding bypasses the SDK's own
+  level gating and the file logger had no gate of its own.
 - A conversation that starts in the Matrix room (flat message, new session)
   now opens the thread with the ask as its topic; previously the first reply
   created a bare `🧵 New Conversation` root and the original message stayed

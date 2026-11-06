@@ -21,6 +21,18 @@ logger.debug(new Error("boom"));
 const sync = logger.getChild("sync");
 sync.warn("long poll timeout");
 
+// Severity gate (the js-sdk rebind bypasses loglevel's own gating — this
+// is the only filter): an INFO gate must drop debug/trace, keep warn.
+const gatedPath = path.join(tmp, "gated.log");
+const gated = createJsSdkFileLogger(gatedPath, "info");
+gated.debug("sync tick");
+gated.trace("wire bytes");
+gated.info("sync started");
+gated.warn("long poll timeout");
+const gatedRaw = fs.readFileSync(gatedPath, "utf8");
+check("gate drops debug/trace", !gatedRaw.includes("debug") && !gatedRaw.includes("trace"), gatedRaw);
+check("gate keeps info/warn", /\[info\] sync started/.test(gatedRaw) && /\[warn\] long poll timeout/.test(gatedRaw));
+
 const raw = fs.readFileSync(logPath, "utf8");
 // `append` writes `<iso> [level] message` — an entry starts with the ISO
 // timestamp (an Error stack spans continuation lines without one).
