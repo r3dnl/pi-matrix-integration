@@ -129,6 +129,7 @@ export function createInbound(deps: InboundDeps): Inbound {
   // path as the fallthrough below — keeps attribution, decision-response
   // detection, and the renderer.
   const injectExpanded = (matrixMessage: MatrixMessage, expanded: string) => {
+    openThreadForRoomTurn(matrixMessage.body ?? "");
     const expandedMessage: MatrixMessage = {
       ...matrixMessage,
       body: expanded,
@@ -137,6 +138,20 @@ export function createInbound(deps: InboundDeps): Inbound {
     const piMessage = messageHandler.handleIncomingMessage(expandedMessage);
     if (piMessage) {
       sessionIntegrator.injectMatrixMessage(expandedMessage, piMessage);
+    }
+  };
+
+  // Thread root opened FROM the room (roadmap 0.9.1): when the session has
+  // no root yet and the conversation starts here (flat message in the room,
+  // not inside a thread — adoption above handled the threaded case), the
+  // thread opens with the ask as its topic. Without this the first outgoing
+  // send creates the bare `🧵 New Conversation` root and the ask stays
+  // outside the thread. Fire-and-forget: the root write lands long before
+  // an LLM answer can; a lost race degrades to the old bare-root behaviour
+  // (ensureThreadRoot is idempotent on an existing root).
+  const openThreadForRoomTurn = (body: string) => {
+    if (threadManager.enabled() && threadManager.pending() && body.trim()) {
+      void threadManager.ensureThreadRoot(body).catch(() => undefined);
     }
   };
 
@@ -319,6 +334,7 @@ export function createInbound(deps: InboundDeps): Inbound {
       // is injected into the session as an attributed custom message.
       const piMessage = messageHandler.handleIncomingMessage(matrixMessage);
       if (piMessage) {
+        openThreadForRoomTurn(matrixMessage.body ?? "");
         sessionIntegrator.injectMatrixMessage(matrixMessage, piMessage);
         logger.debug(
           `[matrix] injected into session: ${matrixMessage.eventId} (${(matrixMessage.body ?? "").length} chars, followUp, triggerTurn)`,

@@ -182,6 +182,19 @@ export function summaryDue(msgCount: number, cap: number, useFib: boolean): bool
   }
 }
 
+/** Root-topic hygiene: first line, collapsed whitespace, word-boundary cut
+ *  at 120 chars. A prompt can arrive with a whole attached markdown document
+ *  in its text (roadmap 0.9.1: `/archify …` made a page-long root); the root
+ *  line stays one readable line. Empty after cleaning → no topic (bare label). */
+export function sanitizeThreadTopic(text: string): string | undefined {
+  const flat = text.split(/\r?\n/, 1).join("").replace(/\s+/g, " ").trim();
+  if (!flat) return undefined;
+  if (flat.length <= 120) return flat;
+  const cut = flat.slice(0, 121);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > 60 ? cut.slice(0, space) : cut.slice(0, 119)).trimEnd()}…`;
+}
+
 /**
  * Thread lifecycle + routing + summarizer + state persistence.
  *
@@ -345,9 +358,10 @@ export class ThreadManager {
     if (this.activeRoot()) return this.activeRoot();
 
     const icon = this.opts.threadIcon ?? "🧵";
+    const clean = topic !== undefined ? sanitizeThreadTopic(topic) : undefined;
     // No topic yet → bare label (no "New Conversation: New Conversation");
     // the summarizer fills in the topic line as the conversation develops.
-    const res = await this.threadSend.postThreadRoot(topic ? `${icon} New Conversation: ${topic}` : `${icon} New Conversation`);
+    const res = await this.threadSend.postThreadRoot(clean ? `${icon} New Conversation: ${clean}` : `${icon} New Conversation`);
     if (!res.success || !res.eventId) {
       this.warnFlat(`thread root send failed: ${res.error ?? "no event id"}`);
       this.sessionState = "flat";
@@ -356,7 +370,7 @@ export class ThreadManager {
     const now = Date.now();
     const root: ThreadRootState = {
       eventId: res.eventId,
-      topic: topic ?? "New Conversation",
+      topic: clean ?? "New Conversation",
       msgCount: 0,
       openDecisions: 0,
       lastActivity: now,
@@ -370,7 +384,7 @@ export class ThreadManager {
     this.activeRootId = res.eventId;
     this.sessionState = "active";
     this.save();
-    this.logger.debug(`[matrix] thread root created ${res.eventId} (topic: ${topic ?? "New Conversation"})`);
+    this.logger.debug(`[matrix] thread root created ${res.eventId} (topic: ${clean ?? "New Conversation"})`);
     return this.activeRoot();
   }
 

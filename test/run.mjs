@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 // config-contract first: it is the cheap schema/wiring gate, and every other
 // suite assumes the config chains it checks are intact.
-const tests = ["config-contract.mjs", "config-migration.mjs", "repro.mjs", "logic/00-core.mjs", "logic/01-threading.mjs", "logic/02-transport-footer.mjs", "logic/03-sdk-crypto.mjs", "e2e-stub-cycle.mjs", "test-gates.mjs", "test-unread-model.mjs", "test-project-provision.mjs", "test-sdk-logger.mjs", "test-stdout-capture.mjs", "test-sdk-delivery.mjs", "test-account-lock.mjs", "test-polls.mjs", "login-check.mjs", "login-wiring-check.mjs", "qr2025-check.mjs", "subagent-bus.mjs", "owner-bus.mjs", "tintinweb-provider.mjs", "nicobailon-provider.mjs", "summarizer-wake.mjs", "summarize-cadence.mjs", "stale-message-guard.mjs", "deps-contract.mjs", "security-boundary.mjs"];
+const tests = ["config-contract.mjs", "config-migration.mjs", "repro.mjs", "logic/00-core.mjs", "logic/01-threading.mjs", "logic/02-transport-footer.mjs", "logic/03-sdk-crypto.mjs", "e2e-stub-cycle.mjs", "test-gates.mjs", "test-unread-model.mjs", "test-project-provision.mjs", "test-sdk-logger.mjs", "test-stdout-capture.mjs", "test-sdk-delivery.mjs", "test-account-lock.mjs", "test-polls.mjs", "login-check.mjs", "login-wiring-check.mjs", "qr2025-check.mjs", "subagent-bus.mjs", "owner-bus.mjs", "tintinweb-provider.mjs", "nicobailon-provider.mjs", "summarizer-wake.mjs", "summarize-cadence.mjs", "stale-message-guard.mjs", "room-thread-root.mjs", "deps-contract.mjs", "security-boundary.mjs"];
 // Wall-time budget (release story 8): the offline tier is the per-push
 // gate; past two minutes it stops being run on every save. CI asserts on
 // the printed total.
