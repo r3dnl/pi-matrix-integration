@@ -52,8 +52,9 @@ check("undefined message is not a wake", classify.isSummarizerWakeNotice(undefin
 
 // ---- the turn guard --------------------------------------------------------
 
-function makeLifecycle() {
+function makeLifecycle(cfgOverrides = {}) {
   const sent = [];
+  const milestones = [];
   const logs = [];
   // BUG-SUMMARIZER-ONFINAL-LOOP A: the wake-answer final must tell the thread
   // manager to skip the report-out trigger.
@@ -61,7 +62,7 @@ function makeLifecycle() {
   // Leak guard: an absorbed notice must be followed by a quiet hint.
   const hints = [];
   const lc = new Lifecycle({
-    cfg: { roomId: "!room:tst", sendFinalMessages: true, sendMilestones: false, maxFinalMessageLength: 2000 },
+    cfg: { roomId: "!room:tst", sendFinalMessages: true, sendMilestones: false, maxFinalMessageLength: 2000, ...cfgOverrides },
     logger: { debug: (m) => logs.push(m), warn: (m) => logs.push(m) },
     sessionIntegrator: {
       updateFooterStatus: () => {},
@@ -72,7 +73,10 @@ function makeLifecycle() {
         sent.push(text);
         return { success: true };
       },
-      sendMilestone: async () => ({ success: true }),
+      sendMilestone: async (text) => {
+        milestones.push(text);
+        return { success: true };
+      },
     },
     threadManager: {
       suppressNextOnFinalTrigger: () => { tm.suppressed += 1; },
@@ -80,10 +84,17 @@ function makeLifecycle() {
     },
   });
   lc.setEnabled(true);
-  return { lc, sent, logs, tm, hints };
+  return { lc, sent, milestones, logs, tm, hints };
 }
 
 const assistantTurn = (text) => ({ message: { role: "assistant", content: [{ type: "text", text }] } });
+
+/** The extension's own summarize directive (Engine A, the fallback path). */
+const directive = (details) => ({
+  customType: "matrix-directive",
+  content: "Run a Matrix thread-summary pass for this session now.",
+  details,
+});
 
 // 1) A wake turn reports out nowhere.
 {
@@ -97,23 +108,85 @@ const assistantTurn = (text) => ({ message: { role: "assistant", content: [{ typ
   );
 }
 
-// 2) The very next real turn still reports out (the flag is one-shot).
+// 2) Every turn of the muted run reports out nowhere; the NEXT run does.
+//    (BUG-thread-summary-bleed: the flag used to be consumed by the first
+//    turn_end, so a pass's closing sentence leaked into the room.)
 {
   const { lc, sent } = makeLifecycle();
   lc.onBeforeAgentStart({ messageType: "custom", message: notice(["pi-matrix-integration-thread-summarizer"]) });
   await lc.onTurnEnd(assistantTurn("wake reply"));
+  await lc.onTurnEnd(assistantTurn("still the same pass"));
+  check("the whole muted run posts nothing", sent.length === 0, `sent=${JSON.stringify(sent)}`);
+  lc.onAgentSettled();
+  lc.onBeforeAgentStart({ messageType: "user", prompt: "next question" });
   await lc.onTurnEnd(assistantTurn("real answer"));
-  check("the next real turn broadcasts", sent.length === 1 && sent[0] === "real answer", `sent=${JSON.stringify(sent)}`);
+  check("the next run broadcasts after settle", sent.length === 1 && sent[0] === "real answer", `sent=${JSON.stringify(sent)}`);
 }
 
-// 3) A wake turn that never reaches the broadcast (tool-only turn) must not
-//    mute the following real turn.
+// 3) A run that dies before settle cannot leave a stale mute behind: the
+//    next run's start re-decides the flag.
 {
   const { lc, sent } = makeLifecycle();
   lc.onBeforeAgentStart({ messageType: "custom", message: notice(["pi-matrix-integration-thread-summarizer"]) });
   await lc.onTurnEnd({ message: { role: "assistant", content: [{ type: "thinking" }] } });
+  lc.onBeforeAgentStart({ messageType: "user", prompt: "hello" });
   await lc.onTurnEnd(assistantTurn("real answer"));
-  check("a text-less wake turn does not leak the mute", sent.length === 1 && sent[0] === "real answer", `sent=${JSON.stringify(sent)}`);
+  check("a new run clears a mute left by a dead one", sent.length === 1 && sent[0] === "real answer", `sent=${JSON.stringify(sent)}`);
+}
+
+// 3b) THE BLEED: the in-session fallback pass — turn 1 is the tool call (no
+//     text), turn 2 the closing sentence. Zero room events, both turns.
+{
+  const { lc, sent, logs } = makeLifecycle();
+  lc.onBeforeAgentStart({
+    messageType: "custom",
+    message: directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }),
+  });
+  await lc.onTurnEnd({ message: { role: "assistant", content: [{ type: "toolCall", id: "c", name: "matrix_update_thread_summary", arguments: {} }] } });
+  await lc.onTurnEnd(assistantTurn("Root unchanged."));
+  await lc.onTurnEnd(assistantTurn("Summary pass done."));
+  check("a multi-turn pass leaks no closing line", sent.length === 0, `sent=${JSON.stringify(sent)}`);
+  check(
+    "every muted turn is observable",
+    logs.filter((l) => /summarizer wake turn, skipping final broadcast/.test(l)).length === 3,
+    JSON.stringify(logs),
+  );
+}
+
+// 3c) A TODO-progress milestone inside a pass stays out of the room too.
+{
+  const { lc, milestones } = makeLifecycle({ sendMilestones: true });
+  lc.onBeforeAgentStart({
+    messageType: "custom",
+    message: directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }),
+  });
+  await lc.onTurnEnd(assistantTurn("TODO progress: 2 completed, 1 in progress"));
+  check("a pass cannot post a milestone", milestones.length === 0, JSON.stringify(milestones));
+}
+
+// 3d) A human message folded into a live pass lifts the mute — the pass
+//     answers it in the room instead of swallowing the question.
+{
+  const { lc, sent } = makeLifecycle();
+  lc.onBeforeAgentStart({
+    messageType: "custom",
+    message: directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }),
+  });
+  await lc.onMessageEnd({ message: { role: "user", content: [{ type: "text", text: "actual question" }] } });
+  await lc.onTurnEnd(assistantTurn("answer to the human"));
+  check("user input mid-pass un-mutes the run", sent.length === 1 && sent[0] === "answer to the human", `sent=${JSON.stringify(sent)}`);
+}
+
+// 3e) The pass's own injected directive must NOT lift the mute.
+{
+  const { lc, sent } = makeLifecycle();
+  lc.onBeforeAgentStart({
+    messageType: "custom",
+    message: directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }),
+  });
+  await lc.onMessageEnd({ message: { role: "user", ...directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }) } });
+  await lc.onTurnEnd(assistantTurn("Root unchanged."));
+  check("the pass's own directive does not lift the mute", sent.length === 0, `sent=${JSON.stringify(sent)}`);
 }
 
 // 4) A notice carrying real work is NOT muted — that report belongs in the room.
@@ -132,13 +205,7 @@ const assistantTurn = (text) => ({ message: { role: "assistant", content: [{ typ
   check("user-prompted turn broadcasts", sent.length === 1 && sent[0] === "hi", `sent=${JSON.stringify(sent)}`);
 }
 
-// ---- Engine A: the in-session summarize directive ----------------------------
-
-const directive = (details) => ({
-  customType: "matrix-directive",
-  content: "Run a Matrix thread-summary pass for this session now.",
-  details,
-});
+// ---- Engine A: the in-session summarize directive ---------------------------
 
 check(
   "summarize-kind directive is summary fuel",

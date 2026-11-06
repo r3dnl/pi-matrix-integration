@@ -161,11 +161,17 @@ export class Lifecycle {
   /** Set when THIS session is a side chain (sub-agent) — the hooks then
    *  route through the owner bus and never touch the connection. */
   private subagent: SubagentSelf | null = null;
-  /** The turn currently running is a thread-summary pass — started by a
+  /** The RUN currently live is a thread-summary pass — started by a
    *  summarizer completion notice (Engine B) or the in-session summarize
    *  directive (Engine A); its report-out stays out of the room (see
-   *  `onBeforeAgentStart` + the 2026-10 summary-loop incident). */
-  private summaryPassTurn = false;
+   *  `onBeforeAgentStart` + the 2026-10 summary-loop incident).
+   *  Run-scoped on purpose: a pass is ≥2 turns (tool call, then a closing
+   *  line) and pi fires `before_agent_start` once per run, so a flag released
+   *  on the first `turn_end` un-muted the closing line and leaked it into the
+   *  room (the 2026-11 repeat of the summary-loop incident). Released at
+   *  `agent_settled`, at the next run's start, or when a human message lands
+   *  mid-pass. */
+  private summaryPassRun = false;
   /** A summarizer wake notice was absorbed into the run currently live (see
    *  `onMessageEnd`). Its report-out must still reach the room, but it must
    *  not re-arm the on-final summary trigger — that answer is the wake's own
@@ -520,6 +526,21 @@ export class Lifecycle {
   async onMessageEnd(event: MessageEndEvent): Promise<void> {
     if (this.subagent) return this.onSubagentMessageEnd(event);
     if (!this.isEnabled()) return;
+    // A human message folded into a live pass ends the mute: swallowing a
+    // real question is worse than one leaked line. Every message this
+    // extension injects (room relay, directive, wake notice) carries a
+    // `customType`, so a bare user message here is terminal-typed input.
+    const incoming = event.message as { role?: string; customType?: unknown };
+    if (
+      this.summaryPassRun &&
+      incoming.role === "user" &&
+      incoming.customType === undefined
+    ) {
+      this.summaryPassRun = false;
+      this.deps.logger.warn(
+        "[matrix] message_end: user input during a summary pass, broadcast mute lifted",
+      );
+    }
     // Busy-parent observability (the 2026-10 summary-loop incident):
     // a wake notice / summarize directive delivered WHILE a run is live is
     // queued INTO that run — before_agent_start never fires for it, so it
@@ -529,7 +550,7 @@ export class Lifecycle {
     // absorbed notice adds at most one legitimate content-driven pass.
     // Logged, never muted. Detection is structural (details), not prose.
     if (
-      !this.summaryPassTurn &&
+      !this.summaryPassRun &&
       (isSummarizerWakeNotice(event.message) || isSummarizeDirectiveNotice(event.message))
     ) {
       this.wakeFuelTurn = true;
@@ -557,9 +578,9 @@ export class Lifecycle {
       ? messageText(event.message)
       : null;
     if (askText) {
-      // Same loop guard as the turn_end broadcast (the flag is consumed
-      // there; message_end of the same turn sees it while set).
-      if (this.summaryPassTurn) {
+      // Same loop guard as the turn_end broadcast (one flag for the whole
+      // pass, read — never consumed — by both).
+      if (this.summaryPassRun) {
         this.deps.logger.debug(
           "[matrix] message_end: wake-turn ask_user context flush skipped (loop guard)",
         );
@@ -602,14 +623,16 @@ export class Lifecycle {
    * that turn's final broadcast: no thread message, so the cadence guard
    * (`msgCount <= lastSummaryAtMsg`) stops spawning. The wake itself still
    * happens (pi-subagents 0.80.0 queues it for every async run); only its
-   * room echo is muted.
+   * room echo is muted — for every turn of that run, not only the first.
    */
   onBeforeAgentStart(event: BeforeAgentStartEvent): void {
     if (this.subagent) return;
-    // A new run begins: a wake-fuel flag left over from the previous run must
-    // not silence this run's report-out summary. A wake absorbed mid-run never
-    // fires this hook, so clearing here cannot drop the flag it set.
+    // A new run begins: a wake-fuel flag or a summary-pass mute left over from
+    // the previous run (a run that died before `agent_settled`) must not
+    // silence this run's report-out. A wake absorbed mid-run never fires this
+    // hook, so clearing here cannot drop the flag it set.
     this.wakeFuelTurn = false;
+    this.summaryPassRun = false;
     this.deps.threadManager?.clearOnFinalSuppression();
     if (event.messageType !== "custom") return;
     const muted = isSummarizerWakeNotice(event.message) || isSummarizeDirectiveNotice(event.message);
@@ -625,7 +648,7 @@ export class Lifecycle {
       this.deps.logger.warn(`[matrix] before_agent_start custom=${customType} runs=[${agents}] summary-turn-muted=${muted}`);
     }
     if (muted) {
-      this.summaryPassTurn = true;
+      this.summaryPassRun = true;
     }
   }
 
@@ -636,13 +659,12 @@ export class Lifecycle {
    */
   async onTurnEnd(event: TurnEndEvent): Promise<void> {
     if (this.subagent) return this.onSubagentTurnEnd(event);
-    // Consumed before any early return below, so a turn that dies without
-    // reaching the broadcast cannot mute the NEXT, real turn. The side-chain
-    // branch above is not one of those returns: a side-chain instance never
-    // sets this flag, because `onBeforeAgentStart` exits as soon as `subagent`
-    // is bound.
-    const wakeTurn = this.summaryPassTurn;
-    this.summaryPassTurn = false;
+    // Read, never consumed here: the mute covers the whole summary-pass run
+    // and is released at `agent_settled`, at the next run's start, or by a
+    // human message landing mid-pass. The side-chain branch above cannot mute
+    // a real run: a side-chain instance never sets the flag, because
+    // `onBeforeAgentStart` exits as soon as `subagent` is bound.
+    const mutedRun = this.summaryPassRun;
     if (!this.isEnabled()) {
       // Observable (not silent): a dropped final answer here was invisible
       // for a whole session because no turn_end log line ever appeared.
@@ -650,6 +672,17 @@ export class Lifecycle {
       return;
     }
     try {
+      // The loop guard, ahead of every room write this turn can make — a
+      // TODO-progress milestone from inside a pass would re-arm the cadence
+      // exactly like the leaked final answer did.
+      if (mutedRun) {
+        // warn (not debug): this is the line the live verification greps for
+        // at the default INFO level (wording kept from the 2026-10 incident).
+        this.deps.logger.warn(
+          "[matrix] turn_end: summarizer wake turn, skipping final broadcast (loop guard)",
+        );
+        return;
+      }
       const todoUpdate = this.deps.cfg.sendMilestones ? extractTodoUpdate(event.message) : null;
       if (todoUpdate) {
         await this.deps.messageHandler.sendMilestone(`TODO progress: ${todoUpdate}`);
@@ -670,15 +703,6 @@ export class Lifecycle {
         return;
       }
       const finalText = messageText(event.message);
-      if (wakeTurn) {
-        // The loop guard: the wake turn's reply is what re-armed the next
-        // summary pass, so it never enters the room. warn (not debug): this
-        // is the line the live verification greps for at the default INFO level.
-        this.deps.logger.warn(
-          "[matrix] turn_end: summarizer wake turn, skipping final broadcast (loop guard)",
-        );
-        return;
-      }
       if (!finalText) {
         const types = (event.message?.content ?? []).map((c) => c.type).join(",") || "none";
         this.deps.logger.debug(
@@ -779,6 +803,9 @@ export class Lifecycle {
 
   /** agent_settled — the single settle source (transport-and-state.md Q4, PO: agreed). */
   onAgentSettled(): void {
+    // The summary-pass mute ends with its run. Before the side-chain
+    // early-return below, which the flag-owning (main) session always hits.
+    this.summaryPassRun = false;
     const sa = this.subagent;
     if (!sa || !sa.bound) return;
     const bus = this.deps.subagentBus?.();
