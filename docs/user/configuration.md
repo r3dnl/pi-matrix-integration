@@ -5,6 +5,8 @@ lists every key the code reads, its default, and the environment variable that
 overrides it. Environment values are typed from the default, so booleans
 accept `true`/`1` and numbers must parse as numbers.
 
+**An example config file with comments explaining the options can be found [here](matrix-config.example.jsonc)**
+
 ## Precedence
 
 1. Environment variables (highest).
@@ -21,15 +23,19 @@ The extension uses the **first config file that exists**:
 4. Install location: `~/.pi/agent/extensions/pi-matrix-integration/config/`.
 5. XDG: `~/.config/pi-matrix-integration/config.json` (or `.jsonc`).
 
-One trap: a profile-suffixed file (for example
-`matrix-config.pi_agent--example.com.jsonc`) is **not** in that list. The bare
+### Profiles & Precedence
+A json(c) can be saved as `matrix-config.{pi_agent_user}--{matrix_domain}.json(c)`,
+and this can be loaded with `/matrix-switch` in the terminal.
+
+One trap wrt precendence: a profile-suffixed file (for example
+`matrix-config.pi_agent--example.com.jsonc`) is **not** in above list. The bare
 `matrix-config.json` is the live config; a profile file is only read when you
 activate that profile with `/matrix-switch` or `/matrix-connect <profile>`.
 Keys written into a profile file have no effect until the profile is active.
 
 ## File format
 
-The file is versioned. A v2 file looks like this (excerpt):
+The config file is versioned. A v2 file looks like this (excerpt):
 
 ```jsonc
 {

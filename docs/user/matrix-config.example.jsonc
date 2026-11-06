@@ -16,8 +16,10 @@
   // the device id and the user id are read from that file.
   "piMatrixIdentity": {
     // Path template. {pi-matrix-username} and {matrix-domain} are expanded.
-    // Mode 0600; written by /matrix-login.
-    "credentialsPath": "~/.config/mtx/accounts/{pi-matrix-username}--{matrix-domain}/credentials.json"
+    // Mode 0600; written by `/matrix-login`. Follow matrix-commander format.
+    // Split per project because 2 project running concurrently require
+    // exclusive access to this dir path for room key crypto store and lockfile.
+    "credentialsPath": "~/.config/mtx/projects/<project>/accounts/<user>--<domain>/credentials.json"
   },
 
   // Connection: how and when the client talks to the homeserver.
@@ -66,7 +68,7 @@
     "threadIcon": "🧵",
     // One summary pass every Nth message. 0 = cadence off (session-end only).
     "summaryCadence": 10,
-    // Ramp trigger points 1, 1, 2, 3, 5, 8… up to the cadence, so young
+    // Ramp trigger points 1, 2, 3, 5, 8… up to the cadence, so young
     // threads get summarized sooner.
     "useFibonacciCadence": true,
     // Run a pass right after each turn's final message lands in the thread.

@@ -101,7 +101,9 @@ package it cannot account for).
 | `jsqr` | 1.4.0 (2021-04) | decodes the QR code during sign-in-with-QR | npm maintainers `jefff`, `templaedhel` |
 | `qrcode` | 1.5.4 (2024-08) | renders the QR code for the other sign-in participant | npm maintainers `soldair`, `vigreco` |
 
-Two notes reviewers ask for. **Encrypted attachments:** files posted to
+Two notes: 
+
+**1. Encrypted attachments:** files posted to
 the room are decrypted locally with `matrix-encrypt-attachment` (the
 Matrix spec's AES-CTR + SHA-256 attachment scheme); keys come from the
 event itself and are never logged — the plaintext body of a message or
@@ -110,16 +112,18 @@ has seen no release since 2022; it is small, spec-stable, and maintained
 inside the Matrix.org org — if that changes, a replacement is a decision
 we will make deliberately, not silently.
 
-**QR encode/decode:** `jsqr` + `qrcode` are kept rather than hand-rolled
+**2. QR encode/decode:** `jsqr` + `qrcode` are kept rather than hand-rolled
 because this is crypto-adjacent code we do not want to own; both are
 small and stable.
 
-Optional integrations (`@juicesharp/rpiv-ask-user-question`, subagent
-extensions, the voice engine) are declared as optional peers and only
-load when installed. The host-provided packages (`pi-coding-agent`,
-`pi-tui`, `typebox`) are declared peers your Pi install supplies — the
-extension never installs them itself. `src/qr2025/` is vendored upstream
-prototype code, carrying its original headers and attribution in `NOTICE`.
+## Optional integrations 
+
+- `@juicesharp/rpiv-ask-user-question`, subagent extensions, the voice engine
+-> are declared as optional peers and only load when installed.
+- The host-provided packages (`pi-coding-agent`,`pi-tui`, `typebox`) are declared 
+peers your Pi install supplies — the extension never installs them itself.
+- `src/qr2025/` is vendored upstream prototype code, carrying its original headers
+and attribution in `NOTICE`.
 
 ## Out of scope
 

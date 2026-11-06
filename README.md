@@ -4,6 +4,8 @@
 [![npm version](https://img.shields.io/npm/v/pi-matrix-integration.svg)](https://www.npmjs.com/package/pi-matrix-integration)
 [![CI](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/ci.yml/badge.svg)](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/ci.yml)
 
+_comment: add version, plus remark this is in beta_
+
 ## _Own your agentic stack, also on the road_
 
 A Pi coding agent extension that connects a [Pi](https://pi.dev/) session to a [Matrix](https://matrix.org/) chat room. Pi posts what it is doing into the room — milestones, questions, final answers — as it works. You reply from the room to steer it: from your phone, tablet or PC - with [Element](https://element.io/) or  [Whatsapp, Discord, Slack, Telegram etc](https://matrix.org/ecosystem/bridges/), without touching the terminal (though you can work from both at once).
@@ -42,6 +44,8 @@ You need a Matrix account of the agent's own — not your personal one — on an
 | **Files between terminal and room** | `@` picks a workspace file for the agent from the room; `@@` attaches files the agent sends back. Markdown ↔ HTML formatting is translated both ways. |
 | **Sub-agent visibility** | Background spawns and their results post to the room and fold into their spawn lines. |
 | **Security by default** | End-to-end encryption support, secure terminal login, agent-owned account, credentials in a `0600` file. |
+| **Drop voice messages** | Record a voice message, send, and it gets transcribed from voice audio to text in the Pi terminal |
+
 
 ## Examples
 
