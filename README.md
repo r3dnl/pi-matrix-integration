@@ -130,17 +130,24 @@ The root message of a Matrix threaded conversation gets updated with a summary a
 
 ## Configuration
 
-Precedence: **environment variables > config file > defaults**. Config lives at `<project>/.pi/matrix/matrix-config.json`(`.jsonc`) (or `~/.config/pi-matrix-integration/` globally); every key has a `PI_MATRIX_<UPPER_SNAKE>` override. A commented example with every key, enum value and default: [docs/user/matrix-config.example.jsonc](docs/user/matrix-config.example.jsonc).
+Precedence: **environment variables > config file > defaults**. 
 
-| Setting | What it does | Default |
-|---|---|---|
-| `sendMilestones.enabled` | post progress milestones to the room | `true` |
-| `sendFinalMessages.enabled` | post each turn's final answer (`💬 Pi: …`) | `true` |
-| `piMatrixThreading.summaryCadence` | thread-summary pass every N messages (`0` = off) | `10` |
-| `piMatrixThreading.useLlmForSummaries` | LLM summary vs. zero-cost heuristic line | `true` |
-| `piMatrixRoom.endToEndEncryption` | encrypt rooms the extension creates | `true` |
+Config lives at `<project>/.pi/matrix/matrix-config.json`(`.jsonc`) (or `~/.config/pi-matrix-integration/` globally); every key has a `PI_MATRIX_<UPPER_SNAKE>` override. The config is one JSON object of grouped keys — the breakdown:
 
-One trap worth knowing early: a profile-suffixed file (`matrix-config.<profile>.jsonc`) is only read while that profile is active — the bare `matrix-config.json` is the live config.
+| Group | Covers |
+|---|---|
+| `piMatrixIdentity`, `piMatrixConnection` | homeserver, agent account, credentials, profiles |
+| `piMatrixRoom` | room selection, end-to-end encryption |
+| `sendMilestones`, `sendUserMessages`, `sendFinalMessages` | what Pi posts into the room |
+| `piMatrixMessageFormatting` | Markdown ↔ HTML translation |
+| `matrixToPi*`, `piToMatrixMirrorAskUserQuestions` | room→Pi features: slash commands, file picker, voice transcription; question mirror |
+| `piMatrixThreading` | threads, summary cadence and model |
+| `piMatrixSubagents` | sub-agent spawn/result visibility |
+| `piMatrixLogging`, `piTerminalUi`, `piTerminalMatrixLoginCommand` | log level and files, footer/TUI display, login-command mapping |
+
+- Every key, default and effect: [configuration reference](docs/user/configuration.md). 
+- A commented example with every key, enum value and default: [docs/user/matrix-config.example.jsonc](docs/user/matrix-config.example.jsonc).
+- One trap worth knowing early: a profile-suffixed config file (`matrix-config.<profile>.jsonc`) is never read at startup — it goes live only when you activate it at runtime with `/matrix-switch <profile>` (or `/matrix-connect <profile>`, same thing). The bare `matrix-config.json` is the live config, and it is live again after every restart.
 
 ---
 
