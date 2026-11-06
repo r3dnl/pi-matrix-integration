@@ -17,7 +17,7 @@ Covers: how the extension finds its config, how profiles work, how the room driv
 
 The schema is `ConfigV2` in `src/config.ts`: an identity block, a connection block, a room block, logging, threading, sub-agents, and feature sections that each have their own `enabled` toggle. `resolveStartupConfigWithMigration` in `src/integration.ts` migrates an older file on startup rather than requiring a manual rewrite.
 
-**Every key is overridable by environment variable.** There are 69 `PI_MATRIX_*` names in `src/` — `docs/user/configuration.md` is the generated reference. The convention matters more than the list: an environment value beats the file, which is how the Docker harness and CI pass credentials without writing a file.
+**Every key is overridable by environment variable.** There are 69 `PI_MATRIX_*` names in `src/` — `docs/user/configuration.md` is the generated reference. The convention matters more than the list: an environment value beats the file, which is how CI passes credentials without writing a file.
 
 ## Profiles
 

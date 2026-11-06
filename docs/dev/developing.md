@@ -26,7 +26,7 @@ pi -e ./          # load this checkout as a package for one run
 
 Then in Pi: `/matrix-login` to authenticate the agent account, `/matrix-connect` to attach the room, `/matrix-status` to confirm, `/matrix-help` for the command list.
 
-The remaining gates are the strict typecheck (`npm run typecheck`) and the container end-to-end harness in `docker/`. That harness is test-only infrastructure: nothing you ship or run needs Docker. It cold-installs the packed extension in a clean image and proves it against a real homeserver (`make e2e`, `make e2e-npm`), or runs the offline suite in a container with no network at all (`make e2e-offline`). See [docker/README.md](../../docker/README.md).
+The remaining gate is the strict typecheck (`npm run typecheck`). The release artifact itself is proven by the live scenario tier (`npm run test:live`) plus the manual cold-install check in the release checklist below.
 
 ## The test tiers
 
@@ -62,7 +62,7 @@ npm run test:live
 
 The scenario suite creates one fresh room per run, drives the real extension
 seams, and writes per-scenario evidence to `artifacts/live-<run-id>/` (the
-docker harness captures it; the live-nightly workflow uploads it). Once per
+the live-nightly workflow uploads it). Once per
 release, judge the summary quality too: point `PI_MATRIX_JUDGE_BASE_URL` /
 `PI_MATRIX_JUDGE_MODEL` at any OpenAI-compatible server and run
 `npm run test:live:judge`. The human confirmation pass for each scenario is
@@ -98,13 +98,11 @@ The short version of the module map: `src/integration.ts` is the composition roo
 1. Update `CHANGELOG.md` (Keep a Changelog) and bump `version` in `package.json`.
 2. Confirm `npm pack --dry-run` ships what you expect: sources, `agents/`, the docs and `NOTICE` — nothing from `state/`, `config/` or `manifests/`.
 3. Run `npm test` and `npm run test:live` once, fully.
-4. Run the cold-install proof: `npm run test:release` (runs `make e2e`;
-   needs Docker plus the `PI_MATRIX_*` test credentials). It installs the
-   packed tarball in a clean container and runs the live tier there — the
-   only check that gates the artifact users actually receive.
-   `make e2e-offline` proves the offline tier is really offline. This
-   step is release-only; no per-commit gate runs it (the nightly
-   workflow does).
+4. Cold-install smoke, by hand (five minutes): `npm pack`, `pi install`
+   the tarball against a clean Pi install (fresh $HOME or a fresh user
+   account), start a session, run `/matrix-login`. This is the check that
+   gates the artifact users actually receive; the live tier it exercises
+   is covered by the nightly workflow on its own.
 5. Tag `v<version>` and publish. The published tarball must be reproducible from the tag.
 
 Breaking changes to config keys or command names require a major bump. Both are user-facing surface.

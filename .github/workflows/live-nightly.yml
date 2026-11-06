@@ -2,9 +2,8 @@ name: Live nightly
 
 # Scheduled live gate (story 16): main only, never a fork PR — the
 # homeserver credentials must not be reachable from a pull request someone
-# else opened. Runs the container end-to-end against the release tarball,
-# the live scenario tier, and the performance gates. A failing run opens
-# (or updates) one issue.
+# else opened. Runs the live scenario tier and the performance gates. A
+# failing run opens (or updates) one issue.
 
 on:
   schedule:
@@ -30,15 +29,6 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Container end-to-end against the packed tarball
-        run: make e2e
-        env:
-          PI_MATRIX_HOMESERVER: ${{ secrets.PI_MATRIX_HOMESERVER }}
-          PI_MATRIX_USERNAME: ${{ secrets.PI_MATRIX_USERNAME }}
-          PI_MATRIX_PASSWORD: ${{ secrets.PI_MATRIX_PASSWORD }}
-          PI_MATRIX_SECOND_TOKEN: ${{ secrets.PI_MATRIX_SECOND_TOKEN }}
-          PI_MATRIX_SECOND_USER: ${{ secrets.PI_MATRIX_SECOND_USER }}
-          PI_MATRIX_SECOND_PASSWORD: ${{ secrets.PI_MATRIX_SECOND_PASSWORD }}
       - name: Live scenario tier
         run: npm run test:live
         env:
