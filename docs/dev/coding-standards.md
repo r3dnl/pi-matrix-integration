@@ -84,3 +84,11 @@ Commands and configuration follow three rules, recorded in [architecture: config
 2. User-visible behaviour documented in `docs/user/`, and any new invariant in the matching architecture topic.
 3. `CHANGELOG.md` entry under Unreleased.
 4. No comment left pointing at a document that does not ship.
+
+## AI-supported coding
+
+`pi-matrix-integration` was developed with AI under human supervision: that means code reviews, architectural design guidelines, security standards, etc. This included redesign and code refactoring as the extension evolved.
+
+The extension was created with full local AI:
+- [Pi agentic harness](https://pi.dev)
+- `Qwen-3.8-27b` and `Qwen-3.8-flash-next`
