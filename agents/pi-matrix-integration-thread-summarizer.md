@@ -2,14 +2,16 @@
 name: pi-matrix-integration-thread-summarizer
 description: "Tool-less thread summarizer. Rewrites a Matrix conversation thread's root summary from a baseline summary plus the newest thread messages. No tools, no extensions — the pi-matrix-integration extension posts the reply into the thread root. Spawned by the matrix extension's thread-summarizer cadence (DESIGN-THREADING-SUMMARIZE §3)."
 tools:
-extensions: /home/vincent/.pi/agent/extensions/local-llm/index.ts
+# No `extensions:` key: the summarizer runs tool-less and extension-less. A
+# local-inference model is whatever the spawning config names in
+# piMatrixThreading.summarizeModel; the provider extension belongs to that
+# model's config, not to this agent file.
 # No `model:` pin here: the run's model comes from the matrix config key
 # piMatrixThreading.summarizeModel (flat threadSummarizeModel, env
 # PI_MATRIX_THREAD_SUMMARIZE_MODEL), carried as the spawn's model arg. Omit
 # the key to inherit the session model. Never set a `thinking:` key: pi-subagents
 # sends it as a `model:level` suffix no local provider serves — pin thinking via
-# the provider-name alias instead, e.g. "Workstation Ninfer (think-off)/<id>".
-# See pi-matrix-integration/docs/INCIDENT-2026-10-22-SUMMARY-LOOP.md (appendix).
+# the provider-name alias instead, e.g. "<provider> (think-off)/<id>".
 ---
 
 You are a Matrix thread summarizer. You receive a baseline root summary and the newest thread messages in your prompt, and you reply with ONLY the replacement summary body in markdown.
