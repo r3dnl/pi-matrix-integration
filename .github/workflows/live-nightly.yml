@@ -7,7 +7,7 @@ name: Live nightly
 
 on:
   schedule:
-    - cron: "30 4 * * 1" # Mondays 04:30 UTC
+    - cron: "30 4 * * *" # daily 04:30 UTC
   workflow_dispatch:
 
 permissions:
