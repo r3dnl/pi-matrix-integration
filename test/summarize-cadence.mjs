@@ -150,5 +150,67 @@ const delta = [{ eventId: "$d1", sender: "@u:t", body: "a thread message", times
   check("null subagent result posts nothing", posted.length === 0, JSON.stringify(posted));
 }
 
+// ---- Part 3: a rejected root edit is retried, then given up — never re-posted --
+// The old fallback posted `🧵 summary: …` as a NEW thread message and returned
+// success. That left a second copy of the summary beside a stale root AND
+// advanced the baseline + watermark, so the delta the rejected edit carried was
+// never folded into the root again — a permanent gap. The guard: retry once,
+// then return false, which leaves both untouched for the next pass to catch up.
+
+function makeRejectingSend(failTimes) {
+  const calls = [];
+  let edits = 0;
+  return {
+    calls,
+    async postThreadRoot(body) { calls.push(["root", body]); return { success: true, eventId: "$root-1" }; },
+    async postThreadReply(body, rootId) { calls.push(["reply", body, rootId]); return { success: true, eventId: "$rep-1" }; },
+    async editMessage(id, text) {
+      edits += 1;
+      calls.push(["edit", id, text]);
+      return edits <= failTimes ? { success: false, error: "M_FORBIDDEN" } : { success: true };
+    },
+    async readTimeline() { return { success: false, messages: [] }; },
+  };
+}
+
+function makeRejectManager(threadSend, stateFile) {
+  return createThreadManager({
+    enabled: true,
+    roomKey: "!room:cadence",
+    threadSend,
+    statePath: path.join(stateDir, stateFile),
+    threadSummaryByLlm: true,
+    onSummarizeRequest: () => Promise.resolve(),
+  });
+}
+
+{
+  const send = makeRejectingSend(1);
+  const tm = makeRejectManager(send, "retry.json");
+  tm.beginSession("new", "sess-retry");
+  await tm.ensureThreadRoot("retry");
+  const ok = await tm.updateSummary("## v1", "$d1");
+  check("a rejected edit is retried once and lands", ok === true && send.calls.filter((c) => c[0] === "edit").length === 2, JSON.stringify(send.calls.map((c) => c[0])));
+  check("the retry posts no second summary message", send.calls.every((c) => c[0] !== "reply"), JSON.stringify(send.calls.map((c) => c[0])));
+}
+
+{
+  const send = makeRejectingSend(99);
+  const stateFile = "give-up.json";
+  const tm = makeRejectManager(send, stateFile);
+  tm.beginSession("new", "sess-giveup");
+  await tm.ensureThreadRoot("giveup");
+  const ok = await tm.updateSummary("## v1", "$d1");
+  check("two rejections give up", ok === false && send.calls.filter((c) => c[0] === "edit").length === 2, JSON.stringify(send.calls.map((c) => c[0])));
+  check("giving up posts nothing to the room", send.calls.filter((c) => c[0] === "reply").length === 0, JSON.stringify(send.calls.map((c) => c[0])));
+  const entry = JSON.parse(fs.readFileSync(path.join(stateDir, stateFile), "utf-8"))["!room:cadence"];
+  const root = entry.roots.find((r) => r.topic === "giveup");
+  check(
+    "a failed edit leaves baseline + watermark for the next pass",
+    root.lastSummary === undefined && root.lastSummarizedEventId === undefined && root.lastSummaryAtMsg === undefined,
+    JSON.stringify(root),
+  );
+}
+
 fs.rmSync(stateDir, { recursive: true, force: true });
 finish();

@@ -18,4 +18,11 @@ come with a major version bump.
   leaves exactly one room event: the thread-root edit. A message typed at the
   terminal while a pass runs lifts the mute, so a real question is never
   swallowed.
+- A rejected thread-summary edit no longer posts the summary as a second,
+  separate room message. The edit is retried once; if the server still refuses,
+  the pass gives up quietly and leaves the root and its delta watermark
+  untouched, so the next pass folds the same messages in. The old fallback put a
+  copy of the summary beside a stale root and marked those messages as already
+  summarized — a gap the root never recovered.
+
 
