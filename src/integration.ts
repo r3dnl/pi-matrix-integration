@@ -822,6 +822,7 @@ export class MatrixIntegration {
         syncTimeoutMs: cfg.syncTimeoutMs,
         logPath: cfg.logPath,
         seenPath: join(getStateDir(), `sdk-seen-${stateServer}.json`),
+        logLevel: cfg.logLevel,
         logger: this.logger,
       });
     // The per-thread unread model, with a per-server path under state/.

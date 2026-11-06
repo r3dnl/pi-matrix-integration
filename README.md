@@ -6,7 +6,7 @@
 
 ## _Own your agentic stack, also on the road_
 
-A Pi coding agent extension that connects a [Pi](https://pi.dev/) session to a [Matrix](https://matrix.org/) chat room. Pi posts what it is doing into the room — milestones, questions, final answers — as it works. You reply from the room to steer it: from your phone, tablet or PC with [Element](https://element.io/), without touching the terminal (though you can work from both at once).
+A Pi coding agent extension that connects a [Pi](https://pi.dev/) session to a [Matrix](https://matrix.org/) chat room. Pi posts what it is doing into the room — milestones, questions, final answers — as it works. You reply from the room to steer it: from your phone, tablet or PC - with [Element](https://element.io/) or  [Whatsapp, Discord, Slack, Telegram etc](https://matrix.org/ecosystem/bridges/), without touching the terminal (though you can work from both at once).
 
 ![Demo: a Pi session on a laptop posts milestones into a Matrix room; the same session is steered from a phone running Element](https://raw.githubusercontent.com/r3dnl/pi-matrix-integration/main/docs/assets/demo-overview.gif)
 
@@ -54,6 +54,30 @@ room  🎯 Milestone: TODO progress: 2 of 3 done
 room  💬 Pi: Tests green — pushing branch fix/auth-ttl.
 ```
 
+![Demo: steer pi terminal session from Element X on phone; see milestones show](https://raw.githubusercontent.com/r3dnl/pi-matrix-integration/main/docs/assets/demo-steer-from-phone.gif)
+
+**Attach a file to Pi session:**
+
+Since we don't have direct access to the file picker in the TUI, the matrix room shows files to choose pick from.
+```
+room  › what does @docs/spec.md say about retries?
+terminal  [Matrix] what does docs/spec.md say about retries? (content attached)
+```
+
+![Demo: Attach a file to the Pi terminal session with fuzzy file picker](https://raw.githubusercontent.com/r3dnl/pi-matrix-integration/main/docs/assets/demo-attach-file-to-terminal.gif)
+
+**Upload a file to the matrix room:**
+
+Want to see the contents of a project file? Upload it to the room - again with fuzzy file picker:
+```
+room >
+terminal
+room >
+```
+
+![Demo: Upload a file as an attachment to the Matrix room - again with fuzzy file picker](https://raw.githubusercontent.com/r3dnl/pi-matrix-integration/main/docs/assets/demo-upload-file-to-matrix.gif)
+
+
 **Answer a decision from the couch:**
 
 ```
@@ -64,14 +88,29 @@ terminal: questionnaire resolves, work proceeds.
 
 Room reply grammar: option number(s)/label(s) (`2`, `2 3` for multi, `Custom: free text`), yes/no as `👍`/`👎`; a review step posts before proceeding — `confirm` to go.
 
-**Ask about a file:**
-
-```
-room  › what does @docs/spec.md say about retries?
-terminal  [Matrix] what does docs/spec.md say about retries? (content attached)
-```
-
 ![Demo: ask_user_question answered from the room while the terminal waits](https://raw.githubusercontent.com/r3dnl/pi-matrix-integration/main/docs/assets/demo-ask-user.gif)
+
+**Organize Pi sessions as Matrix threads**
+
+Keep things organized by running a Pi terminal session as a threaded conversation.
+
+![Demo: starting a new session results in a new, threaded conversation in Matrix](https://raw.githubusercontent.com/r3dnl/pi-matrix-integration/main/docs/assets/demo-threads.gif)
+
+**Watch your session get summarized**
+
+The root message of a Matrix threaded conversation gets updated with a summary as the Pi session progresses.
+
+![Demo: watch how the Matrix root message becomes the session summary, and gets updated as the Pi session progresses -> with key milestones, recent activity, latest & next, and Main Decisions](https://raw.githubusercontent.com/r3dnl/pi-matrix-integration/main/docs/assets/demo-thread-summarization.gif)
+
+**See subagents spawn and check back in**
+
+![Demo: be notified when a subagent spawns, and when it checks back in with the result](https://raw.githubusercontent.com/r3dnl/pi-matrix-integration/main/docs/assets/demo-sub-agent-events.gif)
+
+**Remote terminal command invocation**
+
+![Demo: ](https://raw.githubusercontent.com/r3dnl/pi-matrix-integration/main/docs/assets/demo-terminal-command.gif)
+
+---
 
 ## Configuration
 
@@ -86,6 +125,8 @@ Precedence: **environment variables > config file > defaults**. Config lives at 
 | `piMatrixRoom.endToEndEncryption` | encrypt rooms the extension creates | `true` |
 
 One trap worth knowing early: a profile-suffixed file (`matrix-config.<profile>.jsonc`) is only read while that profile is active — the bare `matrix-config.json` is the live config.
+
+---
 
 ## Reference
 

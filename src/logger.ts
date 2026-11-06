@@ -195,12 +195,16 @@ export function installConsoleInterceptor(logPath: string): () => void {
   };
 }
 
-/** File-backed js-sdk logger: same rotation + console fallback as `createMatrixLogger`. */
-export function createJsSdkFileLogger(logPath: string): JsSdkLogger {
+/** File-backed js-sdk logger: same rotation + console fallback as `createMatrixLogger`.
+ *  `minLevel` (lowercase) gates severity like `createMatrixLogger` does —
+ *  without it the js-sdk's per-sync debug chatter writes unbounded (~790 KB
+ *  overnight at INFO config); the SDK's own loglevel gating is bypassed
+ *  because `rebindJsSdkModuleLogger` replaces these methods wholesale. */
+export function createJsSdkFileLogger(logPath: string, minLevel?: string): JsSdkLogger {
   const make = (namespace: string): JsSdkLogger => {
     const write = (level: string, args: unknown[]): void => {
       const msg = args.map(formatLogArg).join(" ");
-      append(logPath, level, namespace ? `[${namespace}] ${msg}` : msg, console.debug);
+      append(logPath, level, namespace ? `[${namespace}] ${msg}` : msg, console.debug, minLevel);
     };
     return {
       trace: (...args) => write("trace", args),
