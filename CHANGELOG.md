@@ -11,6 +11,9 @@ come with a major version bump.
 
 ### Fixed
 
+- `piMatrixThreading.threadSummaryEvery` below 1 no longer
+  spins the Fibonacci summary schedule forever (`summaryDue` step is
+  `min(a, cap)` = 0); such a cadence now simply never fires the summarizer.
 - A thread-summary pass that runs in the room-facing session (no summarizer
   sub-agent installed) no longer broadcasts its closing line — "Root
   unchanged.", "Up to date." — into the room every pass. The broadcast mute

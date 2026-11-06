@@ -461,6 +461,8 @@ console.log("== threading: fibonacci-capped summary cadence ==");
   ]) === "[false,false,false,false,false,false,false]");
   check("fixed mode keeps the modulo cadence", summaryDue(6, 3, false) === true && summaryDue(5, 3, false) === false);
   check("cap=1 degenerates to every message", summaryDue(1, 1, true) === true && summaryDue(2, 1, true) === true);
+  // Regression: cap < 1 used to spin the fib walk forever (step min(a,0)=0).
+  check("cap<1 is never due, fib and fixed alike", summaryDue(5, 0, true) === false && summaryDue(5, 0, false) === false && summaryDue(5, -1, true) === false);
 
   // Manager level: every=3 caps the fib intervals at 1,1,2,3,3…
   // → LLM runs fire at in-thread sends 1, 2, 4, 7.

@@ -168,6 +168,10 @@ export type SendKind = "milestone" | "final" | "user" | "decision" | "other";
  * runs on every in-thread send, so no point is skipped.
  */
 export function summaryDue(msgCount: number, cap: number, useFib: boolean): boolean {
+  // cap < 1 would spin the fib walk forever: the step is min(a, cap) = 0,
+  // so `point` never reaches msgCount. Config is user-supplied; the loop
+  // cannot rely on it being sane. Never due is the safe answer.
+  if (cap < 1) return false;
   if (!useFib) return msgCount % cap === 0;
   let a = 1;
   let b = 1;
