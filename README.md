@@ -4,32 +4,44 @@
 [![npm version](https://img.shields.io/npm/v/pi-matrix-integration.svg)](https://www.npmjs.com/package/pi-matrix-integration)
 [![CI](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/ci.yml/badge.svg)](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/ci.yml)
 
-_comment: add version, plus remark this is in beta_
+**Version 0.9.0**
 
-## _Own your agentic stack, also on the road_
+_Disclaimer - this is in beta: it has been developed and used on linux and mac, with quite a lot of personal use, but never on windows. It is also highly configurable and I am sure some switches will have a bug. Use at your own risk._
 
-A Pi coding agent extension that connects a [Pi](https://pi.dev/) session to a [Matrix](https://matrix.org/) chat room. Pi posts what it is doing into the room — milestones, questions, final answers — as it works. You reply from the room to steer it: from your phone, tablet or PC - with [Element](https://element.io/) or  [Whatsapp, Discord, Slack, Telegram etc](https://matrix.org/ecosystem/bridges/), without touching the terminal (though you can work from both at once).
+## _Control your Pi terminal from anywhere, anytime_
+
+This is a [Pi coding agent](https://pi.dev/) extension that connects a Pi session to a [Matrix](https://matrix.org/) chat room. Pi posts what it is doing into the room — milestones, questions, final answers — as it works. You reply from the room to steer it: from your phone, tablet or PC - with [Element](https://element.io/) or  [Whatsapp, Discord, Slack, Telegram etc](https://matrix.org/ecosystem/bridges/), without touching the terminal (though you can work from both at once).
 
 ![Demo: a Pi session on a laptop posts milestones into a Matrix room; the same session is steered from a phone running Element](https://raw.githubusercontent.com/r3dnl/pi-matrix-integration/main/docs/assets/demo-overview.gif)
 
-## Install
-
-```sh
-pi install npm:pi-matrix-integration
-```
-
-Restart your Pi session. Until the npm publish lands, install the beta from git: `pi install git:github.com/r3dnl/pi-matrix-integration@v0.9.0`.
-
-You need a Matrix account of the agent's own — not your personal one — on any server with password login (tested against Synapse).
 
 ## Quick start
 
-1. Create the agent's own account on your homeserver, create a room and invite it. Only room members can drive the agent — keep the room invite-only.
-2. Run `/matrix-login` in a Pi session: the dialogue probes your homeserver, logs in, and stores the access token in a credentials file (`~/.config/mtx/accounts/…`, mode `0600`).
-3. Run `/matrix-connect` — the first run asks which room to use.
-4. Run `/matrix-status`: it prints the connected server, room and user.
-5. Type something in the terminal and watch it appear in the room as `🧑 User: …`.
-6. Run `/matrix-introduction-tour` in the terminal, or `//matrix-introduction-tour` from the room, to walk every feature.
+### Pre-requisites
+- Create an account for the Pi agent on your homeserver — its own Matrix account, not your personal one — on any server with password login (tested against Synapse). You also need your personal Matrix account.
+- The easy setup below **requires** the agent account to be able to create rooms, set the room alias, and invite users. If your homeserver forbids that, use Manual Room Setup instead.
+
+### Install
+
+```sh
+pi install git:github.com/r3dnl/pi-matrix-integration@v0.9.0
+```
+(Once the npm publish lands: `pi install npm:pi-matrix-integration`.)
+Restart / reload your Pi session.
+
+### Steps if agent can create room and invite users
+
+1. Open Pi: it will ask you to log in. Follow the instructions. When prompted "Invite user to room", type your personal Matrix ID (`@you:server`) — the invite is how you get into the room. You can always `/matrix-login` to start this flow manually.
+
+### Manual Room Setup
+1. With your personal account, create a room and invite the agent. Give the room an alias — the login prompt resolves rooms by alias, not by room ID (or pre-set `roomId` in the config). Only room members can drive the agent — keep the room invite-only.
+2. Open Pi: it will ask you to log in. Enter the room's alias when prompted. You can always `/matrix-login` to start this flow manually.
+
+### Useful terminal commands
+- Run `/matrix-status`: it prints the connected server, room and user.
+- Type something in the terminal and watch it appear in the room as `🧑 User: …`.
+- Run `/matrix-introduction-tour` in the terminal, or `//matrix-introduction-tour` from the room, to walk every feature.
+- Run `/matrix-help` in the TUI, or `//matrix-help` from the room, to get a condensed help overview
 
 ## What you get
 
