@@ -478,6 +478,7 @@ export class SdkOutbox implements Outbox {
     const accountDir = dirname(this.opts.credentialsPath);
     if (!existsSync(accountDir)) return true; // no account dir — nothing to lock
     const lockPath = join(accountDir, "pi-matrix.lock");
+    let reclaimFails = 0;
     for (;;) {
       try {
         this.lockFd = openSync(lockPath, "wx");
@@ -504,7 +505,15 @@ export class SdkOutbox implements Outbox {
           try {
             unlinkSync(lockPath);
           } catch {
-            /* another process won the race — retry loop */
+            /* another process won the race — retry loop. A PERMANENT unlink
+             * failure (read-only fs, permissions) would spin here forever:
+             * cap the reclaim and yield like the other give-up paths. */
+            if (++reclaimFails > 5) {
+              this.logger.error?.(
+                `[matrix] sdk: could not reclaim the stale lock ${lockPath} after 5 attempts — not connecting.`,
+              );
+              return false;
+            }
           }
           continue;
         }

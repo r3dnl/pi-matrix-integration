@@ -14,6 +14,10 @@ come with a major version bump.
 - `piMatrixThreading.threadSummaryEvery` below 1 no longer
   spins the Fibonacci summary schedule forever (`summaryDue` step is
   `min(a, cap)` = 0); such a cadence now simply never fires the summarizer.
+- Account-lock reclaim during connect no longer hot-spins when a stale
+  `pi-matrix.lock` file cannot be deleted (read-only or permissioned state
+  dir): after 5 failed reclaim attempts the session logs the give-up and
+  does not connect, like every other lock conflict path.
 - A thread-summary pass that runs in the room-facing session (no summarizer
   sub-agent installed) no longer broadcasts its closing line — "Root
   unchanged.", "Up to date." — into the room every pass. The broadcast mute
