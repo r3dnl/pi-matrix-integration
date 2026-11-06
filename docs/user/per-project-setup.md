@@ -1,5 +1,12 @@
 # Per-project setup (1 project : 1 room)
 
+**The extension auto-creates the project configuration and state files, but this is to explain what happens.**
+
+This extension follows Pi's mechanism for making extensions global, or project-local:
+> Placement for /reload: Put extensions in ~/.pi/agent/extensions/ (global) or .pi/extensions/ (project-local) for auto-discovery. Use pi -e ./path.ts only for quick tests. Extensions in auto-discovered locations can be hot-reloaded with /reload.
+
+## Recommendation
+
 Each project gets its own room and its own agent credentials. The extension
 derives the project from the working directory Pi starts in, so the layout
 below is per-project by construction. The general case (one agent account,
@@ -32,14 +39,43 @@ cd <project> && pi
 
 ## FAQ: running Pi from `~/.pi`
 
-Pi derives the project-local path from the working directory, so from
-`~/.pi` the extension looks at `~/.pi/.pi/matrix/`. To use `~/.pi/matrix/`
-instead, create a symlink:
-
+When running Pi in `~/.pi` (so `.pi` is the project name) this leads to 
+So from `~/.pi` the extension looks at `~/.pi/.pi/matrix/`. 
+It is also possible to use `~/.pi/matrix/`instead, create a symlink:
 ```bash
 mkdir -p ~/.pi/.pi
 ln -s ~/.pi/matrix ~/.pi/.pi/matrix
 ```
+
+## FAQ: can two projects share one credentials file?
+
+Not at the same time. The path is yours to point anywhere — nothing checks
+that a credentials file belongs to a project — but the **account directory**
+(the folder holding `credentials.json`) can only be live in one Pi session:
+
+- the E2EE crypto store defaults to `<account-dir>/store`, next to the token.
+  Two sessions start two Olm accounts on one device, the double-ratchet
+  forks, and the room fills with "Unable to decrypt message".
+- `pi-matrix.lock` in the same directory records the holder pid. The second
+  session refuses to connect with:
+  `Matrix account … is already in use by another live pi session (pid N)
+  — one Matrix account/device per pi session. … Stop the other session or
+  give this one its own account/device. Not connecting.`
+
+So sharing works for *sequential* use — finish in one project, then start the
+other — and is refused for concurrent use rather than silently corrupting E2EE.
+
+Do not "fix" this by moving the state directory. State is already per-project:
+when the active config is `<project>/.pi/matrix/matrix-config.json`(`.jsonc`),
+the thread map, the per-server unread and seen watermarks, and the log all live
+in `<project>/.pi/matrix/state/` regardless of where credentials sit. That
+isolation is what keeps two projects from clobbering each other's event ids
+(a real bug once: five projects on one global seen-events file produced
+duplicate deliveries). It does not touch the Olm store or the account lock.
+
+To run two projects concurrently, give each its own agent account — see
+Recommendation above. Sharing one identity across live sessions is tracked as
+an open item in [roadmap.md](roadmap.md).
 
 ## Keeping it safe
 

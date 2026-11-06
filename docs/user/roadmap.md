@@ -25,6 +25,15 @@ the [README](../../README.md); this page is intent, not status.
 - [ ] IMPROVEMENT - Prettier formatting for tables in Element X for phone/tablet
 - [ ] IMPROVEMENT - a better, standard welcome tour with a strict runbook that takes the user along in all features
 - [ ] IMPROVEMENT - store matrix credentials under `{project-root}/.pi/matrix/credentials/...` *BUT WARN IF NOT GITIGNORED!*
+- [ ] FEATURE - concurrent sharing of one Matrix account across projects. Today the
+  account directory holds the token, the Olm crypto store and `pi-matrix.lock`, so a
+  second Pi session on the same `credentialsPath` fails soft by design (two Olm
+  instances over one device fork the double-ratchet → "Unable to decrypt message").
+  To run two projects at once on one identity: per-project `cryptoStoreDir` plus a
+  distinct `deviceId` per project, and the lock must key on the store rather than the
+  account dir. Scope question first: is one shared agent account a supported
+  deployment, or should each project keep its own account (the current default)?
+  FAQ: docs/user/per-project-setup.md.
 - [ ] TECH-DEB - 1 central place for all icon constants, like 🧑 (and others as well)
 - [ ] IMPROVEMENT - Command-surface redesign — recorded, not started. Known items: the duplicate `/matrix-summarize-thread` alias, the `matrix-toggle` / `matrix-thread-toggle` naming collision, and several commands that toggle state the config file already owns. Bound by three rules: the config file is the leading declarative description of behaviour; commands invoke functionality and never store preferences; anything a user needs away from the terminal must be a room-reachable command.
 - [ ] TBD - auto-upload of markdown/feature files as attachments for inspection.
