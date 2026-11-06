@@ -183,7 +183,7 @@ The `piMatrixSubagents` block (flat: `subagents`) is shallow-merged.
 | `summarizeResultIntoSpawnLine` | `summarizeResultIntoSpawnLine` | `true` | Fold the result into the spawn line instead of a new message. |
 | `postMode` | `postMode` | `"turn-end"` | When results are posted. |
 | `plainMarker` | `plainMarker` | `⚡` | Marker on sub-agent lines. |
-| `provider` | `provider` | `"auto"` | Which sub-agent provider to use; `auto` detects the installed one. Env: `PI_MATRIX_SUBAGENT_PROVIDER`. |
+| `provider` | `provider` | `"tintinweb"` | Which sub-agent provider to bind: `tintinweb` (`@tintinweb/pi-subagents`, the default), `nicobailon` (`pi-subagents`, carries an upstream wake bug), or `auto` (probe and flip). Env: `PI_MATRIX_SUBAGENT_PROVIDER`. |
 
 Wake behaviour: a finished background sub-agent run wakes the idle Pi
 session through `pi-subagents`. The mirror treats that wake as internal
