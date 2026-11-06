@@ -965,6 +965,16 @@ await runPhase(
         sendCount(state) === 6 && lastSend(state)?.includes("thinking level"),
         JSON.stringify({ c: sendCount(state), last: lastSend(state) }),
       );
+
+      // Regression (7da0d17 side effect): internal milestones carried routing
+      // markers (type: "session" etc.) in the metadata bag; formatForMatrix
+      // then printed them as a raw-JSON "Details:" tail. No marker belongs in
+      // the room.
+      check(
+        "lifecycle milestones carry no raw-JSON Details tail",
+        sendLog(state).every((e) => !String(e.body).includes("Details:")),
+        JSON.stringify(sendLog(state).map((e) => e.body)),
+      );
     },
   );
 }

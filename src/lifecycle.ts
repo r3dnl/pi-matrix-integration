@@ -267,7 +267,6 @@ export class Lifecycle {
         if (sessionMilestone) {
           try {
             await this.deps.messageHandler.sendMilestone(sessionMilestone.text, {
-              type: "session",
               // `flat` skips thread routing (the /new announcement must not
               // soft-attach into the previous session's thread).
               flat: sessionMilestone.flat,
@@ -458,7 +457,8 @@ export class Lifecycle {
       if (event.willRetry) {
         text += ` — retrying the aborted turn`;
       }
-      await this.deps.messageHandler.sendMilestone(text, { type: "compact", reason });
+      // `reason` is already spelled out in `text`; nothing else to attach.
+      await this.deps.messageHandler.sendMilestone(text);
     } catch (error) {
       this.deps.logger.warn(`[matrix] compact milestone failed: ${error}`);
     }
@@ -477,10 +477,7 @@ export class Lifecycle {
         : event.errorMessage
           ? `(error: ${event.errorMessage})`
           : "";
-      await this.deps.messageHandler.sendMilestone(
-        `Pi failed to compact context ${suffix}`,
-        { type: "compact_failed", reason: event.reason },
-      );
+      await this.deps.messageHandler.sendMilestone(`Pi failed to compact context ${suffix}`);
     } catch (error) {
       this.deps.logger.warn(`[matrix] compact-failed milestone failed: ${error}`);
     }
@@ -496,12 +493,8 @@ export class Lifecycle {
       const name = (m?: { provider?: string; id?: string; name?: string }) =>
         m ? `${m.provider ?? "?"}/${m.name ?? m.id ?? "?"}` : "none";
       const text = `Pi model: ${name(prev)} → ${name(model)} (${event.source})`;
-      await this.deps.messageHandler.sendMilestone(text, {
-        type: "model",
-        source: event.source,
-        model: `${model.provider ?? "?"}/${model.name ?? model.id ?? "?"}`,
-        previousModel: prev ? `${prev.provider ?? "?"}/${prev.name ?? prev.id ?? "?"}` : undefined,
-      });
+      // `text` already carries prev → new (source); no payload to attach.
+      await this.deps.messageHandler.sendMilestone(text);
     } catch (error) {
       this.deps.logger.warn(`[matrix] model milestone failed: ${error}`);
     }
@@ -513,11 +506,7 @@ export class Lifecycle {
     if (!this.isEnabled() || !this.deps.cfg.sendModelChangeMilestones) return;
     try {
       const text = `Pi thinking level: ${event.previousLevel} → ${event.level}`;
-      await this.deps.messageHandler.sendMilestone(text, {
-        type: "thinking_level",
-        level: event.level,
-        previousLevel: event.previousLevel,
-      });
+      await this.deps.messageHandler.sendMilestone(text);
     } catch (error) {
       this.deps.logger.warn(`[matrix] thinking-level milestone failed: ${error}`);
     }
@@ -663,7 +652,7 @@ export class Lifecycle {
     try {
       const todoUpdate = this.deps.cfg.sendMilestones ? extractTodoUpdate(event.message) : null;
       if (todoUpdate) {
-        await this.deps.messageHandler.sendMilestone(`TODO progress: ${todoUpdate}`, { type: "todo" });
+        await this.deps.messageHandler.sendMilestone(`TODO progress: ${todoUpdate}`);
       }
 
       const role = event.message?.role;
