@@ -771,15 +771,21 @@ export class ThreadManager {
     // content (root edits are the only edit target, threads-and-summaries.md).
     const res = await this.threadSend!.editMessage(root.eventId, text, { threadRoot: true });
     if (res.success) return true;
-    // threads-and-summaries.md: an `m.replace` the server rejects falls back to a new
-    // in-thread summary message — logged, never lost. The fallback rides
-    // the same pipeline write (the delegate formats it).
-    const fallbackText = `${this.opts.threadIcon ?? "🧵"} summary: ${text}`;
-    const fallback = await this.threadSend!.postThreadReply(fallbackText, root.eventId);
-    if (!fallback.success) {
-      this.logger.warn(`[matrix] thread summary failed and fallback also failed: ${fallback.error ?? res.error}`);
-    }
-    return fallback.success;
+    // A rejected `m.replace` is retried once (a transient 429/5xx lands on the
+    // second attempt), then given up — quietly. The old fallback posted the
+    // summary as a NEW in-thread message, which did two bad things: it put a
+    // second copy of the summary in the room next to a stale root, and it
+    // counted as a successful edit, so `updateSummary` advanced the baseline
+    // and the per-root watermark. The messages that edit carried were then
+    // never folded into the root again — a permanent gap. Returning false
+    // leaves baseline and watermark untouched, so the next pass re-reads the
+    // same delta on top of the same baseline and catches up.
+    const retry = await this.threadSend!.editMessage(root.eventId, text, { threadRoot: true });
+    if (retry.success) return true;
+    this.logger.warn(
+      `[matrix] thread summary edit rejected twice — root left as-is; the next summary pass folds this delta in again: ${retry.error ?? res.error}`,
+    );
+    return false;
   }
 
   /** The session id as a lone code span (`id`) for the summary root —

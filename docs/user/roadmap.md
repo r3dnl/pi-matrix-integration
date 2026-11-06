@@ -22,6 +22,11 @@ the [README](../../README.md); this page is intent, not status.
 
 - [ ] BUG - `"pi-subagents"` fix (dependency upstream) -> this impacts also the summarizer thread that bleeds into the main terminal session (note: `"@tintinweb/pi-subagents"` recommended for now)
 - [ ] BUG / IMPROVEMENT - Thread mismatch detection: warn user if matrix messages come from a non-active thread (how to reproduce: start a new Pi session that spawns a fresh thread; in matrix open an old thread and send a message)
+- [ ] IMPROVEMENT - `/matrix-status` shows the summarizer mode. Today a missing
+  summarizer sub-agent drops the room into the in-session fallback silently: the
+  warning is a log line only, so the room keeps working and nobody sees the
+  degraded mode. Planned line: `summarizer: unavailable — in-session fallback
+  (install a pi-subagents dialect)`.
 - [ ] IMPROVEMENT - Prettier formatting for tables in Element X for phone/tablet
 - [ ] IMPROVEMENT - a better, standard welcome tour with a strict runbook that takes the user along in all features
 - [ ] IMPROVEMENT - store matrix credentials under `{project-root}/.pi/matrix/credentials/...` *BUT WARN IF NOT GITIGNORED!*
