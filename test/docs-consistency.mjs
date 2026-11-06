@@ -106,7 +106,6 @@ const STRICT = [
   // example.org, tools and CI files are shipped files too
   ...walk('test').filter(f => /\.(ts|mjs|js|json|jsonc|md)$/.test(f)),
   ...walk('tools').filter(f => /\.(mjs|js|json)$/.test(f)),
-  ...walk('docker').filter(f => !f.endsWith('Dockerfile')),
   ...walk('.github'),
 ]
 

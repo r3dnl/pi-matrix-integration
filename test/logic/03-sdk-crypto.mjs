@@ -448,7 +448,7 @@ const { tmp, stateDir, TS, config, fakeOutbox, connOk, fakePi, handler, integrat
   ];
   const voicePresent = voiceRoots.some((r) => fs.existsSync(r));
   if (!voicePresent) {
-    // Cold install (the docker harness): rpiv-voice is an OPTIONAL peer —
+    // Cold install on a clean machine: rpiv-voice is an OPTIONAL peer —
     // npm never fetches it, and voice transcription degrades off. Absence
     // is the graceful-degradation path, not a failure; presence is checked
     // by the same assertion below.

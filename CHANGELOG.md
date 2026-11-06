@@ -33,16 +33,18 @@ come with a major version bump.
   The `"auto"` setting still probes and flips to the `nicobailon` package
   when `@tintinweb` is silent, but that package carries an upstream
   wake-handling bug (roadmap 0.10), so the flip is no longer the default.
-- The cold-install proof is a named release step: `npm run test:release`
-  installs the packed tarball in a clean container and runs the live tier
-  there (Docker plus the `PI_MATRIX_*` test credentials; the nightly
-  workflow already runs it). The harness itself is unchanged; every
-  Docker mention is now gone from the user-facing docs —
-  `docs/dev/developing.md` remains the developer reference.
+- The live-nightly workflow runs the live scenario tier directly (it no
+  longer starts with a container end-to-end run).
+
+### Removed
+- The container cold-install harness (`docker/`, the `Makefile`,
+  `npm run test:release`). Day-to-day development never used it; the
+  nightly workflow runs the live tier against main on its own, and the
+  release checklist carries a five-minute manual cold-install check.
 
 ### Documentation
-- `docs/dev/developing.md`: the release checklist gained the cold-install
-  proof step; the user-facing docs no longer reference the harness.
+- `docs/dev/developing.md`: the release checklist gained the manual
+  cold-install check; references to the removed harness are gone.
 
 ## [0.9.0] - 2026-11-04
 

@@ -4,16 +4,17 @@ What the maintainers intend to build. Facts about what exists today are in
 the [README](../../README.md); this page is intent, not status.
 
 ## Candidates for 0.9.1
-- [x] EXPLAIN - role of the maintainer test harness -> documented in
-  `docs/dev/developing.md`: it is the cold-install end-to-end test
-  harness (offline + live proofs); the shipped extension never needs it.
+- [x] EXPLAIN - role of the maintainer test harness -> the harness was
+  later removed; `docs/dev/developing.md` documents the live tier that
+  proves the release artifact today.
 - [x] BUG - `agents/pi-matrix-integration-thread-summarizer.md` -> reference to extension `local-llm` (removed; the agent is tool-less and extension-less)
 - [x] BUG - starting a new terminal session, and then beginning in matrix leads to a thread that does not capture the original ask to user, but instead has `🧵 New Conversation` (fixed: `src/inbound.ts` opens the root from the room with the ask as topic; `test/room-thread-root.mjs`)
 - [x] BUG - opposite to the above: start with something like `/archify ...` and the message root is really long; I suspect when the contents of a file get attached (basically the full markdown) (fixed: `sanitizeThreadTopic` in `src/threading.ts` — first line, 120-char word-boundary cap)
 - [x] state for unread is tracked in `unread-{env}.json` -> split per project? (done: a project-local config moves all state — `unread-<homeserver>.json`, seen files, thread map — to `<project>/.pi/matrix/state/`; the old `{env}` names predate the homeserver-domain keying)
-- [x] remove the harness folder -> confusing for users (resolved: kept
-  as maintainer-only tooling; it is off every user-facing page now and
-  its proof is a named release step: `npm run test:release`)
+- [x] remove the harness folder -> confusing for users (resolved: the
+  container harness and its Makefile are gone. The nightly workflow runs
+  the live tier directly; the cold-install check is a five-minute manual
+  release step)
 - [ ] default to `"@tintinweb/pi-subagents"`
 
 
