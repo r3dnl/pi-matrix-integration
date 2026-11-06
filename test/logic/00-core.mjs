@@ -253,6 +253,81 @@ await waitUntil(
 const d6 = await dedupeHandler.sendMilestone("Ship it");
 check("repeat after window expiry sends again", d6.success === true && !d6.deduped, JSON.stringify(d6));
 
+// ---- milestone details (the matrix_send_milestone payload path) --------------
+// The tool hands the model's `details` object straight to sendMilestone. It
+// must read as facts under the milestone line, never as an indented JSON blob
+// in a human timeline, and it must never take the milestone down with it.
+console.log("== milestone details ==");
+const detailHandler = createMessageHandler({ outbox: fakeOutbox, dedupeWindowMs: 1 });
+
+await detailHandler.sendMilestone("Phase done");
+check(
+  "a payload-free milestone stays one line",
+  String(lastSendEntry().b) === "🎯 Milestone: Phase done",
+  JSON.stringify(lastSendEntry()),
+);
+
+await detailHandler.sendMilestone("Bug fixed", { root_cause: "flag consumed early", files: "2 changed" });
+const detailBody = String(lastSendEntry().b);
+check(
+  "facts render as bullet lines, not a JSON tail",
+  !detailBody.includes("Details:") &&
+    !detailBody.includes("{") &&
+    detailBody.includes("- root_cause: flag consumed early") &&
+    detailBody.includes("- files: 2 changed"),
+  detailBody,
+);
+check(
+  "the milestone line stays the first line",
+  detailBody.startsWith("🎯 Milestone: Bug fixed\n"),
+  detailBody,
+);
+
+// `flat` used to travel in the same bag as the payload; it is routing and must
+// stay out of the room.
+await detailHandler.sendMilestone("New session", undefined, { flat: true });
+check(
+  "flat routing renders nothing in the body",
+  String(lastSendEntry().b) === "🎯 Milestone: New session",
+  JSON.stringify(lastSendEntry()),
+);
+
+await detailHandler.sendMilestone("Capped", { a: "1", b: "2", c: "3", d: "4", e: "5", f: "6" });
+const cappedBody = String(lastSendEntry().b);
+check(
+  "at most 4 facts survive a 6-key payload",
+  (cappedBody.match(/^- /gm) ?? []).length === 4 && !cappedBody.includes("- e:"),
+  cappedBody,
+);
+
+await detailHandler.sendMilestone("Long story", { story: "x".repeat(900) });
+const longBody = String(lastSendEntry().b);
+check(
+  "a long value is cut to the character budget",
+  // the 400-char budget covers the bullet lines; the milestone line is on top.
+  longBody.length <= 430 && longBody.includes("- story: xxx"),
+  String(longBody.length),
+);
+
+// A value JSON.stringify refuses must degrade to text: formatForMatrix runs
+// outside the callers' try/catch, so a throw here used to lose the milestone.
+const circular = { note: "kept" };
+circular.self = circular;
+const circularSend = await detailHandler.sendMilestone("Survives", circular);
+check(
+  "an unserializable value cannot lose the milestone",
+  circularSend.success === true && String(lastSendEntry().b).includes("🎯 Milestone: Survives"),
+  JSON.stringify(lastSendEntry()),
+);
+
+const fmtDetails = createMessageHandler({ outbox: fakeOutbox, sendFormatted: true, dedupeWindowMs: 1 });
+await fmtDetails.sendMilestone("Listed", { files: "2 changed" });
+check(
+  "the formatted body carries the facts as a list",
+  String(lastSendEntry().h ?? "").includes("<ul>") && String(lastSendEntry().h ?? "").includes("2 changed"),
+  JSON.stringify(lastSendEntry()),
+);
+
 // ---- sendFormatted (item 7b, fake-`mtx` side) ---------------------------------
 console.log("== sendFormatted ==");
 const fmtHandler = createMessageHandler({ outbox: fakeOutbox, sendFormatted: true });

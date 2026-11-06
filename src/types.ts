@@ -463,8 +463,9 @@ export type PiMessageType = 'milestone' | 'response' | 'final' | 'user';
 export interface PiMessage {
   type: PiMessageType;
   content: string;
-  /** Caller-attached bag. `flat` is routing (skip thread routing); every
-   *  other key renders into the room body as a Details block. */
+  /** Caller-attached bag, routing only: `flat` skips thread routing. It is
+   *  never rendered — text a caller wants in the room belongs in `content`
+   *  (see `renderMilestoneDetails`). */
   metadata?: Record<string, unknown>;
   timestamp: number;
   entryId?: string;

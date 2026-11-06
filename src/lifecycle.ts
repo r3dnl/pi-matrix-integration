@@ -272,7 +272,7 @@ export class Lifecycle {
         void this.announceRoomEncryption(ctx);
         if (sessionMilestone) {
           try {
-            await this.deps.messageHandler.sendMilestone(sessionMilestone.text, {
+            await this.deps.messageHandler.sendMilestone(sessionMilestone.text, undefined, {
               // `flat` skips thread routing (the /new announcement must not
               // soft-attach into the previous session's thread).
               flat: sessionMilestone.flat,

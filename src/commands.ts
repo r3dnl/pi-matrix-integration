@@ -358,7 +358,12 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
     description: "Send a milestone or status update to the connected Matrix room",
     parameters: Type.Object({
       milestone: Type.String({ description: "Milestone text to send" }),
-      details: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
+      details: Type.Optional(
+        Type.Record(Type.String(), Type.Unknown(), {
+          description:
+            'Optional 1-4 short key/value facts, shown as one bullet line each under the milestone (e.g. {"files": "2 changed"}). Not a place for prose, code or nested objects — keep each value to one short line.',
+        }),
+      ),
     }),
     async execute(toolCallId, params, _signal, _onUpdate, _ctx) {
       if (!integration.stack.lifecycle.isEnabled()) {
