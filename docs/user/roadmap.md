@@ -4,13 +4,20 @@ What the maintainers intend to build. Facts about what exists today are in
 the [README](../../README.md); this page is intent, not status.
 
 ## Candidates for 0.9.1
-- [ ] EXPLAIN - role of `docker`; is this for testing?
-- [ ] BUG - `agents/pi-matrix-integration-thread-summarizer.md` -> reference to extension `local-llm`
-- [ ] BUG - starting a new terminal session, and then beginning in matrix leads to a thread that does not capture the original ask to user, but instead has `🧵 New Conversation`
-- [ ] BUG - opposite to the above: start with something like `/archify ...` and the message root is really long; I suspect when the contents of a file get attached (basically the full markdown)
+- [x] EXPLAIN - role of the maintainer test harness -> documented in
+  `docs/dev/developing.md`: it is the cold-install end-to-end test
+  harness (offline + live proofs); the shipped extension never needs it.
+- [x] BUG - `agents/pi-matrix-integration-thread-summarizer.md` -> reference to extension `local-llm` (removed; the agent is tool-less and extension-less)
+- [x] BUG - starting a new terminal session, and then beginning in matrix leads to a thread that does not capture the original ask to user, but instead has `🧵 New Conversation` (fixed: `src/inbound.ts` opens the root from the room with the ask as topic; `test/room-thread-root.mjs`)
+- [x] BUG - opposite to the above: start with something like `/archify ...` and the message root is really long; I suspect when the contents of a file get attached (basically the full markdown) (fixed: `sanitizeThreadTopic` in `src/threading.ts` — first line, 120-char word-boundary cap)
+- [x] state for unread is tracked in `unread-{env}.json` -> split per project? (done: a project-local config moves all state — `unread-<homeserver>.json`, seen files, thread map — to `<project>/.pi/matrix/state/`; the old `{env}` names predate the homeserver-domain keying)
+- [x] remove the harness folder -> confusing for users (resolved: kept
+  as maintainer-only tooling; it is off every user-facing page now and
+  its proof is a named release step: `npm run test:release`)
+- [ ] default to `"@tintinweb/pi-subagents"`
 
 
-## Candidates for 0.10.0 / 1.0.0
+## Candidates for 0.10.0
 
 - [ ] BUG - `"pi-subagents"` fix (dependency upstream) -> this impacts also the summarizer thread that bleeds into the main terminal session (note: `"@tintinweb/pi-subagents"` recommended for now)
 - [ ] BUG / IMPROVEMENT - Thread mismatch detection: warn user if matrix messages come from a non-active thread (how to reproduce: start a new Pi session that spawns a fresh thread; in matrix open an old thread and send a message)
@@ -21,8 +28,9 @@ the [README](../../README.md); this page is intent, not status.
 - [ ] IMPROVEMENT - Command-surface redesign — recorded, not started. Known items: the duplicate `/matrix-summarize-thread` alias, the `matrix-toggle` / `matrix-thread-toggle` naming collision, and several commands that toggle state the config file already owns. Bound by three rules: the config file is the leading declarative description of behaviour; commands invoke functionality and never store preferences; anything a user needs away from the terminal must be a room-reachable command.
 - [ ] TBD - auto-upload of markdown/feature files as attachments for inspection.
 - [ ] TBD - Activity-based summarizer watchdog: abort runs that stream nothing, instead of waiting out the completion budget.
+- [ ] FEATURE - test and optimize for bridged clients (whatsapp, discord, ...)
 
-## post v1.0 ideas
+## (post) v1.0 ideas
 
 - [ ] FEATURE - Inter agent communication
 - [ ] IMPROVEMENT - see archify project: with code of conduct etc
