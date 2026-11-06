@@ -7,6 +7,43 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 Breaking changes to configuration keys or `/matrix-*` command names always
 come with a major version bump.
 
+## [Unreleased]
+
+### Fixed
+- A conversation that starts in the Matrix room (flat message, new session)
+  now opens the thread with the ask as its topic; previously the first reply
+  created a bare `🧵 New Conversation` root and the original message stayed
+  outside the thread.
+- Thread root titles are sanitized: first line, collapsed whitespace, capped
+  at 120 characters on a word boundary — a prompt carrying an attached
+  markdown document (e.g. `/archify …`) no longer produces a page-long root.
+- The shipped thread-summarizer agent definition no longer references a
+  maintainer-local `local-llm` extension path (it runs tool-less and
+  extension-less; the model comes from `piMatrixThreading.summarizeModel`).
+- Lifecycle milestones (session start/stop, compaction, model and
+  thinking-level changes, TODO progress) no longer bleed a raw-JSON
+  `Details:` tail into the room. Since the milestone-payload fix they carried
+  internal routing markers (`{"type":"session"}` …) in the metadata bag, and
+  the formatter printed whatever was attached. The markers — nothing reads
+  them — are gone from the call sites; a payload sent via
+  `matrix_send_milestone` still arrives as a `Details:` block.
+
+### Changed
+- `subagents.provider` now defaults to `"tintinweb"` (`@tintinweb/pi-subagents`).
+  The `"auto"` setting still probes and flips to the `nicobailon` package
+  when `@tintinweb` is silent, but that package carries an upstream
+  wake-handling bug (roadmap 0.10), so the flip is no longer the default.
+- The cold-install proof is a named release step: `npm run test:release`
+  installs the packed tarball in a clean container and runs the live tier
+  there (Docker plus the `PI_MATRIX_*` test credentials; the nightly
+  workflow already runs it). The harness itself is unchanged; every
+  Docker mention is now gone from the user-facing docs —
+  `docs/dev/developing.md` remains the developer reference.
+
+### Documentation
+- `docs/dev/developing.md`: the release checklist gained the cold-install
+  proof step; the user-facing docs no longer reference the harness.
+
 ## [0.9.0] - 2026-11-04
 
 First public beta — the 1.0.0 feature set, published for real-world trial.
