@@ -31,5 +31,3 @@ come with a major version bump.
   untouched, so the next pass folds the same messages in. The old fallback put a
   copy of the summary beside a stale root and marked those messages as already
   summarized — a gap the root never recovered.
-
-
