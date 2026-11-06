@@ -337,13 +337,21 @@ export class MessageHandler {
   }
 
   /**
-   * Send milestone to Matrix
+   * Send milestone to Matrix. `details` is the caller's fact list (the
+   * `matrix_send_milestone` tool hands the model's key/value pairs straight
+   * here); it renders as `- key: value` lines under the milestone line.
+   * Routing stays separate from content: `opts.flat` skips thread routing (the
+   * `/new` session announcement).
    */
-  async sendMilestone(milestone: string, details?: Record<string, unknown>): Promise<MatrixSendResult> {
+  async sendMilestone(
+    milestone: string,
+    details?: Record<string, unknown>,
+    opts?: { flat?: boolean },
+  ): Promise<MatrixSendResult> {
     const piMessage: PiMessage = {
       type: 'milestone',
-      content: milestone,
-      metadata: details,
+      content: `${milestone}${renderMilestoneDetails(details)}`,
+      metadata: opts?.flat === true ? { flat: true } : undefined,
       timestamp: Date.now(),
     };
 
@@ -413,26 +421,13 @@ export class MessageHandler {
   }
 
   /**
-   * Format Pi message for Matrix
+   * Format Pi message for Matrix: the kind prefix and the content. Nothing
+   * else — the metadata bag is routing only (`flat`, read in
+   * `handleOutgoingMessage`). A caller that wants text in the room puts it in
+   * `content`; see `renderMilestoneDetails`.
    */
   formatForMatrix(piMessage: PiMessage): string {
-    const prefix = this.getMessagePrefix(piMessage.type);
-    const content = piMessage.content;
-
-    // The metadata bag carries everything a caller attached. One key is
-    // routing (`flat`, read in handleOutgoingMessage); the rest is body
-    // material and belongs in the room. Nothing nests its payload under a
-    // `details` key, so reading the bag is what makes it arrive.
-    let metadataText = '';
-    if (piMessage.metadata) {
-      const attached = { ...piMessage.metadata } as Record<string, unknown>;
-      delete attached.flat;
-      if (Object.keys(attached).length > 0) {
-        metadataText = `\n\nDetails: ${JSON.stringify(attached, null, 2)}`;
-      }
-    }
-
-    return `${prefix}${content}${metadataText}`;
+    return `${this.getMessagePrefix(piMessage.type)}${piMessage.content}`;
   }
 
   /**
@@ -474,6 +469,51 @@ export class MessageHandler {
     if (!this.outbox) return { success: false, eventId: "", error: "no outbox", timestamp: Date.now() };
     const res = await this.outbox.postMessage(body, html);
     return { success: res.success, eventId: res.eventId ?? "", error: res.error, timestamp: Date.now() };
+  }
+}
+
+/** How many facts one milestone's `details` may carry, and the total character
+ *  budget for their values. A model that treats the parameter as a prose
+ *  drawer gets the first facts, not a wall of text. */
+const MILESTONE_DETAIL_MAX_KEYS = 4;
+const MILESTONE_DETAIL_MAX_CHARS = 400;
+
+/**
+ * The `details` tail of a milestone: one `- key: value` markdown bullet per
+ * fact, so the pipeline's formatter (markdown.ts, the single formatter) turns
+ * them into a list and a plain-text client still reads them. No JSON: an
+ * indented `JSON.stringify` block in a chat timeline is a machine format in a
+ * human channel — unreadable at a glance, it wraps badly on a phone, and the
+ * substance is nearly always already in the milestone line.
+ *
+ * Returns "" for no details, so a payload-free milestone stays one line.
+ * Values that are not strings go through `JSON.stringify` per key, guarded:
+ * the tool schema takes `unknown`, and a value the serializer refuses (a
+ * circular reference) must degrade to text, not throw the milestone out of the
+ * send path — `formatForMatrix` sits outside the callers' try/catch, so a
+ * throw there loses the send.
+ */
+export function renderMilestoneDetails(details?: Record<string, unknown>): string {
+  const entries = Object.entries(details ?? {}).slice(0, MILESTONE_DETAIL_MAX_KEYS);
+  if (entries.length === 0) return "";
+  const lines: string[] = [];
+  let budget = MILESTONE_DETAIL_MAX_CHARS;
+  for (const [key, value] of entries) {
+    const flat = (typeof value === "string" ? value : safeDetailValue(value)).replace(/\s*\n\s*/g, " ").trim();
+    const line = `- ${key}: ${flat}`.slice(0, budget);
+    lines.push(line);
+    budget -= line.length;
+    if (budget <= 0) break;
+  }
+  return `\n\n${lines.join("\n")}`;
+}
+
+/** A non-string detail value as text; unserializable → `String(value)`. */
+function safeDetailValue(value: unknown): string {
+  try {
+    return JSON.stringify(value) ?? String(value);
+  } catch {
+    return String(value);
   }
 }
 

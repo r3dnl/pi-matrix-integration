@@ -969,10 +969,21 @@ await runPhase(
       // Regression (7da0d17 side effect): internal milestones carried routing
       // markers (type: "session" etc.) in the metadata bag; formatForMatrix
       // then printed them as a raw-JSON "Details:" tail. No marker belongs in
-      // the room.
+      // the room. These fixtures are lifecycle-only, so their bodies carry no
+      // tail at all — the shape check next is what also covers the
+      // agent-authored half: `matrix_send_milestone` hands the model's
+      // `details` object over, and while the renderer lived in the metadata
+      // bag every such milestone arrived as `Details: {…}` JSON. The payload
+      // path itself is asserted in test/logic/00-core.mjs
+      // (== milestone details ==).
       check(
         "lifecycle milestones carry no raw-JSON Details tail",
         sendLog(state).every((e) => !String(e.body).includes("Details:")),
+        JSON.stringify(sendLog(state).map((e) => e.body)),
+      );
+      check(
+        "no body in this phase carries a JSON-shaped Details tail",
+        sendLog(state).every((e) => !/Details:\s*[[{]/.test(String(e.body))),
         JSON.stringify(sendLog(state).map((e) => e.body)),
       );
     },

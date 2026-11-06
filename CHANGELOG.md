@@ -11,6 +11,14 @@ come with a major version bump.
 
 ### Fixed
 
+- A milestone sent with details no longer dumps raw JSON into the room. The
+  `matrix_send_milestone` tool's `details` object was printed under the
+  milestone as an indented `Details: { … }` block — unreadable at a glance, bad
+  on a phone, and a value the JSON writer refuses (a circular structure) threw
+  inside the formatter and lost the milestone. Facts now render as up to four
+  `- key: value` bullet lines under the milestone (markdown, so the room shows a
+  list and plain-text clients keep the facts), the parameter says what it is
+  for, and the outgoing-metadata bag is routing-only again.
 - `piMatrixThreading.threadSummaryEvery` below 1 no longer
   spins the Fibonacci summary schedule forever (`summaryDue` step is
   `min(a, cap)` = 0); such a cadence now simply never fires the summarizer.
