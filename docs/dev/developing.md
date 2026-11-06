@@ -26,7 +26,7 @@ pi -e ./          # load this checkout as a package for one run
 
 Then in Pi: `/matrix-login` to authenticate the agent account, `/matrix-connect` to attach the room, `/matrix-status` to confirm, `/matrix-help` for the command list.
 
-Two gates are being added in this release and are not wired yet: a strict typecheck (`npm run typecheck`) and a container-based end-to-end harness. Until they exist, read the diff yourself and run the suites above.
+The remaining gates are the strict typecheck (`npm run typecheck`) and the container end-to-end harness in `docker/`. That harness is test-only infrastructure: nothing you ship or run needs Docker. It cold-installs the packed extension in a clean image and proves it against a real homeserver (`make e2e`, `make e2e-npm`), or runs the offline suite in a container with no network at all (`make e2e-offline`). See [docker/README.md](../../docker/README.md).
 
 ## The test tiers
 
@@ -98,7 +98,14 @@ The short version of the module map: `src/integration.ts` is the composition roo
 1. Update `CHANGELOG.md` (Keep a Changelog) and bump `version` in `package.json`.
 2. Confirm `npm pack --dry-run` ships what you expect: sources, `agents/`, the docs and `NOTICE` — nothing from `state/`, `config/` or `manifests/`.
 3. Run `npm test` and `npm run test:live` once, fully.
-4. Tag `v<version>` and publish. The published tarball must be reproducible from the tag.
+4. Run the cold-install proof: `npm run test:release` (runs `make e2e`;
+   needs Docker plus the `PI_MATRIX_*` test credentials). It installs the
+   packed tarball in a clean container and runs the live tier there — the
+   only check that gates the artifact users actually receive.
+   `make e2e-offline` proves the offline tier is really offline. This
+   step is release-only; no per-commit gate runs it (the nightly
+   workflow does).
+5. Tag `v<version>` and publish. The published tarball must be reproducible from the tag.
 
 Breaking changes to config keys or command names require a major bump. Both are user-facing surface.
 
