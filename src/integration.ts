@@ -840,7 +840,7 @@ export class MatrixIntegration {
     // fallback below. The dialect comes from the resolved provider
     // ; one provider serves the driver and
     // the spawn watchers below.
-    const subagentProvider = resolveSubagentProvider(cfg.subagents?.provider ?? "auto", {
+    const subagentProvider = resolveSubagentProvider(cfg.subagents?.provider ?? "tintinweb", {
       events: this.pi.events,
       logger: this.logger,
       agentType: SUMMARIZER_AGENT_TYPE,

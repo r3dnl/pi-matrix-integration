@@ -445,7 +445,11 @@ export const DEFAULT_CONFIG: MatrixConfig = {
     colorByType: undefined as Record<string, string> | undefined,
     colorPalette: undefined as string[] | undefined,
     plainMarker: "⚡",
-    provider: "auto" as const,
+    // Default dialect: @tintinweb/pi-subagents. "auto" re-probes and flips
+    // to the nicobailon package when tintinweb is silent — that package has
+    // an upstream wake-handling bug (roadmap 0.10), so the flip is no
+    // longer the default. Opt back in with provider: "auto".
+    provider: "tintinweb" as const,
   },
   // Thread-summary prompt delta cap (most-recent thread messages kept in the
   // summarizer prompt). Default 40.

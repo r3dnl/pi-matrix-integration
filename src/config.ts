@@ -245,7 +245,7 @@ export const DEFAULT_CONFIG_V2: ConfigV2 = {
     summarizeResultIntoSpawnLine: true,
     postMode: "turn-end",
     plainMarker: "⚡",
-    provider: "auto"
+    provider: "tintinweb"
   },
   
   piTerminalUi: {
@@ -429,7 +429,7 @@ export function migrateV1toV2(oldConfig: Partial<V1FileConfig>): ConfigV2 {
       colorByType: oldConfig.subagents?.colorByType,
       colorPalette: oldConfig.subagents?.colorPalette,
       plainMarker: oldConfig.subagents?.plainMarker ?? "⚡",
-      provider: oldConfig.subagents?.provider ?? "auto"
+      provider: oldConfig.subagents?.provider ?? "tintinweb"
     },
     
     piTerminalUi: {
