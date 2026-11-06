@@ -21,3 +21,8 @@ pi-matrix-integration-*.tgz
 .pi/
 .pi/state
 .archify
+
+# local test harness, restored from git history (commit 39c0297); intentionally untracked
+docker/
+Makefile
+artifacts/
