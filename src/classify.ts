@@ -226,6 +226,14 @@ export function isSummarizerWakeNotice(
 /** The extension's own in-session directive customType (session-integration.ts). */
 const MATRIX_DIRECTIVE_CUSTOM_TYPE = "matrix-directive";
 
+/** The relayed-room-message customType (session-integration.ts
+ *  `injectMatrixMessage`). Exported so the summary-pass mute lift can
+ *  recognise a room message as human input — swallowing a mid-pass room
+ *  question is what the 2026-11 live incident did.
+ *  Distinct from the directive/wake-notice types: matching this one can
+ *  never self-unmute a pass. */
+export const MATRIX_MESSAGE_CUSTOM_TYPE = "matrix-message";
+
 /** `details.kind` set by the thread-summary directive injections
  *  (summarize-dispatch.ts). Structured identity — never prose matching. */
 export const SUMMARIZE_DIRECTIVE_KIND = "summarize";
