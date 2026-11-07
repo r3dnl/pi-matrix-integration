@@ -11,6 +11,14 @@ come with a major version bump.
 
 ### Fixed
 
+- The leftover closing line of a thread-summary pass whose broadcast mute was
+  lifted by a mid-pass room question no longer dispatches a wasted summary
+  pass. In the no-subagent fallback the pass and the human answer share one
+  run, and no signal separates the pass's "Root unchanged." from the answer
+  — so the lifted run now books every final as non-content (the existing
+  wake-answer mechanism): each message still reaches the room, none re-arms
+  the summary. A summary is delayed at most one post, never lost — the
+  content-based cadence gate catches up.
 - A question sent from the Matrix room while a thread-summary pass is running
   in the room-facing session no longer loses its answer. The pass's broadcast
   mute lifted only for terminal-typed input; a relayed room message is
