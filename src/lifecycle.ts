@@ -53,7 +53,7 @@ import type { SdkOutbox, SdkDeliveryCallbacks } from "./sdk-client.js";
 import type { MessageHandler } from "./message-handler.js";
 import type { ThreadManager } from "./threading.js";
 import type { SessionIntegrator } from "./session-integration.js";
-import { extractMilestone, extractTodoUpdate, isSummarizerWakeNotice, isSummarizeDirectiveNotice, messageText, truncateFinalMessage } from "./classify.js";
+import { extractMilestone, extractTodoUpdate, isSummarizerWakeNotice, isSummarizeDirectiveNotice, messageText, truncateFinalMessage, MATRIX_MESSAGE_CUSTOM_TYPE } from "./classify.js";
 import { encryptionNotice } from "./encryption-status.js";
 import type { SubagentBusImpl, SubagentPostIdentity } from "./subagent-bus.js";
 import type { ConnectionStatus, MatrixConfig } from "./types.js";
@@ -527,15 +527,17 @@ export class Lifecycle {
     if (this.subagent) return this.onSubagentMessageEnd(event);
     if (!this.isEnabled()) return;
     // A human message folded into a live pass ends the mute: swallowing a
-    // real question is worse than one leaked line. Every message this
-    // extension injects (room relay, directive, wake notice) carries a
-    // `customType`, so a bare user message here is terminal-typed input.
+    // real question is worse than one leaked line. Human input arrives on
+    // two channels: the terminal (a bare user message — every OTHER message
+    // this extension injects, directive or wake notice, carries a
+    // `customType` that this check rejects) and the room (a relay, injected
+    // as `MATRIX_MESSAGE_CUSTOM_TYPE`): the room is
+    // this integration's primary input channel, so it must lift too).
     const incoming = event.message as { role?: string; customType?: unknown };
-    if (
-      this.summaryPassRun &&
-      incoming.role === "user" &&
-      incoming.customType === undefined
-    ) {
+    const humanInput =
+      (incoming.role === "user" && incoming.customType === undefined) ||
+      incoming.customType === MATRIX_MESSAGE_CUSTOM_TYPE;
+    if (this.summaryPassRun && humanInput) {
       this.summaryPassRun = false;
       this.deps.logger.warn(
         "[matrix] message_end: user input during a summary pass, broadcast mute lifted",
@@ -678,8 +680,18 @@ export class Lifecycle {
       if (mutedRun) {
         // warn (not debug): this is the line the live verification greps for
         // at the default INFO level (wording kept from the 2026-10 incident).
+        // The excerpt names what was dropped:
+        // a "the agent went quiet" report must be answerable from the log,
+        // not by reading source. First 80 chars only — the log is not a
+        // transcript store.
+        const droppedText = messageText(
+          event.message as { role?: string; content?: Array<{ type: string; text?: string }> },
+        );
+        const excerpt = droppedText
+          ? ` dropped: "${droppedText.replace(/\s+/g, " ").slice(0, 80)}"`
+          : "";
         this.deps.logger.warn(
-          "[matrix] turn_end: summarizer wake turn, skipping final broadcast (loop guard)",
+          `[matrix] turn_end: summarizer wake turn, skipping final broadcast (loop guard)${excerpt}`,
         );
         return;
       }

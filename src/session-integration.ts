@@ -17,7 +17,7 @@
 
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Box, Text } from "@earendil-works/pi-tui";
-import { localpartOf } from "./classify.js";
+import { localpartOf, MATRIX_MESSAGE_CUSTOM_TYPE } from "./classify.js";
 import type { ConnectionStatus } from "./types.js";
 import { createTuiFooter } from "./tui-footer.js";
 import type { MatrixMessage, MatrixMessageDetails, PiMessage } from "./types.js";
@@ -89,7 +89,7 @@ export class SessionIntegrator {
 
     this.pi.sendMessage(
       {
-        customType: "matrix-message",
+        customType: MATRIX_MESSAGE_CUSTOM_TYPE,
         content,
         display: true,
         details,
@@ -166,7 +166,7 @@ export class SessionIntegrator {
    * Must be registered during extension load (or any time before rendering).
    */
   registerMatrixMessageRenderer(pi: ExtensionAPI): void {
-    pi.registerMessageRenderer<MatrixMessageDetails>("matrix-message", (message, { expanded }, theme) => {
+    pi.registerMessageRenderer<MatrixMessageDetails>(MATRIX_MESSAGE_CUSTOM_TYPE, (message, { expanded }, theme) => {
       const data = message.details;
       const senderName = data?.senderName || localpartOf(data?.sender ?? "unknown");
       const header = `${this.config.piTerminalMatrixMessagePrefix}${senderName}:`;

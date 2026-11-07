@@ -177,16 +177,90 @@ const directive = (details) => ({
   check("user input mid-pass un-mutes the run", sent.length === 1 && sent[0] === "answer to the human", `sent=${JSON.stringify(sent)}`);
 }
 
-// 3e) The pass's own injected directive must NOT lift the mute.
+// 3e) The pass's own injected directive must NOT lift the mute — and neither
+//     may a wake notice: the lift must never be self-triggered by anything
+//     the summary machinery injects (BUG-summary-pass-mute guard).
+{
+  const { lc, sent, logs } = makeLifecycle();
+  lc.onBeforeAgentStart({
+    messageType: "custom",
+    message: directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }),
+  });
+  await lc.onMessageEnd({ message: { role: "user", ...directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }) } });
+  await lc.onMessageEnd({ message: { role: "custom", ...notice(["pi-matrix-integration-thread-summarizer"]) } });
+  await lc.onTurnEnd(assistantTurn("Root unchanged."));
+  check("the pass's own directive does not lift the mute", sent.length === 0, `sent=${JSON.stringify(sent)}`);
+  check(
+    "no lift fired for injected messages",
+    !logs.some((l) => /broadcast mute lifted/.test(l)),
+    JSON.stringify(logs),
+  );
+}
+
+// 3f) BUG-summary-pass-mute: a RELAYED ROOM MESSAGE is human input too — the
+//     room is this integration's primary input channel. Absorbed mid-pass it
+//     must lift the mute and the answer turn must broadcast.
+const roomRelay = (text) => ({
+  role: "custom",
+  customType: "matrix-message",
+  content: `[Matrix] vincent: ${text}`,
+  details: { sender: "@vincent:tst", senderName: "vincent", eventId: "$ev", roomId: "!room:tst" },
+});
+{
+  const { lc, sent, logs } = makeLifecycle();
+  lc.onBeforeAgentStart({
+    messageType: "custom",
+    message: directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }),
+  });
+  await lc.onMessageEnd({ message: roomRelay("Show me the code of serve.mjs") });
+  check(
+    "a room relay mid-pass lifts the mute",
+    logs.some((l) => /broadcast mute lifted/.test(l)),
+    JSON.stringify(logs),
+  );
+  await lc.onTurnEnd(assistantTurn("Here is serve.mjs …"));
+  check("the answer to the room reaches the room", sent.length === 1 && sent[0] === "Here is serve.mjs …", `sent=${JSON.stringify(sent)}`);
+}
+
+// 3g) A relay while NOT muted changes nothing — normal broadcast on a later
+//     run must not double-send or trip the lift path.
+{
+  const { lc, sent, logs } = makeLifecycle();
+  lc.onBeforeAgentStart({ messageType: "user", prompt: "hello" });
+  await lc.onMessageEnd({ message: roomRelay("follow-up from the room") });
+  check(
+    "unmuted relay does not log a lift",
+    !logs.some((l) => /broadcast mute lifted/.test(l)),
+    JSON.stringify(logs),
+  );
+  await lc.onTurnEnd(assistantTurn("answer with the follow-up"));
+  check("unmuted run broadcasts once", sent.length === 1 && sent[0] === "answer with the follow-up", `sent=${JSON.stringify(sent)}`);
+}
+
+// 3h) After a relay lifts the mute, the ask_user_question context flush (same
+//     flag, message_end path) runs again — a questionnaire cannot land in the
+//     room without its preceding context.
 {
   const { lc, sent } = makeLifecycle();
   lc.onBeforeAgentStart({
     messageType: "custom",
     message: directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }),
   });
-  await lc.onMessageEnd({ message: { role: "user", ...directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }) } });
-  await lc.onTurnEnd(assistantTurn("Root unchanged."));
-  check("the pass's own directive does not lift the mute", sent.length === 0, `sent=${JSON.stringify(sent)}`);
+  await lc.onMessageEnd({ message: roomRelay("which option?") });
+  await lc.onMessageEnd({
+    message: {
+      role: "assistant",
+      content: [
+        { type: "text", text: "Context for the decision." },
+        { type: "toolCall", id: "c", name: "ask_user_question", arguments: {} },
+      ],
+    },
+  });
+  check(
+    "post-lift ask_user context flushes",
+    sent.length === 1 && sent[0] === "Context for the decision.",
+    `sent=${JSON.stringify(sent)}`,
+  );
 }
 
 // 4) A notice carrying real work is NOT muted — that report belongs in the room.
@@ -207,6 +281,10 @@ const directive = (details) => ({
 
 // ---- Engine A: the in-session summarize directive ---------------------------
 
+check(
+  "the room relay is not summary fuel (lift and mute never share a type)",
+  classify.isSummarizeDirectiveNotice({ customType: classify.MATRIX_MESSAGE_CUSTOM_TYPE, details: { kind: classify.SUMMARIZE_DIRECTIVE_KIND } }) === false,
+);
 check(
   "summarize-kind directive is summary fuel",
   classify.isSummarizeDirectiveNotice(directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND })),

@@ -11,6 +11,15 @@ come with a major version bump.
 
 ### Fixed
 
+- A question sent from the Matrix room while a thread-summary pass is running
+  in the room-facing session no longer loses its answer. The pass's broadcast
+  mute lifted only for terminal-typed input; a relayed room message is
+  injected as a custom message, failed that check, and the turn answering it
+  was dropped in silence. A room relay is now recognised as human input like
+  a terminal message, so the answer broadcasts normally; the pass's own
+  directive and wake notices still cannot lift the mute. Muted drops now also
+  log the first 80 characters of the swallowed text, so a quiet-agent report
+  is answerable from the log alone.
 - A milestone sent with details no longer dumps raw JSON into the room. The
   `matrix_send_milestone` tool's `details` object was printed under the
   milestone as an indented `Details: { … }` block — unreadable at a glance, bad
