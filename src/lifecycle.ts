@@ -172,6 +172,17 @@ export class Lifecycle {
    *  `agent_settled`, at the next run's start, or when a human message lands
    *  mid-pass. */
   private summaryPassRun = false;
+  /** The live run was a summary pass whose mute was LIFTED by human input.
+   *  The pass and the human answer now share one run, and no per-turn signal
+   *  tells the pass's leftover report-out ("Root unchanged.") apart from the
+   *  answer — so every final of this run ships (answers must never be
+   *  swallowed) but is booked as bookkeeping via `suppressNextOnFinalTrigger`
+   *  (same contract as `wakeFuelTurn`): no leftover line can dispatch a
+   *  wasted summary pass. A suppressed trigger only delays a summary — the
+   *  content gate (`msgCount <= lastSummaryAtMsg`) catches up on the next
+   *  post; it never drops one. Cleared at run boundaries with
+   *  `summaryPassRun`. */
+  private summaryLiftedRun = false;
   /** A summarizer wake notice was absorbed into the run currently live (see
    *  `onMessageEnd`). Its report-out must still reach the room, but it must
    *  not re-arm the on-final summary trigger — that answer is the wake's own
@@ -539,6 +550,7 @@ export class Lifecycle {
       incoming.customType === MATRIX_MESSAGE_CUSTOM_TYPE;
     if (this.summaryPassRun && humanInput) {
       this.summaryPassRun = false;
+      this.summaryLiftedRun = true;
       this.deps.logger.warn(
         "[matrix] message_end: user input during a summary pass, broadcast mute lifted",
       );
@@ -635,6 +647,7 @@ export class Lifecycle {
     // hook, so clearing here cannot drop the flag it set.
     this.wakeFuelTurn = false;
     this.summaryPassRun = false;
+    this.summaryLiftedRun = false;
     this.deps.threadManager?.clearOnFinalSuppression();
     if (event.messageType !== "custom") return;
     const muted = isSummarizerWakeNotice(event.message) || isSummarizeDirectiveNotice(event.message);
@@ -723,7 +736,12 @@ export class Lifecycle {
         return;
       }
       // Wake-fuel report-out: the answer ships, the summary re-arm does not.
-      if (this.wakeFuelTurn) this.deps.threadManager?.suppressNextOnFinalTrigger();
+      // Same contract for a lifted summary pass: the pass's leftover line is
+      // indistinguishable from the human answer at this point, so every
+      // final of the lifted run is booked as bookkeeping — each ships, none
+      // dispatches a wasted pass (a suppressed trigger delays the next
+      // summary one post at most; the content gate never loses it).
+      if (this.wakeFuelTurn || this.summaryLiftedRun) this.deps.threadManager?.suppressNextOnFinalTrigger();
       const result = await this.deps.messageHandler.sendFinalMessage(
         truncateFinalMessage(finalText, this.deps.cfg.maxFinalMessageLength),
       );
@@ -818,6 +836,7 @@ export class Lifecycle {
     // The summary-pass mute ends with its run. Before the side-chain
     // early-return below, which the flag-owning (main) session always hits.
     this.summaryPassRun = false;
+    this.summaryLiftedRun = false;
     const sa = this.subagent;
     if (!sa || !sa.bound) return;
     const bus = this.deps.subagentBus?.();

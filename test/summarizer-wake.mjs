@@ -263,6 +263,51 @@ const roomRelay = (text) => ({
   );
 }
 
+// 3i) A2: a lifted run books EVERY final as non-content — the pass's leftover
+//     line ships but cannot dispatch a wasted summary pass. The answer ships
+//     too (answer-after-edit ordering, the case re-muting after the root edit
+//     would swallow). Suppression dies with the run.
+{
+  const { lc, sent, tm } = makeLifecycle();
+  lc.onBeforeAgentStart({
+    messageType: "custom",
+    message: directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }),
+  });
+  // root edit lands first — the relay and the answer come AFTER it.
+  await lc.onTurnEnd({ message: { role: "assistant", content: [{ type: "toolCall", id: "c", name: "matrix_update_thread_summary", arguments: {} }] } });
+  await lc.onMessageEnd({ message: roomRelay("Show me the code of serve.mjs") });
+  await lc.onTurnEnd(assistantTurn("Here is serve.mjs …"));
+  check("the answer emitted after the edit ships", sent.length === 1 && sent[0] === "Here is serve.mjs …", `sent=${JSON.stringify(sent)}`);
+  check("the answer's report-out dispatches no pass", tm.suppressed === 1, JSON.stringify(tm));
+  await lc.onTurnEnd(assistantTurn("Root unchanged."));
+  check("the leftover line ships", sent.length === 2 && sent[1] === "Root unchanged.", `sent=${JSON.stringify(sent)}`);
+  check("the leftover line dispatches no wasted pass", tm.suppressed === 2, JSON.stringify(tm));
+  // The lifted-run booking ends at the run boundary: the next run's final
+  // keeps its report-out trigger.
+  lc.onAgentSettled();
+  lc.onBeforeAgentStart({ messageType: "user", prompt: "next question" });
+  await lc.onTurnEnd(assistantTurn("later answer"));
+  check(
+    "the next run keeps its report-out trigger",
+    sent.length === 3 && tm.suppressed === 2,
+    `sent=${JSON.stringify(sent)} tm=${JSON.stringify(tm)}`,
+  );
+}
+
+// 3j) A muted run with NO relay: nothing posts and nothing is booked as
+//     bookkeeping either — the summary machinery is untouched (the root edit
+//     itself goes through the tool, not through the broadcast path).
+{
+  const { lc, sent, tm } = makeLifecycle();
+  lc.onBeforeAgentStart({
+    messageType: "custom",
+    message: directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }),
+  });
+  await lc.onTurnEnd(assistantTurn("Root unchanged."));
+  check("unlifted pass posts nothing", sent.length === 0, `sent=${JSON.stringify(sent)}`);
+  check("unlifted pass books no suppression", tm.suppressed === 0, JSON.stringify(tm));
+}
+
 // 4) A notice carrying real work is NOT muted — that report belongs in the room.
 {
   const { lc, sent } = makeLifecycle();
