@@ -26,4 +26,3 @@ pi-matrix-integration-*.tgz
 docker/
 Makefile
 artifacts/
-ROADMAP.md
