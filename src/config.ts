@@ -174,9 +174,14 @@ export interface MatrixToPiRemoteFilePickerConfig {
   fileSearchMethod: "builtin" | "fzf";
 }
 
-/** Inbound voice messages transcribed locally and injected as the sender's text. */
+/** Inbound voice messages transcribed (remote STT when configured, else
+ *  locally) and injected as the sender's text. */
 export interface MatrixToPiVoiceTranscriptionConfig {
   enabled: boolean;
+  /** OpenAI-shaped remote STT base tried before the local engine; empty = off. */
+  sttBaseUrl: string;
+  /** Model id sent to the remote endpoint. */
+  sttModel: string;
 }
 
 export interface PiToMatrixFileAttachmentConfig {
@@ -309,7 +314,9 @@ export const DEFAULT_CONFIG_V2: ConfigV2 = {
   },
 
   matrixToPiVoiceTranscription: {
-    enabled: true
+    enabled: true,
+    sttBaseUrl: "",
+    sttModel: "mlx-community/whisper-small-asr-fp16"
   }
 };
 
@@ -499,7 +506,9 @@ export function migrateV1toV2(oldConfig: Partial<V1FileConfig>): ConfigV2 {
     },
 
     matrixToPiVoiceTranscription: {
-      enabled: oldConfig.voiceTranscription ?? true
+      enabled: oldConfig.voiceTranscription ?? true,
+      sttBaseUrl: oldConfig.sttBaseUrl ?? "",
+      sttModel: oldConfig.sttModel ?? "mlx-community/whisper-small-asr-fp16"
     }
   };
   

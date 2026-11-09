@@ -1175,6 +1175,10 @@ export class MatrixIntegration {
         typeof outbox.downloadMedia === "function"
           ? outbox.downloadMedia(mxcUrl)
           : Promise.resolve(null),
+      // Remote-primary STT (empty = off); the transcriber falls back to
+      // the local engine on any remote failure.
+      sttBaseUrl: cfg.sttBaseUrl,
+      sttModel: cfg.sttModel,
     });
     const inbound = createInbound({
       cfg,

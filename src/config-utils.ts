@@ -110,14 +110,35 @@ function removeSurroundingQuotes(value: string): string {
 /** Parse a .json/.jsonc file body. Exported for the v1 -> v2 conversion, which
  * must migrate the FILE's values, not the merged config (see config). */
 export function parseJsonc(content: string): Record<string, unknown> {
-  // Remove single-line comments (// ...)
-  let result = content.replace(/\/\/[^\n]*/g, '');
-  
-  // Remove multi-line comments (/* ... */)
-  result = result.replace(/\/\*[\s\S]*?\*\//g, '');
-  
-  // Parse the cleaned JSON
-  return JSON.parse(result) as Record<string, unknown>;
+  // Comment stripping must be string-aware: a regex sweep deletes the `//`
+  // inside "http://…" config values and corrupts the document (the
+  // sttBaseUrl incident — unterminated string, un-loadable config, login
+  // prompt on restart). One pass with a tiny state machine instead: inside a
+  // string only `"` (honouring `\`) ends the run; outside it, `//` skips to
+  // the newline and `/* … */` skips to the close.
+  let out = '';
+  let inString = false;
+  let i = 0;
+  while (i < content.length) {
+    const c = content[i];
+    if (inString) {
+      if (c === '\\') { out += content.slice(i, i + 2); i += 2; continue; }
+      if (c === '"') inString = false;
+      out += c;
+      i++;
+      continue;
+    }
+    if (c === '"') { inString = true; out += c; i++; continue; }
+    if (c === '/' && content[i + 1] === '/') { while (i < content.length && content[i] !== '\n') i++; continue; }
+    if (c === '/' && content[i + 1] === '*') {
+      const end = content.indexOf('*/', i + 2);
+      i = end === -1 ? content.length : end + 2;
+      continue;
+    }
+    out += c;
+    i++;
+  }
+  return JSON.parse(out) as Record<string, unknown>;
 }
 
 /**
@@ -224,6 +245,8 @@ function mapV2ToFlat(v2: Record<string, unknown>): Record<string, unknown> {
     matrixLoginEnabled: login.enabled,
     qr2025: login.qr2025,
     voiceTranscription: voice.enabled,
+    sttBaseUrl: voice.sttBaseUrl,
+    sttModel: voice.sttModel,
     displayStdoutOnStartup: ui.displayStdoutOnStartup,
     fileAttach: attachMx.enabled,
     fileAttachPrefix: attachMx.prefix,
@@ -394,6 +417,14 @@ export const DEFAULT_CONFIG: MatrixConfig = {
   // Whisper, the dictate-local chain), then injected as the sender's
   // text. On by default (opt out with false / PI_MATRIX_VOICE_TRANSCRIPTION).
   voiceTranscription: true,
+  // Remote STT endpoint tried before the local voice engine: an
+  // OpenAI-shaped POST {sttBaseUrl}/audio/transcriptions (multipart
+  // file/model/response_format=json — e.g. an mlx-audio server on the
+  // LAN). Any remote failure falls back to the local chain above.
+  // Empty = local-only, the conservative default: no LAN dependency
+  // unless the operator declares one.
+  sttBaseUrl: "",
+  sttModel: "mlx-community/whisper-small-asr-fp16",
   // `@@` outbound attach: a lone @@fragment uploads a work artifact or a
   // media file (image/audio/video) as a Matrix file attachment. One cap for
   // both — `maxBytesUpload` — because media is the binding case. Uploads go
@@ -725,6 +756,8 @@ const ENV_MAPPINGS: Record<string, keyof MatrixConfig> = {
   PI_MATRIX_MATRIX_LOGIN_ENABLED: 'matrixLoginEnabled',
   PI_MATRIX_DISPLAY_STDOUT_ON_STARTUP: 'displayStdoutOnStartup',
   PI_MATRIX_VOICE_TRANSCRIPTION: 'voiceTranscription',
+  PI_MATRIX_STT_BASE_URL: 'sttBaseUrl',
+  PI_MATRIX_STT_MODEL: 'sttModel',
   PI_MATRIX_FILE_ATTACH: 'fileAttach',
   PI_MATRIX_ATTACH_MAX_BYTES: 'attachMaxBytes',
   PI_MATRIX_PICKER_LIMIT: 'pickerLimit',

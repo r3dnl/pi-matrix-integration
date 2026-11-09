@@ -17,6 +17,29 @@ const configUtilsMod = await jiti.import(`${EXT}/src/config-utils.ts`);
 const DEFAULTS_FLAT = configUtilsMod.DEFAULT_CONFIG;
 const DEFAULTS_V2 = configMod.DEFAULT_CONFIG_V2;
 
+// ---- parseJsonc: comment stripping must be string-aware -------------------
+// The sttBaseUrl incident: the old regex sweep deleted the `//` inside
+// "http://…" values, corrupting the document (un-loadable config, login
+// prompt on restart). These checks pin that behavior.
+{
+  const { parseJsonc } = configUtilsMod;
+  const cases = [
+    ["url value survives", '{"u":"http://h:8002/v1"}', (o) => o.u === "http://h:8002/v1"],
+    ["line comment stripped", "{\n// c\n\"a\":1}", (o) => o.a === 1],
+    ["url in string, comment after", '{"u":"https://x//y"} // gone', (o) => o.u === "https://x//y"],
+    ["block comment", '{"a":1 /* x\ny */ , "b":2}', (o) => o.a === 1 && o.b === 2],
+    ["escaped quote", '{"a":"he said \\"//x\\""}', (o) => o.a === 'he said "//x"'],
+    ["block opener inside string", '{"a":"/* not a comment"} // real', (o) => o.a === "/* not a comment"],
+  ];
+  for (const [name, src, pass] of cases) {
+    try {
+      if (!pass(parseJsonc(src))) add("parseJsonc", name);
+    } catch (error) {
+      add("parseJsonc", `${name} threw ${error.message}`);
+    }
+  }
+}
+
 // ---- helpers -------------------------------------------------------------
 const leaves = (obj, pre = []) => {
   const out = [];

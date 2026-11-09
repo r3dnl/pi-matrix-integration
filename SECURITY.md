@@ -120,6 +120,11 @@ small and stable.
 
 - `@juicesharp/rpiv-ask-user-question`, subagent extensions, the voice engine
 -> are declared as optional peers and only load when installed.
+- **Remote voice transcription is opt-in and operator-declared.** With
+  `sttBaseUrl` set, a room sender's voice audio is POSTed to that endpoint
+  (typically a LAN machine) before the local engine is tried; unset is
+  local-only. The endpoint is operator configuration — the room's member
+  list remains the access control for who can trigger it.
 - The host-provided packages (`pi-coding-agent`,`pi-tui`, `typebox`) are declared 
 peers your Pi install supplies — the extension never installs them itself.
 - `src/qr2025/` is vendored upstream prototype code, carrying its original headers

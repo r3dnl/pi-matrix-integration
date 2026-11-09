@@ -133,7 +133,9 @@ readable.
 | `slashCommandPrefix` | `/` | `PI_MATRIX_SLASH_COMMAND_PREFIX` | Prefix that marks a room message as a command. |
 | `piToMatrixMirrorAskUserQuestions.enabled` | `true` | `PI_MATRIX_MIRROR_ASK_USER` | Mirror `ask_user_question` questionnaires into the room. See [ask-user pairing](ask-user-pairing.md). |
 | `createPollsForAskUserQuestions` (same v2 section) | `true` | `PI_MATRIX_MIRROR_ASK_USER_POLLS` | Also post a poll for yes/no style questions. |
-| `matrixToPiVoiceTranscription.enabled` | `true` | `PI_MATRIX_VOICE_TRANSCRIPTION` | Transcribe voice notes sent to the room. |
+| `matrixToPiVoiceTranscription.enabled` | `true` | `PI_MATRIX_VOICE_TRANSCRIPTION` | Transcribe voice notes sent to the room. Needs `ffmpeg` on the Pi host; failures post a warning into the room. |
+| `matrixToPiVoiceTranscription.sttBaseUrl` | `""` (off) | `PI_MATRIX_STT_BASE_URL` | Remote STT endpoint tried first (OpenAI-shaped `POST {base}/audio/transcriptions`, e.g. an mlx-audio server on the LAN). Any remote failure falls back to the local engine. |
+| `matrixToPiVoiceTranscription.sttModel` | `mlx-community/whisper-small-asr-fp16` | `PI_MATRIX_STT_MODEL` | Model id sent to the remote endpoint. |
 
 Anything typed in the room becomes model input for the agent. The room's
 member list is the security boundary — see [SECURITY.md](../../SECURITY.md).

@@ -247,9 +247,29 @@ export function createInbound(deps: InboundDeps): Inbound {
       ) {
         void voiceTranscriber
           .transcribe(matrixMessage)
-          .then((r) => {
+          .then(async (r) => {
             if (r.text) {
+              // Thread topic = the transcript, not the voice file's body
+              // (the filename): same topic rule as a text turn. Awaited
+              // BEFORE the echo so the root-first ordering invariant holds
+              // and the echo's in-thread routing has its root; a lost race
+              // here is impossible by construction (this is the only root
+              // call for the turn — injectExpanded's openThreadForRoomTurn
+              // sees the session no longer pending and no-ops).
+              if (threadManager.enabled() && threadManager.pending() && r.text.trim()) {
+                await threadManager.ensureThreadRoot(r.text).catch(() => undefined);
+              }
               injectExpanded(matrixMessage, `[voice] ${r.text}`);
+              // Transcript echo: the room sees what was understood and
+              // which engine produced it (remote model id vs "<model>
+              // (local)") — the sender otherwise only sees their own
+              // voice bubble. Routed like every other send: into the
+              // active thread (the voice event's own thread was adopted
+              // before this leg, or the root above just opened); flat
+              // only when threading is off or no root exists.
+              void messageHandler
+                .post(`🗣️ ${r.text}\n_${r.engine ?? "voice engine"}_`, "other")
+                .catch(() => undefined);
               return;
             }
             if (r.sss) {
@@ -257,9 +277,15 @@ export function createInbound(deps: InboundDeps): Inbound {
                 .post(
                   "⚠️ Voice message received, but this device cannot decrypt its media (E2EE SSS). Send it from a non-E2EE room, or enable encrypted attachments (MSC4125) in the sending client.",
                   "other",
-                  { flat: true },
                 )
                 .catch(() => undefined);
+              return;
+            }
+            if (r.fail) {
+              void messageHandler
+                .post(`⚠️ Voice message not transcribed: ${r.fail}.`, "other")
+                .catch(() => undefined);
+              logger.warn(`[matrix] ${matrixMessage.eventId} voice transcription failed: ${r.fail}`);
               return;
             }
             logger.warn(`[matrix] ${matrixMessage.eventId} voice transcription produced no transcript (dropped)`);
