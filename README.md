@@ -18,8 +18,9 @@ This is a [Pi coding agent](https://pi.dev/) extension that connects a Pi sessio
 ## Quick start
 
 ### Pre-requisites
-- Create an account for the Pi agent on your homeserver — its own Matrix account, not your personal one — on any server with password login (tested against Synapse). You also need your personal Matrix account.
+- A Matrix account for the Pi agent on your homeserver — its own account, not your personal one — on any server with password login (tested against Synapse). You also need your personal Matrix account.
 - The easy setup below **requires** the agent account to be able to create rooms, set the room alias, and invite users. If your homeserver forbids that, use Manual Room Setup instead.
+- Voice-message transcription needs `ffmpeg` on the machine running Pi (`sudo apt install ffmpeg` on Debian/Ubuntu). It is the only thing that uses it; without it, voice notes are not transcribed and the room gets a warning instead.
 
 ### Install
 
@@ -56,7 +57,7 @@ Restart / reload your Pi session.
 | **Files between terminal and room** | `@` picks a workspace file for the agent from the room; `@@` attaches files the agent sends back. Markdown ↔ HTML formatting is translated both ways. |
 | **Sub-agent visibility** | Background spawns and their results post to the room and fold into their spawn lines. |
 | **Security by default** | End-to-end encryption support, secure terminal login, agent-owned account, credentials in a `0600` file. |
-| **Drop voice messages** | Record a voice message, send, and it gets transcribed from voice audio to text in the Pi terminal |
+| **Drop voice messages** | Record a voice message, send, and it gets transcribed from voice audio to text in the Pi terminal, plus a transcript echo in the room naming the engine that produced it (remote STT model or local Whisper). Needs `ffmpeg` on the Pi host; a message that cannot be transcribed gets a warning back in the room. |
 
 
 ## Examples

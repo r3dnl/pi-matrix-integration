@@ -25,7 +25,7 @@
 
 import { spawn } from "node:child_process";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 // The rpiv-voice engine modules live in the pi npm store. pi's jiti
@@ -135,6 +135,13 @@ const FFMPEG_TIMEOUT_MS = 60_000;
  *  engine.recognize (a hung native decode must never wedge the voice
  *  leg; dictate-local's finalize safety net). */
 const RECOGNIZE_TIMEOUT_MS = 60_000;
+// ── Remote STT leg (OpenAI-shaped endpoint, remote-primary) ────────────────
+/** Remote budget (ms): the server may cold-load its model on the first
+ *  call (~30 s observed on mlx-audio); beyond this the attempt is
+ *  abandoned and the local chain runs. Voice is already fire-and-forget,
+ *  so a generous budget costs latency, never a dropped message. */
+const REMOTE_STT_TIMEOUT_MS = 45_000;
+
 /** Longer than this is not a voice message (info.duration is ms). */
 const MAX_DURATION_MS = 15 * 60 * 1000;
 /** Shorter than this carries no speech (0.3 s of int16 samples). */
@@ -149,12 +156,28 @@ export interface VoiceTranscribeResult {
    *  it — the caller should tell the user (a log-only failure would look
    *  like a silently dropped message). */
   sss?: boolean;
+  /** Room-safe one-line reason when transcription failed — the caller
+   *  posts it so the sender learns what happened instead of watching a
+   *  silent drop. Internal error detail (paths, stderr) stays in the
+   *  log; only this classified reason crosses into the room. */
+  fail?: string;
+  /** Which engine produced the text — the configured remote model id, or
+   *  the local model directory name suffixed "(local)". Posted into the
+   *  room next to the transcript so the sender sees who transcribed. */
+  engine?: string;
 }
 
 export interface VoiceTranscriberDeps {
   logger: MatrixLogger;
   /** Authenticated media download (`mxc://…` → bytes, null on failure). */
   download: (mxcUrl: string) => Promise<Buffer | null>;
+  /** OpenAI-shaped remote STT base (e.g. `http://192.168.2.11:8002/v1`).
+   *  Set = remote-primary: the clip is POSTed to
+   *  `{sttBaseUrl}/audio/transcriptions` before the local engine runs;
+   *  any remote failure falls back to it. Unset = local-only (default). */
+  sttBaseUrl?: string;
+  /** Model id sent to the remote endpoint (`sttBaseUrl` only). */
+  sttModel?: string;
 }
 
 export interface VoiceTranscriber {
@@ -242,12 +265,47 @@ export function createVoiceTranscriber(deps: VoiceTranscriberDeps): VoiceTranscr
     );
   }
 
+  // ── Remote STT: OpenAI-shaped multipart POST, clip bytes as-is ─────────
+  // Returns the transcript, or null when the leg is off or failed (logged)
+  // — the caller then runs the local chain. Never throws: the remote is
+  // an optimization, the local engine is the guarantee.
+  async function transcribeRemote(media: Buffer): Promise<string | null> {
+    const base = deps.sttBaseUrl?.replace(/\/+$/, "");
+    if (!base) return null;
+    try {
+      const form = new FormData();
+      form.append("file", new Blob([new Uint8Array(media)]), "voice.ogg");
+      form.append("model", deps.sttModel ?? "");
+      form.append("response_format", "json");
+      const res = await fetch(`${base}/audio/transcriptions`, {
+        method: "POST",
+        body: form,
+        signal: AbortSignal.timeout(REMOTE_STT_TIMEOUT_MS),
+      });
+      if (!res.ok) {
+        logger.warn(`[matrix] voice: remote STT HTTP ${res.status} — falling back to the local engine`);
+        return null;
+      }
+      const text = String(((await res.json()) as { text?: unknown }).text ?? "").trim();
+      if (!text) {
+        logger.warn("[matrix] voice: remote STT returned no text — falling back to the local engine");
+        return null;
+      }
+      return text;
+    } catch (error) {
+      logger.warn(
+        `[matrix] voice: remote STT failed (${String(error).slice(0, 120)}) — falling back to the local engine`,
+      );
+      return null;
+    }
+  }
+
   return {
     async transcribe(message): Promise<VoiceTranscribeResult> {
       const url = message.mediaUrl;
       if (!url) {
         logger.warn(`[matrix] voice ${message.eventId}: no media URL`);
-        return {};
+        return { fail: "the message carries no downloadable media attachment" };
       }
 
       // E2EE SSS media: the ciphertext is useless without the user's SSS
@@ -262,13 +320,13 @@ export function createVoiceTranscriber(deps: VoiceTranscriberDeps): VoiceTranscr
       const duration = message.mediaInfo?.duration;
       if (typeof duration === "number" && duration > MAX_DURATION_MS) {
         logger.warn(`[matrix] voice ${message.eventId}: ${Math.round(duration / 60000)} min exceeds the ${MAX_DURATION_MS / 60000} min voice cap`);
-        return {};
+        return { fail: `the clip is longer than the ${MAX_DURATION_MS / 60000} minute voice cap` };
       }
 
       let media = await download(url);
       if (!media || media.byteLength === 0) {
         logger.warn(`[matrix] voice ${message.eventId}: media download failed`);
-        return {};
+        return { fail: "the media download from the homeserver failed" };
       }
 
       // MSC4125: the event carries its own key — decrypt before decode.
@@ -277,8 +335,17 @@ export function createVoiceTranscriber(deps: VoiceTranscriberDeps): VoiceTranscr
           media = await decryptMsc4125(media, message.mediaFile);
         } catch (error) {
           logger.warn(`[matrix] voice ${message.eventId}: MSC4125 decrypt failed: ${error}`);
-          return {};
+          return { fail: "the encrypted attachment could not be decrypted" };
         }
+      }
+
+      // Remote-primary, local-fallback: the endpoint takes the clip bytes
+      // (already MSC4125-decrypted); empty/failure falls through to the
+      // local chain below, which owns the failure classification.
+      const remote = await transcribeRemote(media);
+      if (remote) {
+        logger.debug(`[matrix] voice ${message.eventId}: remote STT → "${remote.slice(0, 60)}"`);
+        return { text: remote, engine: deps.sttModel?.trim() || "remote STT" };
       }
 
       let pcm: Buffer;
@@ -286,11 +353,18 @@ export function createVoiceTranscriber(deps: VoiceTranscriberDeps): VoiceTranscr
         pcm = await decodeToPcm(media);
       } catch (error) {
         logger.warn(`[matrix] voice ${message.eventId}: decode failed: ${error}`);
-        return {};
+        // ENOENT means the ffmpeg binary is missing on the bridge host —
+        // the one failure mode the operator can actually fix, so name it.
+        const enoent = /ENOENT/.test(String(error));
+        return {
+          fail: enoent
+            ? "audio decoding needs ffmpeg, which is not installed on the bridge host"
+            : "the audio could not be decoded (unsupported or corrupt media)",
+        };
       }
       if (pcm.byteLength < MIN_PCM_BYTES) {
         logger.debug(`[matrix] voice ${message.eventId}: no speech (pcm ${pcm.byteLength} bytes)`);
-        return {};
+        return { fail: "no speech detected — the clip was too short or silent" };
       }
 
       // The recognition + timeout race (dictate-local's finalize safety
@@ -299,10 +373,10 @@ export function createVoiceTranscriber(deps: VoiceTranscriberDeps): VoiceTranscr
       try {
         engine = await getEngine();
       } catch {
-        return {}; // engine load already logged
+        return { fail: "the local speech-recognition engine failed to load (see the bridge log)" }; // already logged
       }
       const mods = await loadVoiceModules(logger);
-      if (!mods) return {}; // load failure already logged
+      if (!mods) return { fail: "the local speech-recognition engine is not installed" }; // already logged
       let text: string;
       try {
         text = await Promise.race([
@@ -313,15 +387,19 @@ export function createVoiceTranscriber(deps: VoiceTranscriberDeps): VoiceTranscr
         ]);
       } catch (error) {
         logger.warn(`[matrix] voice ${message.eventId}: recognition failed: ${error}`);
-        return {};
+        return { fail: "speech recognition failed or timed out (see the bridge log)" };
       }
       text = text.trim();
       if (!text || mods.hal.isHallucination(text)) {
         logger.debug(`[matrix] voice ${message.eventId}: empty or hallucinated transcript`);
-        return {};
+        return { fail: "no speech detected — the clip was silent or unclear" };
       }
       logger.debug(`[matrix] voice ${message.eventId}: transcribed ${pcm.byteLength / 2 / SAMPLE_RATE}s → "${text.slice(0, 60)}"`);
-      return { text };
+      // Engine identity for the room echo: the model directory name
+      // (~/.pi/models/whisper-base → "whisper-base"), read from the
+      // module's own paths so the string never drifts from what loads.
+      const localModel = basename(dirname(mods.model.getModelPaths().decoderPath)) || "whisper";
+      return { text, engine: `${localModel} (local)` };
     },
   };
 }

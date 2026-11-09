@@ -204,6 +204,11 @@ export interface MatrixConfig {
   // Inbound voice/audio messages are downloaded, decoded and transcribed
   // locally, then injected as the sender's text. On by default.
   voiceTranscription?: boolean;
+  // Remote STT endpoint tried before the local voice engine
+  // (OpenAI-shaped POST {sttBaseUrl}/audio/transcriptions). Empty = the
+  // voice leg is local-only. sttModel is the model id sent to it.
+  sttBaseUrl?: string;
+  sttModel?: string;
   // Prefix for file attachment to outbound Matrix messages
   fileAttachPrefix?: string;
   // Maximum bytes for file uploads to Matrix
@@ -292,10 +297,15 @@ export interface PartialMatrixConfig {
   threadPendingRoute?: "flat" | "latest";
   attachEncryption?: "on" | "off";
   /** Voice-message transcription: an `m.audio`/`m.voice`
-   *  room message is downloaded, decoded (ffmpeg), transcribed (local
-   *  Whisper via the rpiv-voice engine — the dictate-local chain) and
-   *  injected as the sender's text message. Default "on". */
+   *  room message is downloaded, decoded (ffmpeg), transcribed (remote
+   *  STT when configured, else local Whisper via the rpiv-voice engine —
+   *  the dictate-local chain) and injected as the sender's text message.
+   *  Default "on". */
   voiceTranscription?: boolean;
+  /** Remote STT base URL tried before the local engine (empty = off). */
+  sttBaseUrl?: string;
+  /** Model id sent to the remote STT endpoint. */
+  sttModel?: string;
   e2ee?: "on" | "off";
   cryptoStoreDir?: string;
   storePassphrase?: string;

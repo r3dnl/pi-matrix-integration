@@ -221,6 +221,12 @@
   // Voice notes sent to the room.
   "matrixToPiVoiceTranscription": {
     // Transcribe voice notes into text for the session.
-    "enabled": true
+    "enabled": true,
+    // Optional: an OpenAI-shaped STT endpoint tried before the local
+    // engine (POST {sttBaseUrl}/audio/transcriptions). Any failure —
+    // timeout, non-200, empty text — falls back to local transcription.
+    // Leave unset to stay local-only.
+    // "sttBaseUrl": "http://192.168.2.11:8002/v1",
+    // "sttModel": "mlx-community/whisper-small-asr-fp16"
   }
 }

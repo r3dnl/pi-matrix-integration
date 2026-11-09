@@ -9,7 +9,49 @@ come with a major version bump.
 
 ## [Unreleased]
 
+### Added
+
+- A transcribed voice message now answers in the room: `🗣️ <transcript>`
+  with the engine named underneath — the configured remote model id, or the
+  local model directory suffixed `(local)` — so the sender sees what was
+  understood and by what. The echo follows the same threading logic as any
+  other send: into the voice message's thread, or the thread the message
+  opens (see Fixed). The session injection is unchanged.
+- Voice transcription can now use a remote STT endpoint first: setting
+  `matrixToPiVoiceTranscription.sttBaseUrl` (env `PI_MATRIX_STT_BASE_URL`,
+  plus `sttModel`/`PI_MATRIX_STT_MODEL`) POSTs the voice clip to an
+  OpenAI-shaped `{base}/audio/transcriptions` — e.g. an mlx-audio server on
+  the LAN — before the local Whisper engine runs. Any remote failure
+  (timeout, non-200, empty text, unreachable) falls back to the local
+  chain: the endpoint is an optimization, never a dependency. Unset by
+  default — local-only, exactly the old behavior.
+- A voice message that cannot be transcribed now answers the sender in the
+  room — `⚠️ Voice message not transcribed: <reason>` — instead of being
+  dropped with only a bridge-log line. Reasons are classified
+  (missing/corrupt media, failed download, ffmpeg not installed, too long,
+  no speech, engine unavailable); internal error detail stays in the log.
+  The README now lists `ffmpeg` as a pre-requisite: it is the one system
+  binary voice transcription needs (ogg/opus → PCM for the local Whisper).
+
 ### Fixed
+
+- Voice messages now thread like text. Previously the transcript echo was
+  forced flat (room root) even when the voice message sat in a thread, and
+  a first-message voice note opened a thread whose topic was the recording
+  filename (`🧵 voice-message-recording.ogg`). Now: a voice message inside a
+  thread gets its transcript echoed into that same thread, and a voice
+  message that opens a new thread names the transcript (with the normal
+  120-char word cut) as the topic — same as a typed ask or a `@{file}`
+  attachment. The `⚠️` failure notices route the same way.
+
+- `parseJsonc` no longer deletes `//` inside string values. The comment
+  sweep was a plain regex, so a config value containing a URL (`"sttBaseUrl":
+  "http://…"`) corrupted the document: unterminated string, un-loadable
+  config, the active-profile pointer silently falling back to the
+  placeholder identity, a login prompt on restart, and a failed
+  `/matrix-switch`. Stripping is now a string-aware one-pass scanner
+  (line + block comments, escaped quotes); pinned by six checks in
+  `test/config-contract.mjs`.
 
 - The leftover closing line of a thread-summary pass whose broadcast mute was
   lifted by a mid-pass room question no longer dispatches a wasted summary
