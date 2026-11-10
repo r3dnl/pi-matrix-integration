@@ -59,13 +59,12 @@ import {
   buildLoginUi,
   hasLoadableCredentials,
   runLoginDialogue,
-  buildTourPrompt,
   homeserverDomain,
   type LoginResult,
   type LoginResponse,
   makeLoginFetch,
 } from "./login.js";
-import { buildMatrixHelp } from "./matrix-help.js";
+import { buildTourScript, runTourScript } from "./tour.js";
 import { createSdkOutbox, type SdkOutbox, type SdkDeliveryCallbacks } from "./sdk-client.js";
 import { UnreadModel } from "./unread-model.js";
 import {
@@ -518,14 +517,19 @@ export class MatrixIntegration {
   }
 
   /**
-   * The onboarding tour (transport-and-state.md): inject the one canned prompt through
-   * the [Matrix] directive path, sourced from the /matrix-help text (the
-   * same content the room sees from /matrix-help). Re-runnable — the
-   * command and the post-login offer both call this. The agent posts the
-   * tour with its normal tools; no new content store, no new channel.
+   * The onboarding tour: play the fixed script (tour.ts) through the
+   * outgoing pipeline. No directive is injected — the LLM never sees the
+   * tour, and the posted messages echo back as own-user events the inbound
+   * funnel drops. Re-runnable — the command and the post-login offer both
+   * call this; the runner opts out of the dedupe window so a replay inside
+   * the window still posts every step.
    */
   runIntroductionTour(): void {
-    this.stack.sessionIntegrator.injectDirective(buildTourPrompt(buildMatrixHelp(this.config)));
+    void runTourScript(buildTourScript(this.config), (text, kind) =>
+      this.stack.messageHandler.post(text, kind, { dedupe: false }),
+    ).catch((error: unknown) =>
+      this.logger.warn(`[matrix] introduction tour failed: ${error}`),
+    );
   }
 
   /**

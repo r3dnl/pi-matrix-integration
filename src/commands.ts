@@ -67,9 +67,9 @@ export function registerCommands(pi: ExtensionAPI, integration: MatrixIntegratio
     },
   });
 
-  // Onboarding tour (configuration-and-room-behaviour.md): one canned prompt via
-  // the [Matrix] directive path, sourced from the /matrix-help text. The agent
-  // posts the tour with its normal tools. Re-runnable for updates/reminders.
+  // Onboarding tour (configuration-and-room-behaviour.md): the fixed script
+  // (tour.ts) posted by code through the outgoing pipeline — the LLM is not
+  // in the loop. Re-runnable for updates/reminders.
   pi.registerCommand("matrix-introduction-tour", {
     description: "Walk the room through an introduction tour of this integration",
     handler: async (_args, ctx) => {

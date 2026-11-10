@@ -20,6 +20,7 @@ the [README](../../README.md); this page is intent, not status.
 
 ## Candidates for 0.10.0
 
+- [ ] BUG - Decision Dialogue - sometimes with the lead-in user message gets shown before the ask_user_question dialogue (correct) and then repeats again after the dialogue has been answered (incorrect).
 - [ ] BUG - `"pi-subagents"` fix (dependency upstream) -> this impacts also the summarizer thread that bleeds into the main terminal session (note: `"@tintinweb/pi-subagents"` recommended for now)
 - [ ] IMPROVEMENT - Config writes must follow the `last-active-profile`
   pointer — only the active profile file may be seeded or rewritten. Observed
@@ -49,8 +50,9 @@ the [README](../../README.md); this page is intent, not status.
   degraded mode. Planned line: `summarizer: unavailable — in-session fallback
   (install a pi-subagents dialect)`.
 - [ ] IMPROVEMENT - Prettier formatting for tables in Element X for phone/tablet
-- [ ] IMPROVEMENT - a better, standard welcome tour with a strict runbook that takes the user along in all features
+- [x] IMPROVEMENT - a better, standard welcome tour with a strict runbook that takes the user along in all features
 - [ ] IMPROVEMENT - store matrix credentials under `{project-root}/.pi/matrix/credentials/...` *BUT WARN IF NOT GITIGNORED!*
+- [ ] IMPROVEMENT - when resuming a session, mark the milestone in the thread with `🎯 Milestone: Pi resumed this session`
 - [ ] FEATURE - concurrent sharing of one Matrix account across projects. Today the
   account directory holds the token, the Olm crypto store and `pi-matrix.lock`, so a
   second Pi session on the same `credentialsPath` fails soft by design (two Olm
