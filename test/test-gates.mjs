@@ -811,14 +811,14 @@ await runPhase(
       "/matrix-help posts the guide to the room",
       sendCount(state) === before + 1 &&
         typeof guide === "string" &&
-        guide.includes("Matrix–Pi Integration") &&
+        guide.includes("Matrix–Pi room") &&
         guide.includes("/pi-help"),
       JSON.stringify({ sent: sendCount(state) - before, head: guide?.slice(0, 80) }),
     );
     check(
-      "guide reflects the live config (fileAttach on here → picker available)",
-      /Attach a file with @/.test(guide) && !/disabled in this deployment/.test(guide),
-      JSON.stringify(guide?.split("\n").find((l) => l.startsWith("3.")) ?? ""),
+      "guide reflects the live config (remoteFilePicker on here → the @ row carries no off marker)",
+      /^\| `@src\/` /m.test(guide) && !/\| `@src\/`[^\n]*\(off here\)/.test(guide),
+      JSON.stringify(guide?.split("\n").find((l) => l.startsWith("| `@src/`")) ?? ""),
     );
 
     // pi-help alias shares the same handler → also posts the guide.
@@ -831,7 +831,7 @@ await runPhase(
     check(
       "/pi-help (alias) posts the guide to the room too",
       sendCount(state) === before2 + 1 &&
-        (lastSend(state) ?? "").includes("Matrix–Pi Integration"),
+        (lastSend(state) ?? "").includes("Matrix–Pi room"),
       JSON.stringify({ sent: sendCount(state) - before2, head: lastSend(state)?.slice(0, 60) }),
     );
 

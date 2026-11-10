@@ -35,6 +35,32 @@ come with a major version bump.
 
 ### Changed
 
+- `/matrix-help` (and its alias `/pi-help`) is now a reference card instead of
+  a prose walkthrough — the guided version is `/matrix-introduction-tour`, so
+  the guide no longer re-explains features. It lists what the room accepts
+  (plain text, `/commands`, `@` picker, `@@` attach, voice notes, the decision
+  reply grammar, `help`) and every command the extension registers in a table
+  whose last column says where the answer shows up: room or terminal. That
+  split was the guide's blind spot — typing `/matrix-status` from the room
+  looks like silence. It closes by saying where behavior is actually changed:
+  the config file, the `~/.config` file that covers projects without one, the
+  `PI_MATRIX_*` overrides — and links the configuration reference for the key
+  list rather than copying it, so there is one source to keep current. Which
+  tiers to name was worth the argument: the README called
+  `~/.config/pi-matrix-integration/` the global location and the first cut of
+  this change replaced it with the extension directory, which is worse. That
+  directory only exists in a development install, where the extension is a
+  symlink into a source tree; an npm-installed extension is cached under
+  `~/.pi/agent/tmp/extensions/` and reinstalled whenever the registry has a
+  newer matching version, so a file written inside the package does not
+  survive an update. Pi documents no user-level config directory for
+  extensions — its only persistence surface is the session transcript, per
+  session rather than per machine. The guide and README now name the two
+  tiers a normal user can actually rely on, and `docs/user/configuration.md`
+  says why its tiers 3 and 4 are not a place to keep config. Formatting is
+  markdown (two GFM tables, code spans) rather than plain prose, so the
+  `sendFormatted` gate renders it and plain-text clients keep it readable;
+  the guide stays HTML-free by design.
 - The introduction tour shows instead of tells, and stays a dummy
   interaction. The decisions step no longer embeds a look-alike of a
   questionnaire: it explains, then the tour opens a REAL questionnaire on the

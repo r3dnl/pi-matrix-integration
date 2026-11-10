@@ -23,6 +23,16 @@ The extension uses the **first config file that exists**:
 4. Install location: `~/.pi/agent/extensions/pi-matrix-integration/config/`.
 5. XDG: `~/.config/pi-matrix-integration/config.json` (or `.jsonc`).
 
+Tiers 3 and 4 are the same directory in a development install, where the
+extension is a symlink under `~/.pi/agent/extensions/` and its `config/`
+folder is the source tree. They are not a usable place for user config in an
+npm install: Pi caches such packages under `~/.pi/agent/tmp/extensions/` and
+reinstalls them whenever the registry has a newer matching version, so a file
+written inside the package does not survive an update. Pi defines no
+user-level config directory for extensions — its only documented persistence
+surface is the session transcript (`pi.appendEntry()`), which is per session,
+not per machine. Use tier 2 for one project and tier 5 to cover a machine.
+
 ### Profiles & Precedence
 A json(c) can be saved as `matrix-config.{pi_agent_user}--{matrix_domain}.json(c)`,
 and this can be loaded with `/matrix-switch` in the terminal.
