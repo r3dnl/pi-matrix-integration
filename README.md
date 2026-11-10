@@ -25,7 +25,7 @@ This is a [Pi coding agent](https://pi.dev/) extension that connects a Pi sessio
 ### Install
 
 ```sh
-pi install git:github.com/r3dnl/pi-matrix-integration@v0.9.0
+pi install git:github.com/r3dnl/pi-matrix-integration
 ```
 (Once the npm publish lands: `pi install npm:pi-matrix-integration`.)
 Restart / reload your Pi session.
@@ -183,7 +183,11 @@ Config lives at `<project>/.pi/matrix/matrix-config.json`(`.jsonc`) (or `~/.conf
 
 Aliases: `/pi-help` (= `/matrix-help`), `/matrix-summarize-thread` (= `/matrix-thread-summarize`).
 
-Every extension command is reachable from the room: any room member can type it and it runs against your session, and the room relays slash commands from every installed extension (`/skill:*` included). There is no per-user allowlist — Matrix room membership is the access control. Pi's own built-in commands (`/new`, `/reload`) stay terminal-only. The three model-facing tools (`matrix_send_milestone`, `matrix_get_messages`, `matrix_update_thread_summary`) let Pi use the room on its own.
+Notes:
+- Every extension command is reachable from the room: any room member can type it and it runs against your session, and the room relays slash commands from every installed extension (`/skill:*` included). 
+- Security and permission control is "as-is" in the agentic harness. There is no (matrix) per-user allowlist — Matrix room membership is the access control. 
+- Pi's own built-in commands (`/new`, `/reload`) stay terminal-only. 
+- The three model-facing tools (`matrix_send_milestone`, `matrix_get_messages`, `matrix_update_thread_summary`) let Pi use the room on its own.
 
 ## Related
 
