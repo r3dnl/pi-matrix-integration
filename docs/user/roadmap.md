@@ -47,6 +47,27 @@ the [README](../../README.md); this page is intent, not status.
   is never overwritten. Open question: once the base `matrix-config.jsonc`
   stops receiving writes, what is its intended role — pure fallback identity
   for the first login, or obsolete?
+- [ ] TECH-DEB - delete config tiers 3 and 4 from `resolveConfigPath`
+  (`src/config-utils.ts:611-620`). Today the resolver tries, in order: an
+  explicit path, `<cwd>/.pi/matrix/matrix-config.json`(`.jsonc`),
+  `<extension-dir>/config/`, `~/.pi/agent/extensions/pi-matrix-integration/config/`,
+  and `~/.config/pi-matrix-integration/config.json`(`.jsonc`). Tiers 3 and 4
+  are not a config surface a user can rely on: in a development install they
+  are one and the same directory, and because the extension is a symlink into
+  a source tree there, a config seeded at tier 3 is written into a git working
+  tree. In the npm install most users get, `getExtensionDir()` resolves inside
+  Pi's package cache (`~/.pi/agent/tmp/extensions/`), which Pi reinstalls
+  whenever the registry has a newer matching version — so a room, a
+  credentials path or a profile sitting there is deleted by an update with no
+  error, and the session falls back to defaults — the same lost-login symptom
+  the profile-pointer bug above produced. Pi itself documents no
+  user-level config directory for extensions (its only persistence surface is
+  the session transcript, per session rather than per machine), so these two
+  tiers are this extension's own invention with no directory convention behind
+  them. Shape: resolve to explicit path → project file → `~/.config` file →
+  defaults, and document those as the whole surface. Decision first: whether a
+  release should warn when a file exists at a deleted tier, or whether we simply
+  drop it and let the moved file be found where it is expected.
 - [ ] BUG / IMPROVEMENT - Thread mismatch detection: warn user if matrix messages come from a non-active thread (how to reproduce: start a new Pi session that spawns a fresh thread; in matrix open an old thread and send a message)
 - [ ] IMPROVEMENT - `/matrix-status` shows the summarizer mode. Today a missing
   summarizer sub-agent drops the room into the in-session fallback silently: the
