@@ -26,3 +26,5 @@ pi-matrix-integration-*.tgz
 docker/
 Makefile
 artifacts/
+
+.video-demo-script.md
