@@ -517,7 +517,9 @@ const SCENARIOS = [
       const steps = buildTourScript(c.config);
       const injectedBefore = c.injected.length;
       const relayedBefore = c.fakePi.sentMessages.length;
-      await runTourScript(steps, (text, kind) => c.messageHandler.post(text, kind, { dedupe: false }));
+      await runTourScript(steps, (text, kind, html) =>
+        c.messageHandler.post(text, kind, { dedupe: false, html }),
+      );
       // Poll the fetched room (not the 50-event waitUntil window — by here
       // the run's history is larger) until every step has landed. In crypto
       // mode this reads the E2EE reader's decrypted timeline.

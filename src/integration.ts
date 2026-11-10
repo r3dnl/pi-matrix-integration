@@ -64,7 +64,15 @@ import {
   type LoginResponse,
   makeLoginFetch,
 } from "./login.js";
-import { buildTourScript, runTourScript } from "./tour.js";
+import { buildTourScript, runTourScript, tourDecisionDemoQuestions } from "./tour.js";
+
+/** Tool-call id the introduction tour's decision demo prompts with. It names
+ *  a wait that does not exist, which is exactly the point: the id lets the
+ *  answer path recognise a demo answer and drop it instead of emitting it.
+ *  Prefixed so it can never collide with a real tool-call id. */
+const TOUR_DEMO_TOOL_CALL_ID = "matrix-tour-decision-demo";
+/** How long an unanswered tour demo stays votable. */
+const TOUR_DEMO_TTL_MS = 10 * 60 * 1000;
 import { createSdkOutbox, type SdkOutbox, type SdkDeliveryCallbacks } from "./sdk-client.js";
 import { UnreadModel } from "./unread-model.js";
 import {
@@ -238,7 +246,10 @@ export class MatrixIntegration {
    *  session is the MAIN line; released (the owner stays) when it is a
    *  side chain. */
   private prev: MatrixIntegration | undefined;
-
+  /** The tour's decision demo is the live mirror right now. */
+  private tourDemoOpen = false;
+  /** Its expiry timer — see `showTourDecisionDemo`. */
+  private tourDemoTimer: ReturnType<typeof setTimeout> | null = null;
   constructor(
     pi: ExtensionAPI,
     config: MatrixConfig,
@@ -304,6 +315,10 @@ export class MatrixIntegration {
       const payload = (data ?? {}) as { questions?: unknown; toolCallId?: unknown };
       const qs = payload.questions;
       if (Array.isArray(qs)) {
+        // A real questionnaire arriving while a tour demo is open supersedes
+        // it in the mirror; close it here so its ledger entry is balanced and
+        // its expiry timer cannot fire behind the real wait.
+        this.closeTourDecisionDemo(false);
         void this.stack.askUserMirror.onPrompt(
           qs as MirrorQuestion[],
           typeof payload.toolCallId === "string" ? payload.toolCallId : undefined,
@@ -522,14 +537,88 @@ export class MatrixIntegration {
    * tour, and the posted messages echo back as own-user events the inbound
    * funnel drops. Re-runnable — the command and the post-login offer both
    * call this; the runner opts out of the dedupe window so a replay inside
-   * the window still posts every step.
+   * the window still posts every step. Each step carries pre-built HTML, so
+   * the tour is formatted even with `sendFormatted` off (the debug
+   * escape-hatch posts the same words as plain text).
    */
   runIntroductionTour(): void {
-    void runTourScript(buildTourScript(this.config), (text, kind) =>
-      this.stack.messageHandler.post(text, kind, { dedupe: false }),
+    // Re-running the tour supersedes a live decision demo (the mirror's own
+    // re-prompt rule); closing it here also balances its count of open decisions.
+    this.closeTourDecisionDemo(false);
+    void runTourScript(
+      buildTourScript(this.config),
+      (text, kind, html) =>
+        this.stack.messageHandler.post(text, kind, { dedupe: false, html }),
+      {
+        // A demo that cannot be shown is a logged warning, not an aborted
+        // tour — the remaining steps still land.
+        "decision-demo": () =>
+          this.showTourDecisionDemo().catch((error: unknown) =>
+            this.logger.warn(`[matrix] tour decision demo failed: ${error}`),
+          ),
+      },
     ).catch((error: unknown) =>
       this.logger.warn(`[matrix] introduction tour failed: ${error}`),
     );
+  }
+
+  /**
+   * The tour's live decision demo: the REAL ask-user mirror, prompted with a
+   * synthetic tool-call id. Questionnaire, tappable poll, living review and
+   * confirm step are the production flow, and room replies are consumed by
+   * the mirror — so the demo wakes no agent and resolves no tool call.
+   */
+  async showTourDecisionDemo(): Promise<void> {
+    this.closeTourDecisionDemo(false);
+    this.tourDemoOpen = true;
+    await this.stack.askUserMirror.onPrompt(
+      tourDecisionDemoQuestions(),
+      TOUR_DEMO_TOOL_CALL_ID,
+    );
+    // The mirror refuses to post while the bridge is off — nothing is open
+    // then, so nothing needs closing later.
+    this.tourDemoOpen = this.stack.askUserMirror.isOpen();
+    // A real wait ends when upstream posts `blocked(false)`; a demo has no
+    // upstream, so it carries its own deadline. Without one an unanswered
+    // demo would keep eating replies that look like option numbers, and the
+    // thread's count of open decisions would stay high forever.
+    this.tourDemoTimer = setTimeout(() => {
+      this.tourDemoTimer = null;
+      // Stale-timer guard: a session reload can leave this callback on an
+      // old stack, where nothing is open to expire.
+      if (!this.stack.askUserMirror.isOpen()) return;
+      this.closeTourDecisionDemo(true);
+    }, TOUR_DEMO_TTL_MS);
+  }
+
+  /** End the demo: close the mirror (its post runs through the `decision`
+   *  ledger, so the count is decremented here) and optionally tell the room
+   *  why the questionnaire just stopped answering. */
+  closeTourDecisionDemo(explain: boolean): void {
+    if (this.tourDemoTimer) {
+      clearTimeout(this.tourDemoTimer);
+      this.tourDemoTimer = null;
+    }
+    const wasOpen = this.tourDemoOpen && this.stack.askUserMirror.isOpen();
+    this.tourDemoOpen = false;
+    if (!wasOpen) return;
+    this.stack.askUserMirror.onBlocked(false);
+    this.stack.events.emit({ type: "decision-closed", source: "rpiv" });
+    if (explain) {
+      void this.stack.messageHandler
+        .post(
+          "⏱ The tour's decision demo expired. Nothing reached the agent — a real decision waits until you answer it.",
+          "other",
+          { dedupe: false },
+        )
+        .catch(() => undefined);
+    }
+  }
+
+  /** True while the tour's demo questionnaire is the live mirror, i.e. its
+   *  answers must not enter the answer channel. */
+  isTourDecisionDemoAnswer(toolCallId: string): boolean {
+    return this.tourDemoOpen && toolCallId === TOUR_DEMO_TOOL_CALL_ID;
   }
 
   /**
@@ -1001,7 +1090,27 @@ export class MatrixIntegration {
       // The flag moved to the lifecycle — the late-bound
       // call-time read keeps the mirror switch-current.
       isEnabled: () => lifecycle.isEnabled(),
-      emitAnswer: (payload) => this.pi.events.emit("rpiv:ask-user:answer", payload),
+      emitAnswer: (payload) => {
+        // The tour's demo names a tool call that was never parked. Its
+        // display-sync partials have nothing to sync, and its complete set
+        // would be refused upstream as an invalid answer — with the reason
+        // posted into the room. So the demo's answers end here: the first
+        // confirm closes the demo, the room never sees a rejection.
+        if (this.isTourDecisionDemoAnswer(payload.toolCallId)) {
+          if (!payload.partial) {
+            this.closeTourDecisionDemo(false);
+            void this.stack.messageHandler
+              .post(
+                "✅ That was the tour's decision demo — your answer landed in the room flow and nowhere else. A real decision looks and behaves exactly the same.",
+                "other",
+                { dedupe: false },
+              )
+              .catch(() => undefined);
+          }
+          return;
+        }
+        this.pi.events.emit("rpiv:ask-user:answer", payload);
+      },
       // Polls: single-select questions additionally
       // ship as tappable m.poll events. The active thread root is read at
       // call time (same late-bound style as the decision text posts' thread

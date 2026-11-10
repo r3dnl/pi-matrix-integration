@@ -42,6 +42,7 @@ Restart / reload your Pi session.
 - Run `/matrix-status`: it prints the connected server, room and user.
 - Type something in the terminal and watch it appear in the room as `🧑 User: …`.
 - Run `/matrix-introduction-tour` in the terminal, or `//matrix-introduction-tour` from the room, to walk every feature.
+  Each step explains a feature and ends with exactly what to type to try it, and where the room can produce the real thing it does: the decision step posts a live decision dialogue you can answer, and the sub-agent step shows the real spawn and result lines. Neither starts an agent turn — the tour is a dummy interaction.
 - Run `/matrix-help` in the TUI, or `//matrix-help` from the room, to get a condensed help overview
 
 ## What you get
