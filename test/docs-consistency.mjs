@@ -149,7 +149,23 @@ for (const file of SOURCE_FILES) {
   })
 }
 
-// --- 4. references that go stale in place ---
+// --- 4b. conflict markers committed to the tree ---
+// A rebase that resolves by `git add`-ing the conflicted file ships the
+// markers themselves; the roadmap shipped with two such blocks. Any line
+// starting with a marker in a shipped file is a hard fail.
+let markerHits = 0
+for (const file of [...STRICT, ...markdown]) {
+  const abs = path.join(ROOT, file)
+  if (!fs.existsSync(abs)) continue
+  fs.readFileSync(abs, 'utf8').split('\n').forEach((line, i) => {
+    if (/^<<<<<<< /.test(line) || /^>>>>>>> /.test(line)) {
+      fail(`${file}:${i + 1}: unresolved conflict marker "${line.slice(0, 20)}"`)
+      markerHits++
+    }
+  })
+}
+
+// --- 5. references that go stale in place ---
 // `markdown.ts:159` named the right place the day it was written and nothing
 // after. A commit sha is the same failure with a longer fuse: this repo's
 // history starts at its own first commit, so a sha copied in from the tree the
