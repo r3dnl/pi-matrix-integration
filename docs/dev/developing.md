@@ -109,17 +109,18 @@ secret**, one secret per name (exact case):
 These are throwaway test identities — provision them with the manifest
 shape in `test/live/accounts-manifest.example.json`.
 If the nightly homeserver auto-encrypts new rooms (a default-encryption
-Synapse), the suite reads through the crypto reader — a persistent device
-whose identity the extension shares room keys with, so it needs a stable
-`device_id` + `access_token`, never a password login (that would mint a
-new device every run). The workflow already supports it: store the reader
-account's whole `credentials.json` as a secret named
-`PI_MATRIX_READER_CREDENTIALS_JSON`, and `live-nightly.yml` writes it to
-`runner.temp` and points `PI_MATRIX_READER_CREDENTIALS` at it. An unset
-secret leaves the file unwritten and the suite takes the plain-reader path.
-Maintenance loop: if the reader's token ever dies (revocation, soft
-logout), run `npm run test:live` once locally — it re-mints and rewrites
-the local file — then refresh the secret with the new content.
+Synapse), the suite reads through the crypto reader. Locally the reader is
+a persistent device (`credentials.json` + crypto store beside it, the
+layout under `~/.config/mtx/accounts/`). A CI runner is stateless and
+cannot carry the store — and a stored `device_id` with an empty store means
+a NEW identity registered under the OLD device, so Olm key shares
+encrypted to the registered identity can never be unwrapped (the failure
+shows as `NoOlm` / withheld-key in the reader's crypto log). The nightly
+therefore mints a fresh reader device per run: `PI_MATRIX_READER_USER` /
+`PI_MATRIX_READER_PASSWORD` (reusing the primary account's secrets) log in
+as a brand-new device, which is exactly the path a first local run takes.
+No reader secret is needed; `PI_MATRIX_READER_CREDENTIALS_JSON` is not read
+by the workflow.
 
 ## Architecture
 
