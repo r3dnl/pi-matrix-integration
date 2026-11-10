@@ -48,23 +48,17 @@ the [README](../../README.md); this page is intent, not status.
   stops receiving writes, what is its intended role — pure fallback identity
   for the first login, or obsolete?
 - [ ] BUG / IMPROVEMENT - Thread mismatch detection: warn user if matrix messages come from a non-active thread (how to reproduce: start a new Pi session that spawns a fresh thread; in matrix open an old thread and send a message)
-<<<<<<< HEAD
 - [ ] IMPROVEMENT - `/matrix-status` shows the summarizer mode. Today a missing
   summarizer sub-agent drops the room into the in-session fallback silently: the
   warning is a log line only, so the room keeps working and nobody sees the
   degraded mode. Planned line: `summarizer: unavailable — in-session fallback
   (install a pi-subagents dialect)`.
-=======
 - [ ] IMPROVEMENT - 2 pi agentic sessions on the same matrix room leads to delivery of "ghost" messages in one of the terminal sessions -> can this be avoided / detected?
->>>>>>> a8e1e10 (roadmap items)
 - [ ] IMPROVEMENT - Prettier formatting for tables in Element X for phone/tablet
 - [x] IMPROVEMENT - a better, standard welcome tour with a strict runbook that takes the user along in all features
 - [ ] IMPROVEMENT - store matrix credentials under `{project-root}/.pi/matrix/credentials/...` *BUT WARN IF NOT GITIGNORED!*
-<<<<<<< HEAD
 - [ ] IMPROVEMENT - when resuming a session, mark the milestone in the thread with `🎯 Milestone: Pi resumed this session`
-=======
 - [ ] IMPROVEMENT - poll for `@file` selector menu
->>>>>>> a8e1e10 (roadmap items)
 - [ ] FEATURE - concurrent sharing of one Matrix account across projects. Today the
   account directory holds the token, the Olm crypto store and `pi-matrix.lock`, so a
   second Pi session on the same `credentialsPath` fails soft by design (two Olm
