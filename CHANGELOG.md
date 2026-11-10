@@ -47,6 +47,14 @@ come with a major version bump.
 
 ### Fixed
 
+- A decision poll that throws no longer eats the decision. `postPoll` was
+  awaited unguarded, so a poll transport that raised (rather than returning
+  `{success: false}`) escaped `onPrompt` and took the whole questionnaire
+  with it — the table, the reply grammar and the terminal's copy of the
+  question. A poll is an extra affordance over the text grammar, so a failure
+  now costs only that question's poll: the room logs it and still posts the
+  questionnaire.
+
 - Voice messages now thread like text. Previously the transcript echo was
   forced flat (room root) even when the voice message sat in a thread, and
   a first-message voice note opened a thread whose topic was the recording

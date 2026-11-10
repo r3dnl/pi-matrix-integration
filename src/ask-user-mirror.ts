@@ -363,7 +363,18 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
           // polls allow one vote per option.
           const maxSelections = q.multiSelect === true ? options.length : 1;
           const answers = (q.options ?? []).map((o, j) => ({ id: String(j + 1), label: o.label }));
-          const res = await deps.postPoll!(q.question, answers, maxSelections);
+          // A poll is an extra affordance over the text grammar, so a poll
+          // transport that throws must cost exactly as much as one that
+          // refuses: this question keeps its table and reply grammar, the
+          // questionnaire stays posted. Without the catch a throwing
+          // `postPoll` escapes into `onPrompt` and eats the whole decision.
+          let res: { success: boolean; eventId?: string; error?: string };
+          try {
+            res = await deps.postPoll!(q.question, answers, maxSelections);
+          } catch (err) {
+            deps.warn?.(`[matrix] decision poll post threw: ${err}`);
+            continue;
+          }
           if (!res.success) {
             deps.warn?.(`[matrix] decision poll post failed: ${res.error || "unknown error"}`);
             continue; // the text grammar still covers this question
