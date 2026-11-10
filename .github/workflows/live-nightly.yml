@@ -29,6 +29,22 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Materialize the reader device
+        # The crypto reader is a persistent device (device_id + token): the
+        # extension shares room keys with it, so it must re-present a known
+        # device — which is exactly what a password login could not do. The
+        # secret is the reader's whole credentials.json; an empty secret
+        # leaves the file unwritten, and the suite then takes the plain
+        # reader path (correct for non-auto-encrypting homeservers, loudly
+        # failing for encrypting ones).
+        env:
+          PI_MATRIX_READER_CREDENTIALS_JSON: ${{ secrets.PI_MATRIX_READER_CREDENTIALS_JSON }}
+        run: |
+          if [ -n "$PI_MATRIX_READER_CREDENTIALS_JSON" ]; then
+            mkdir -p "$RUNNER_TEMP/live-reader"
+            printf '%s' "$PI_MATRIX_READER_CREDENTIALS_JSON" > "$RUNNER_TEMP/live-reader/credentials.json"
+            chmod 600 "$RUNNER_TEMP/live-reader/credentials.json"
+          fi
       - name: Live scenario tier
         run: npm run test:live
         env:
@@ -38,6 +54,7 @@ jobs:
           PI_MATRIX_SECOND_TOKEN: ${{ secrets.PI_MATRIX_SECOND_TOKEN }}
           PI_MATRIX_SECOND_USER: ${{ secrets.PI_MATRIX_SECOND_USER }}
           PI_MATRIX_SECOND_PASSWORD: ${{ secrets.PI_MATRIX_SECOND_PASSWORD }}
+          PI_MATRIX_READER_CREDENTIALS: ${{ runner.temp }}/live-reader/credentials.json
       # The perf gates fail loudly until the performance suites land; keep
       # nightly red-free until they exist, then drop the continue-on-error.
       - name: Performance gates

@@ -109,14 +109,17 @@ secret**, one secret per name (exact case):
 These are throwaway test identities — provision them with the manifest
 shape in `test/live/accounts-manifest.example.json`.
 If the nightly homeserver auto-encrypts new rooms (a default-encryption
-Synapse), the suite also reads through the crypto reader, which wants a
-persistent device: provision one locally, store its whole
-`credentials.json` as a secret, and extend `live-nightly.yml` to write it
-out before the run (a step writing `secrets.PI_MATRIX_READER_CREDENTIALS_JSON`
-to a file under `runner.temp`, plus
-`PI_MATRIX_READER_CREDENTIALS` pointed at it in the live step's env). That
-workflow edit is a deliberate scope change — propose before making it, per
-this repo's rules.
+Synapse), the suite reads through the crypto reader — a persistent device
+whose identity the extension shares room keys with, so it needs a stable
+`device_id` + `access_token`, never a password login (that would mint a
+new device every run). The workflow already supports it: store the reader
+account's whole `credentials.json` as a secret named
+`PI_MATRIX_READER_CREDENTIALS_JSON`, and `live-nightly.yml` writes it to
+`runner.temp` and points `PI_MATRIX_READER_CREDENTIALS` at it. An unset
+secret leaves the file unwritten and the suite takes the plain-reader path.
+Maintenance loop: if the reader's token ever dies (revocation, soft
+logout), run `npm run test:live` once locally — it re-mints and rewrites
+the local file — then refresh the secret with the new content.
 
 ## Architecture
 
