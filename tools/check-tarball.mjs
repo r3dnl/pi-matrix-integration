@@ -23,7 +23,10 @@ let dir = unpacked;
 let tmp = null;
 if (!dir) {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "targate-"));
-  execFileSync("npm", ["pack", "--pack-destination", tmp], { cwd: ROOT, stdio: "ignore" });
+  // Same rule as the CI scan step: the content gate wants the bytes npm
+  // would publish; the prepack typecheck guard belongs to publishing
+  // (release.yml) and has no dev toolchain in a prod-only (--omit=dev) job.
+  execFileSync("npm", ["pack", "--ignore-scripts", "--pack-destination", tmp], { cwd: ROOT, stdio: "ignore" });
   const tgz = fs.readdirSync(tmp).find((f) => f.endsWith(".tgz"));
   execFileSync("tar", ["xzf", path.join(tmp, tgz), "-C", tmp], { stdio: "ignore" });
   dir = path.join(tmp, "package");
