@@ -20,7 +20,7 @@
     "accounts; never reuse a real user's password."
   ],
   "defaults": {
-    "password": "REPLACE-throwaway-password",
+    "password": "example-throwaway-password",
     "displayname_suffix": " (pi-matrix-integration test)",
     "no deactivate": true
   },

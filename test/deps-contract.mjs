@@ -21,10 +21,14 @@ const check = (name, ok, detail) => {
 // 1. the full tree resolves: no missing, invalid or unmet peers.
 {
   try {
-    cp.execSync("npm ls --all", { cwd: ROOT, stdio: "ignore" });
-    check("npm ls --all exits 0", true);
+    // The manifest job installs with `npm ci --omit=dev`; asking about the
+    // FULL tree there reports the deliberately-absent dev deps and the
+    // host-provided peers as "missing" (exit 1) — a predicate for a tree CI
+    // never installs. Ask about the tree CI actually has.
+    cp.execSync("npm ls --all --omit=dev", { cwd: ROOT, stdio: "ignore" });
+    check("npm ls --all --omit=dev exits 0", true);
   } catch (error) {
-    check("npm ls --all exits 0", false, String(error.message).slice(0, 120));
+    check("npm ls --all --omit=dev exits 0", false, String(error.message).slice(0, 120));
   }
 }
 
