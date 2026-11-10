@@ -134,7 +134,7 @@ The root message of a Matrix threaded conversation gets updated with a summary a
 
 Precedence: **environment variables > config file > defaults**. 
 
-Config lives at `<project>/.pi/matrix/matrix-config.json`(`.jsonc`) (or `~/.config/pi-matrix-integration/` globally); every key has a `PI_MATRIX_<UPPER_SNAKE>` override. The config is one JSON object of grouped keys — the breakdown:
+Config lives at `<project>/.pi/matrix/matrix-config.json`(`.jsonc`) (for projects without one, `~/.config/pi-matrix-integration/config.json`); every key has a `PI_MATRIX_<UPPER_SNAKE>` override. The config is one JSON object of grouped keys — the breakdown:
 
 | Group | Covers |
 |---|---|

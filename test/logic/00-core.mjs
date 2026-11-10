@@ -1325,10 +1325,53 @@ check(
   `len=${helpOn.length}`,
 );
 check(
-  "guide covers the room's capabilities",
-  ["plain language", "Slash commands", "/skill:", "numbered list", "milestones", "/matrix-help"]
+  "guide covers the room's actions, not a re-run of the tour",
+  ["plain text", "`/name …`", "`@src/`", "`@@readme`", "voice note", "`confirm`", "`help`"]
     .every((needle) => helpOn.includes(needle)),
   JSON.stringify(helpOn.slice(0, 80)),
+);
+// The room could not discover which commands answer where, and could not
+// find settings without reading the source: both are now first-class sections.
+const HELP_COMMANDS = [
+  "matrix-connect", "matrix-login", "matrix-introduction-tour", "matrix-disconnect",
+  "matrix-toggle", "matrix-status", "matrix-switch", "matrix-thread-toggle",
+  "matrix-send", "matrix-messages", "matrix-subagents", "matrix-help", "pi-help",
+  "matrix-thread-summarize", "matrix-summarize-thread",
+];
+check(
+  "guide lists every registered command",
+  HELP_COMMANDS.every((c) => helpOn.includes(`/${c}`)),
+  JSON.stringify(HELP_COMMANDS.filter((c) => !helpOn.includes(`/${c}`))),
+);
+check(
+  "guide names the three sections and the tour it defers to",
+  helpOn.includes("**Actions**") && helpOn.includes("**Commands**") &&
+    helpOn.includes("**What the agent posts here, on its own**") &&
+    helpOn.includes("**Settings live in the config, not in commands**") &&
+    helpOn.includes("`/matrix-introduction-tour`"),
+  JSON.stringify(helpOn.match(/\*\*[^*]+\*\*/g)),
+);
+check(
+  "guide marks where each command's answer shows (room vs terminal)",
+  helpOn.includes("| Command | Does | Answer shows |") &&
+    helpOn.includes("| `/matrix-messages [n]` | reads back the last n room messages | terminal |") &&
+    helpOn.includes("| `/matrix-send TEXT` | posts TEXT into the room | room |"),
+  "the split the room cannot guess must be in the table",
+);
+check(
+  "guide points at the config tiers that survive an npm install, the env overrides and the linked reference",
+  helpOn.includes(".pi/matrix/") && helpOn.includes("`matrix-config.json`") &&
+    helpOn.includes("~/.config/pi-matrix-integration/config.json") &&
+    !helpOn.includes("~/.pi/agent/extensions/pi-matrix-integration/config/") && helpOn.includes("PI_MATRIX_") &&
+    helpOn.includes("](https://github.com/r3dnl/pi-matrix-integration/blob/main/docs/user/configuration.md)") &&
+    !helpOn.includes("piMatrixMessageFormatting"),
+  "settings are config; the linked doc stays the single source for the key list",
+);
+check(
+  "guide formats as markdown the pipeline can render",
+  helpOn.includes("| --- | --- |") && helpOn.includes("`@src/*.ts`") &&
+    helpOn.includes("🎯 milestones"),
+  "tables + code spans, no hand-built HTML",
 );
 check(
   "guide is plain text (no HTML tags)",
@@ -1336,14 +1379,14 @@ check(
   "guide must be portable plain text",
 );
 check(
-  "picker section reflects fileAttach=true",
-  /Attach a file with @/.test(helpOn) && !/disabled in this deployment/.test(helpOn),
-  JSON.stringify(helpOn.split("\n").find((l) => l.startsWith("3.")) ?? ""),
+  "actions table marks the @ picker live when remoteFilePicker is on",
+  !/\| `@src\/`[^\n]*\(off here\)/.test(helpOn),
+  JSON.stringify(helpOn.split("\n").find((l) => l.startsWith("| `@src/`")) ?? ""),
 );
 check(
-  "picker section reflects fileAttach=false (off by default)",
-  /disabled in this deployment/.test(helpOff) && !/disabled in this deployment/.test(helpOn),
-  JSON.stringify(helpOff.split("\n").find((l) => l.startsWith("3.")) ?? ""),
+  "actions table marks the @ picker off when remoteFilePicker is off",
+  /\| `@src\/`[^\n]*\(off here\)/.test(helpOff) && !/\| `@src\/`[^\n]*\(off here\)/.test(helpOn),
+  JSON.stringify(helpOff.split("\n").find((l) => l.startsWith("| `@src/`")) ?? ""),
 );
 
 // isAgentHelp: agent-directed "help" detection
