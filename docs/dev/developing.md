@@ -74,9 +74,49 @@ A test homeserver that only speaks `http://` on a non-local address needs
 an explicit opt-in as well: `PI_MATRIX_ALLOW_INSECURE_HTTP=1`. Without it
 the login dialogue refuses `http://` unless the address is loopback or a
 `.local` name, or a human confirms the risk in the dialogue. Nothing else
-changes; the variable never applies to `https://`.
+changes; the variable never applies to `https://`. Create a fresh room per
+run (the scripts do) so reruns cannot interfere, and expect the suite to
+write messages to that room.
 
-Create a fresh room per run (the scripts do) so reruns cannot interfere, and expect the suite to write messages to that room.
+## What CI runs
+
+Four workflows live in `.github/workflows/`:
+
+| Workflow | Trigger | Jobs |
+|---|---|---|
+| `ci.yml` | every push / PR | `gate`: credential scan (plus a self-test that the scan can bite), typecheck, lint, `npm test`, docs-consistency. `manifest`: `npm ci --omit=dev` in a clean tree, the dependency contract, the secret scan on the unpacked tarball, and the tarball file allowlist |
+| `deps.yml` | schedule + lockfile changes | `npm audit --omit=dev` (fails on high/critical), registry signature verification |
+| `live-nightly.yml` | daily 04:30 UTC + manual dispatch, `main` only | `npm run test:live` and `npm run test:perf` against a real homeserver using repository secrets; evidence uploaded, a failing run opens (or reuses) one tracking issue |
+| `release.yml` | version tag | the `prepack` publish guard, then publish |
+
+The nightly is the only workflow that touches the network with credentials,
+and it never runs on a fork or a pull request — the secrets are repository
+secrets, exposed only to this scheduled run on `main`.
+
+### Setting up the nightly's secrets
+
+In GitHub: **Settings → Secrets and variables → Actions → New repository
+secret**, one secret per name (exact case):
+
+- `PI_MATRIX_HOMESERVER` — the https URL of your test homeserver
+- `PI_MATRIX_USERNAME` + `PI_MATRIX_PASSWORD` — the primary (agent) test
+  account
+- `PI_MATRIX_SECOND_USER` + `PI_MATRIX_SECOND_PASSWORD`, or
+  `PI_MATRIX_SECOND_TOKEN` — the human-seat account (the workflow reads the
+  token variable too, but a token stops working when the session it belongs
+  to expires; a password does not)
+
+These are throwaway test identities — provision them with the manifest
+shape in `test/live/accounts-manifest.example.json`.
+If the nightly homeserver auto-encrypts new rooms (a default-encryption
+Synapse), the suite also reads through the crypto reader, which wants a
+persistent device: provision one locally, store its whole
+`credentials.json` as a secret, and extend `live-nightly.yml` to write it
+out before the run (a step writing `secrets.PI_MATRIX_READER_CREDENTIALS_JSON`
+to a file under `runner.temp`, plus
+`PI_MATRIX_READER_CREDENTIALS` pointed at it in the live step's env). That
+workflow edit is a deliberate scope change — propose before making it, per
+this repo's rules.
 
 ## Architecture
 
