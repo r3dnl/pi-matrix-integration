@@ -29,9 +29,15 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - run: npm ci
       - name: Live scenario tier
         run: npm run test:live
         env:
+          # The live tier drives the extension through the pi harness, which
+          # locates the pi package via `pi` on PATH — absent on a runner.
+          # The devDependency installed above IS the package; point the
+          # override at it (same version the suite's jiti compiles against).
+          PI_MATRIX_TEST_PI_PKG: ${{ github.workspace }}/node_modules/@earendil-works/pi-coding-agent
           PI_MATRIX_HOMESERVER: ${{ secrets.PI_MATRIX_HOMESERVER }}
           PI_MATRIX_USERNAME: ${{ secrets.PI_MATRIX_USERNAME }}
           PI_MATRIX_PASSWORD: ${{ secrets.PI_MATRIX_PASSWORD }}
@@ -75,7 +81,14 @@ jobs:
             echo "an open nightly-failure issue already exists; not opening a second"
             exit 0
           fi
+          # Best-effort: a first nightly failure on a fresh repo has no
+          # ci-nightly label, and a failed gh label create must not mask the
+          # failure issue that this step exists to file.
+          gh label create ci-nightly --color 9e4a14 \
+            --description "Live nightly gate failure tracking issue" 2>/dev/null || true
           gh issue create --repo "$GITHUB_REPOSITORY" \
             --title "$title" \
             --body "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\n\nSee the run log and the uploaded artifacts." \
-            --label ci-nightly
+            --label ci-nightly || gh issue create --repo "$GITHUB_REPOSITORY" \
+              --title "$title" \
+              --body "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\n\nSee the run log and the uploaded artifacts."
