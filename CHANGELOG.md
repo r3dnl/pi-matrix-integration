@@ -35,6 +35,37 @@ come with a major version bump.
 
 ### Changed
 
+- The introduction tour shows instead of tells, and stays a dummy
+  interaction. The decisions step no longer embeds a look-alike of a
+  questionnaire: it explains, then the tour opens a REAL questionnaire on the
+  ask-user mirror — questionnaire, tappable poll, living review and all —
+  under a synthetic tool-call id, so the room's answer ends the demo instead
+  of resolving a parked tool call and never enters the answer channel. An
+  unanswered demo expires after 10 minutes, and a real decision or a replayed
+  tour supersedes it; either way the count of open decisions the demo's
+  post took is released. The sub-agent step is followed by the two lines the
+  production formatters build (`⚡ Spawn subagent…`, tinted by type, then
+  `⚡ Agent result:`), built from the live `piMatrixSubagents` settings; no
+  bus record is written, so `/matrix-subagents` still lists only real spawns.
+  No model turn starts for any of it — the same guarantee as before, now
+  pinned by `test/login-wiring-check.mjs`.
+- Every introduction-tour step now has the same shape: a bold blue topic
+  line, part A (what the feature is) and a green part-B line saying exactly
+  what to type to try it (`Try it: /matrix-help`). Steps are no longer
+  numbered, literals render as `code`, and the tour carries two fenced
+  blocks — a Matrix message event as `json` and the `TourEntry` type behind
+  the tour itself as `ts` — so Element's syntax highlighting shows. The
+  slash-command step states the split the room cannot guess: a room-typed
+  command runs in the terminal and most answer there only, so the step
+  contrasts `/matrix-help` (arrives here) with `/matrix-status` (terminal
+  only), and the controls step lists both groups. Sub-agents and threads now
+  say how to provoke them: ask Pi for a sub-agent, or start a fresh session
+  with `/new` and watch a new thread open. The tour closes with what to do
+  next: type a message about the topic you want to talk about. The script grew
+  from 9-to-11 steps to 12-to-15 (the three existing config toggles, plus the
+  two sub-agent demo lines behind `piMatrixSubagents.enabled`). Each step ships
+  pre-built HTML as `formatted_body`, so the formatting survives
+  `sendFormatted: false` — the plain body carries the same words.
 - The introduction tour is scripted. `/matrix-introduction-tour` and the
   `/matrix-login` tour offer now play a fixed 9-to-11-step runbook
   (`src/tour.ts`) — every message exact, posted by code in a fixed order,

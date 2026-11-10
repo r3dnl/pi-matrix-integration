@@ -1,5 +1,10 @@
 import { escapeHtml } from "./markdown.js";
 
+/** Dark green for instruction lines — the color an answer is NOT yet in.
+ *  Exported for the introduction tour, which marks its part-B "what to
+ *  type" line with the same semantic. */
+export const INSTRUCTION_GREEN = "#1a7f37";
+
 /**
  * AskUserMirror — the Matrix half of the dual-surface RPIV decision bridge.
  *
@@ -760,7 +765,6 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
   // dark-green bold: Matrix's custom-HTML subset has no background color,
   // so <font color> + <strong> is the closest expressible treatment — the
   // same proven mechanism as the converter's inline-code font color.
-  const INSTRUCTION_GREEN = "#1a7f37";
   const instruction = (t: string): string =>
     `<font color="${INSTRUCTION_GREEN}"><strong>${t}</strong></font>`;
 

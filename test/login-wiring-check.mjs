@@ -321,6 +321,10 @@ const sendCount = () =>
   fs.existsSync(path.join(stateDir, "send.log"))
     ? fs.readFileSync(path.join(stateDir, "send.log"), "utf8").split("\n").filter(Boolean).length
     : 0;
+const sendLog = () =>
+  fs.existsSync(path.join(stateDir, "send.log"))
+    ? fs.readFileSync(path.join(stateDir, "send.log"), "utf8")
+    : "";
 const configCredsPath = () => JSON.parse(fs.readFileSync(projectConfigPath, "utf8")).credentialsPath;
 
 async function runFactory(label, uiScript, run) {
@@ -491,6 +495,15 @@ const resetFreshState = () => {
   });
   check("D3: /matrix-introduction-tour registered", h.commands.has("matrix-introduction-tour"));
   check("D3: tour posts the fixed script to the room by code (>=9 sends)", tourSends >= 9, `+${tourSends} sends`);
+  // Show, do not tell: the decision step's hook opens the real ask-user
+  // mirror, so a real questionnaire is posted (src/integration.ts), and the
+  // sub-agent step is followed by the two lines the production formatters
+  // build. Both stay room-side: the next check pins that the session saw
+  // neither.
+  check("D3: the decision step posts a real questionnaire",
+    sendLog().includes("Pi decision (RPIV)"), sendLog().slice(-200));
+  check("D3: the sub-agent step posts the production spawn/result lines",
+    sendLog().includes("Spawn subagent, task:") && sendLog().includes("Agent result:"), "");
   check("D3: the LLM never sees the tour (no directive into the session)",
     sentMessages.every((m) => m.message?.customType !== "matrix-directive"),
     JSON.stringify(sentMessages.map((m) => m.message?.customType)));
