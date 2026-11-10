@@ -16,6 +16,10 @@ the [README](../../README.md); this page is intent, not status.
   the live tier directly; the cold-install check is a five-minute manual
   release step)
 - [ ] default to `"@tintinweb/pi-subagents"`
+- [ ] release the `mtx` account tool — the live-tier account manifests
+  (`test/live/accounts-manifest.example.json`) are written in its format;
+  it is maintainer-local today, releasing it lets others provision their
+  own live-tier test accounts
 
 
 ## Candidates for 0.10.0
