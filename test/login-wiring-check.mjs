@@ -317,6 +317,10 @@ const connectCount = () =>
   fs.existsSync(path.join(stateDir, "connect.log"))
     ? fs.readFileSync(path.join(stateDir, "connect.log"), "utf8").split("\n").filter(Boolean).length
     : 0;
+const sendCount = () =>
+  fs.existsSync(path.join(stateDir, "send.log"))
+    ? fs.readFileSync(path.join(stateDir, "send.log"), "utf8").split("\n").filter(Boolean).length
+    : 0;
 const configCredsPath = () => JSON.parse(fs.readFileSync(projectConfigPath, "utf8")).credentialsPath;
 
 async function runFactory(label, uiScript, run) {
@@ -469,30 +473,36 @@ const resetFreshState = () => {
   );
 }
 
-// D3: /matrix-introduction-tour is registered + injects the canned prompt
-// through the [Matrix] directive path (design §10)
+// D3: /matrix-introduction-tour plays the scripted tour (src/tour.ts) by
+// code: the fixed script lands on the room send path, and NOTHING reaches
+// the session — no directive, no turn. Copy + order are pinned in
+// test/tour-check.mjs; the room-side sequence in test/live (scenario 14).
 {
   resetFreshState();
+  let tourSends = 0;
   const { h, sentMessages } = await runFactory("D3 tour command", { input: [HS, "vincent", "myroom", ""], password: "pw123" }, async (h2, ctx) => {
+    await h2.commands.get("matrix-login").handler("", ctx); // connect the stack
     const cmd = h2.commands.get("matrix-introduction-tour");
     if (!cmd) throw new Error("matrix-introduction-tour not registered");
+    const before = sendCount();
     await cmd.handler("", ctx);
+    await new Promise((r) => setImmediate(r)); // drain the fire-and-forget tour runner
+    tourSends = sendCount() - before;
   });
   check("D3: /matrix-introduction-tour registered", h.commands.has("matrix-introduction-tour"));
-  const directive = sentMessages.find((m) => m.message?.customType === "matrix-directive");
-  check("D3: tour injected once via the [Matrix] directive path",
-    directive !== undefined && /tour/i.test(String(directive.message.content)),
+  check("D3: tour posts the fixed script to the room by code (>=9 sends)", tourSends >= 9, `+${tourSends} sends`);
+  check("D3: the LLM never sees the tour (no directive into the session)",
+    sentMessages.every((m) => m.message?.customType !== "matrix-directive"),
     JSON.stringify(sentMessages.map((m) => m.message?.customType)));
-  check("D3: tour prompt sources the matrix-help content",
-    directive !== undefined && /Matrix–Pi Integration/i.test(String(directive.message.content)),
-    String(directive?.message?.content ?? "").slice(0, 120));
 }
 
-// C3: first run, tour accepted → the tour directive is injected after
-// connect (design §3: "yes → /matrix-introduction-tour runs after connect")
+// C3: first run, tour accepted → the scripted tour posts after connect
+// (design §3: "yes → /matrix-introduction-tour runs after connect"), and
+// the session receives no tour directive.
 {
   resetFreshState();
   const before = connectCount();
+  let tourSends = -1;
   const { ctxBase, sentMessages } = await runFactory("C3 first-run tour accepted", {
     input: [HS, "vincent", "myroom", ""],
     // Order: first-run connect prompt (backlog 3) -> 3 toggles -> tour ->
@@ -502,12 +512,15 @@ const resetFreshState = () => {
     select: ["yes", "accept", "accept", "accept", TOUR_YES, "No"],
     password: "pw123",
   }, async (h, ctx) => {
+    const sendsBefore = sendCount();
     await h.sessionStart({ type: "session_start", reason: "startup" }, ctx);
+    await new Promise((r) => setImmediate(r)); // drain the fire-and-forget tour runner
+    tourSends = sendCount() - sendsBefore;
   });
   check("C3: connect attempted after login", connectCount() > before, `before=${before} after=${connectCount()}`);
-  const directive = sentMessages.find((m) => m.message?.customType === "matrix-directive");
-  check("C3: tour directive injected after connect",
-    directive !== undefined && /tour/i.test(String(directive.message.content)),
+  check("C3: tour posted after connect (>=9 sends, incl. connect traffic)", tourSends >= 9, `+${tourSends} sends`);
+  check("C3: the LLM never sees the tour (no directive into the session)",
+    sentMessages.every((m) => m.message?.customType !== "matrix-directive"),
     JSON.stringify(sentMessages.map((m) => m.message?.customType)));
   check("C3: success line still shown", ctxBase.calls.notify.some((n) => /unverified/i.test(n.msg)));
 }

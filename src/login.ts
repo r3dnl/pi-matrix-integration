@@ -678,21 +678,6 @@ export async function runToggleSteps(ui: LoginUi): Promise<ToggleStepsResult> {
 }
 
 /**
- * The onboarding tour prompt (configuration-and-room-behaviour.md): one canned directive telling the
- * agent to walk the room through the feature tour, sourced from the
- * matrix-help text (the same content the room sees from /matrix-help). The
- * agent posts the tour with its normal tools — no new content store.
- */
-export function buildTourPrompt(helpContent: string): string {
-  return [
-    "Onboarding tour: you just finished onboarding in this Matrix room.",
-    "Walk the room through this integration now — post a short, friendly introduction tour using your normal tools (matrix_send_milestone and ordinary messages). Keep it conversational: a few short messages, not a wall of text.",
-    "Use the guide below as your source for what exists:",
-    helpContent,
-  ].join("\n");
-}
-
-/**
  * Run the credentials login dialogue. Esc/null at any step, or
  * "cancel" on the retry prompt, closes with `{ok:false, cancelled:true}` and
  * writes nothing. Login errors notify and re-ask the password only.

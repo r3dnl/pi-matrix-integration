@@ -33,7 +33,6 @@ const {
   normalizeRoomAlias,
   runRoomStep,
   runToggleSteps,
-  buildTourPrompt,
   TOGGLE_AUTOCONNECT_OPTIONS,
   TOGGLE_AUTOCONNECT_NO,
   TOGGLE_THREADS_OPTIONS,
@@ -903,12 +902,7 @@ console.log("\n--- runToggleSteps (design §9): two selects + tour, default firs
     r.ok === false && r.cancelled === true, JSON.stringify(r));
 }
 
-console.log("\n--- buildTourPrompt (design §10): one canned prompt, matrix-help source ---");
-{
-  const p = buildTourPrompt("HELP-CONTENT-XYZ");
-  check("tour prompt: embeds the matrix-help content verbatim", p.includes("HELP-CONTENT-XYZ"));
-  check("tour prompt: instructs the agent to walk the room through a tour", /tour/i.test(p) && /room/i.test(p));
-}
+// The onboarding tour itself moved to the scripted runner (test/tour-check.mjs).
 
 // ===========================================================================
 // Story 5: verified-probe regression tier (design §15) + device-id default fix
