@@ -155,7 +155,9 @@ export class TuiFooter {
   private formatRoomSegment(status: ConnectionStatus): string {
     const user = status.userId ? splitMxid(status.userId) : undefined;
     const room = roomLocalPart(status.roomId);
-    const domain = user?.domain ?? splitMxid(status.roomId)?.domain;
+    // roomId may be absent (a pre-connection failure carries only lastError)
+    // — splitMxid(undefined) crashed the footer on exactly that status.
+    const domain = user?.domain ?? (status.roomId ? splitMxid(status.roomId)?.domain : undefined);
 
     // No user identity → fall back to the raw room id (old layout).
     if (!user || !room || !domain) {
