@@ -66,7 +66,7 @@ jobs:
           PI_MATRIX_PASSWORD: ${{ secrets.PI_MATRIX_PASSWORD }}
       - name: Upload harness artifacts
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: live-nightly-${{ github.run_number }}
           path: artifacts/
