@@ -56,7 +56,11 @@ jobs:
       - name: Credential scan (unpacked tarball)
         run: |
           mkdir -p /tmp/pack
-          npm pack --pack-destination /tmp/pack >/dev/null
+          # --ignore-scripts: `npm pack` fires the prepack typecheck guard,
+          # and this job deliberately installs WITHOUT dev dependencies —
+          # tsc is not here. The guard runs on publish (release.yml); this
+          # step only needs the bytes the registry would receive.
+          npm pack --ignore-scripts --pack-destination /tmp/pack >/dev/null
           tar xzf /tmp/pack/*.tgz -C /tmp/pack
           node tools/scan-secrets.mjs --dir /tmp/pack/package
       - name: Tarball content gate (files allowlist, license set)
