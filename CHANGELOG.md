@@ -33,6 +33,18 @@ come with a major version bump.
   The README now lists `ffmpeg` as a pre-requisite: it is the one system
   binary voice transcription needs (ogg/opus → PCM for the local Whisper).
 
+### Changed
+
+- The introduction tour is scripted. `/matrix-introduction-tour` and the
+  `/matrix-login` tour offer now play a fixed 9-to-11-step runbook
+  (`src/tour.ts`) — every message exact, posted by code in a fixed order,
+  the same sequence in every room (conditional steps follow the live
+  `remoteFilePicker` / `fileAttach` / `voiceTranscription` toggles). The
+  LLM is no longer in the tour loop: no prompt is injected, the agent is
+  never woken, and its own echo guard drops the tour's room events on the
+  way in. Previously one canned prompt let the agent improvise the content,
+  count and order of tour messages fresh every run.
+
 ### Fixed
 
 - Voice messages now thread like text. Previously the transcript echo was

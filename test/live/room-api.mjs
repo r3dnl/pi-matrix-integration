@@ -7,13 +7,14 @@
  * state assertions passed while the room showed nothing, which is the failure
  * mode behind the summary-loop incident in the project history.
  *
- * Credentials come from the environment only (live-tier discipline): the
- * primary account logs in with a password or presents a token; the second
- * account (the "human" in receive scenarios) needs a token or a password.
+ * Credentials come from the environment only (live-tier discipline): each
+ * actor presents a credentials.json path (the extension's own account-file
+ * layout), a token, or a user + password — in that order of preference.
  *
  * No internal hostnames here: everything derives from PI_MATRIX_* at run
  * time; examples in docs use matrix.example.org.
  */
+import { readFileSync } from "node:fs";
 
 export class RoomApi {
   /**
@@ -56,15 +57,18 @@ export class RoomApi {
       password,
     });
     this.token = j.access_token;
+    this.deviceId = j.device_id;
     this.userId = j.user_id ?? (await this.whoami());
     if (!this.userId) this.userId = `@${username}:${new URL(this.hs).host}`;
     return this;
   }
 
-  /** Token login: whoami supplies the user id. */
-  static async withToken(homeserver, token) {
+  /** Token login: whoami supplies the user id. `deviceId` is the token's own
+   * device (from credentials.json) — carried so crypto boots can bind it. */
+  static async withToken(homeserver, token, deviceId = undefined) {
     const api = new RoomApi(homeserver);
     api.token = token;
+    api.deviceId = deviceId;
     api.userId = await api.whoami();
     if (!api.userId) throw new Error("token login: whoami returned no user_id");
     return api;
@@ -131,6 +135,7 @@ export class RoomApi {
       event_id: ev.event_id,
       sender: ev.sender,
       type: ev.type,
+      msgtype: edit?.msgtype ?? c.msgtype,
       body: edit?.body ?? c.body ?? "",
       // the body as FIRST posted (before any m.replace edit): the proof that
       // an edit targeted THIS event and did not just happen to match later.
@@ -139,7 +144,9 @@ export class RoomApi {
       editedId: edit ? relates.event_id : undefined,
       threadRoot: relates.rel_type === "m.thread" ? relates.event_id : undefined,
       // m.file / m.image payloads (attachment round trip asserts on these):
-      url: edit?.url ?? c.url,
+      // the extension posts msgtype-m.file m.room.messages, where the media
+      // reference lives in content.file.url (MSC3502 shape), not content.url.
+      url: edit?.url ?? c.url ?? edit?.file?.url ?? c.file?.url,
       file: edit?.file ?? c.file,
       filename: edit?.filename ?? c.filename ?? c.body,
       ts: ev.origin_server_ts ?? 0,
@@ -226,11 +233,61 @@ export class RoomApi {
 }
 
 /**
+ * Read an access token from a matrix-commander-style credentials.json (the
+ * same file layout /matrix-login writes: access_token + device_id). The path
+ * comes from an env var; the token is never echoed. Throws naming the file
+ * when it is unreadable or carries no token.
+ */
+export function readCredentials(filePath) {
+  let json;
+  try {
+    json = JSON.parse(readFileSync(filePath, "utf8"));
+  } catch (error) {
+    throw new Error(`credentials file ${filePath} unreadable: ${error}`, { cause: error });
+  }
+  if (!json.access_token) throw new Error(`credentials file ${filePath} has no access_token`);
+  return json;
+}
+
+export function readAccessToken(filePath) {
+  return readCredentials(filePath).access_token;
+}
+
+/**
+ * Primary-actor credentials from the environment (never literals):
+ * PI_MATRIX_PRIMARY_CREDENTIALS (path to a credentials.json — the extension
+ * account layout) preferred; PI_MATRIX_USERNAME + PI_MATRIX_PASSWORD as
+ * fallback. Throws naming what is missing.
+ */
+export async function connectPrimaryActor(homeserver) {
+  const creds = process.env.PI_MATRIX_PRIMARY_CREDENTIALS;
+  if (creds) {
+    const json = readCredentials(creds);
+    return RoomApi.withToken(homeserver, json.access_token, json.device_id);
+  }
+  const user = process.env.PI_MATRIX_USERNAME;
+  const password = process.env.PI_MATRIX_PASSWORD;
+  if (!user || !password) {
+    throw new Error(
+      'live scenario suite needs a primary actor: set PI_MATRIX_PRIMARY_CREDENTIALS (path to a credentials.json), or PI_MATRIX_USERNAME + PI_MATRIX_PASSWORD\n' +
+        'export them (see docs/dev/developing.md, "Running the live tier").',
+    );
+  }
+  const api = new RoomApi(homeserver);
+  await api.loginWithPassword(user, password);
+  return api;
+}
+
+/**
  * Second-actor credentials from the environment (never literals):
- * PI_MATRIX_SECOND_TOKEN preferred; PI_MATRIX_SECOND_USER +
- * PI_MATRIX_SECOND_PASSWORD as fallback. Throws naming what is missing.
+ * PI_MATRIX_SECOND_CREDENTIALS (credentials.json path) preferred, then
+ * PI_MATRIX_SECOND_TOKEN, then PI_MATRIX_SECOND_USER +
+ * PI_MATRIX_SECOND_PASSWORD. Throws naming what is missing.
  */
 export async function connectSecondActor(homeserver) {
+  if (process.env.PI_MATRIX_SECOND_CREDENTIALS) {
+    return RoomApi.withToken(homeserver, readAccessToken(process.env.PI_MATRIX_SECOND_CREDENTIALS));
+  }
   if (process.env.PI_MATRIX_SECOND_TOKEN) {
     return RoomApi.withToken(homeserver, process.env.PI_MATRIX_SECOND_TOKEN);
   }

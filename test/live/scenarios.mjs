@@ -1,7 +1,7 @@
 /**
  * Live scenario suite (release story 13).
  *
- * Thirteen named scenarios exercising the advertised behaviours against a
+ * Fourteen named scenarios exercising the advertised behaviours against a
  * real homeserver with the real extension modules loaded through the same
  * jiti seam the offline tier uses. The shape is the stubbed e2e cycle
  * (test/e2e-stub-cycle.mjs) with the fake transport replaced by the real
@@ -31,19 +31,13 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createPiJiti, EXT_DIR, requireLiveEnv } from "../_harness.mjs";
-import { RoomApi, connectSecondActor } from "./room-api.mjs";
+import { connectPrimaryActor, connectSecondActor } from "./room-api.mjs";
+import { createCryptoReader } from "./crypto-reader.mjs";
 
-requireLiveEnv();
-// The second actor ("the human" in the receive scenarios): a token, or a
-// user + password. Names the missing variables the same way requireLiveEnv
-// does — fail loudly, never no-op.
-if (!process.env.PI_MATRIX_SECOND_TOKEN && !(process.env.PI_MATRIX_SECOND_USER && process.env.PI_MATRIX_SECOND_PASSWORD)) {
-  console.error(
-    'live scenario suite needs a second actor — set PI_MATRIX_SECOND_TOKEN, or PI_MATRIX_SECOND_USER + PI_MATRIX_SECOND_PASSWORD\n' +
-      'export them (see docs/dev/developing.md, "Running the live tier").',
-  );
-  process.exit(1);
-}
+// The homeserver URL is the only hard env requirement; the actors' credentials
+// resolve in room-api (credentials.json path | token | user + password) and
+// fail by naming the missing variable.
+requireLiveEnv(["PI_MATRIX_HOMESERVER"]);
 
 const HOMESERVER = process.env.PI_MATRIX_HOMESERVER;
 const RUN_ID = Math.floor(Date.now() / 1000);
@@ -57,30 +51,53 @@ const { createMessageHandler } = await jiti.import(`${EXT_DIR}/src/message-handl
 const { createSessionIntegrator } = await jiti.import(`${EXT_DIR}/src/session-integration.ts`);
 const { createThreadManager } = await jiti.import(`${EXT_DIR}/src/threading.ts`);
 const { createAskUserMirror } = await jiti.import(`${EXT_DIR}/src/ask-user-mirror.ts`);
+const { PickerState } = await jiti.import(`${EXT_DIR}/src/file-attach.ts`);
 const { createLifecycle } = await jiti.import(`${EXT_DIR}/src/lifecycle.ts`);
 const { createRoomUx } = await jiti.import(`${EXT_DIR}/src/room-ux.ts`);
 const { TuiFooter } = await jiti.import(`${EXT_DIR}/src/tui-footer.ts`);
 const { parseCommandLine, findCommand } = await jiti.import(`${EXT_DIR}/src/command-relay.ts`);
+const { buildTourScript, runTourScript } = await jiti.import(`${EXT_DIR}/src/tour.ts`);
 
 // ---- boot: credentials, fresh room, the real stack ---------------------------
 
-const primary = await new RoomApi(HOMESERVER).loginWithPassword(
-  process.env.PI_MATRIX_USERNAME,
-  process.env.PI_MATRIX_PASSWORD,
-);
+const primary = await connectPrimaryActor(HOMESERVER);
 const second = await connectSecondActor(HOMESERVER);
+
+// E2EE mode: on an encryption-by-default homeserver (Synapse auto-enables
+// m.room.encryption; there is no client-side opt-out) the plain REST reader
+// cannot see bodies. The E2EE reader rides its OWN account device: once,
+// a password login creates it (new device id) and writes a
+// credentials.json; every later run logs in by that file (persistent
+// crypto store beside it, keys survive between runs). Default file:
+// ~/.config/mtx/accounts/live-reader--<host>/credentials.json, overridable
+// via PI_MATRIX_READER_CREDENTIALS. Without reader credentials the suite
+// keeps the plain-reader path for non-auto-encrypting servers.
+const READER_CREDENTIALS =
+  process.env.PI_MATRIX_READER_CREDENTIALS ??
+  path.join(os.homedir(), ".config", "mtx", "accounts", `live-reader--${new URL(HOMESERVER).host}`, "credentials.json");
+const cryptoMode = fs.existsSync(READER_CREDENTIALS) || Boolean(process.env.PI_MATRIX_READER_PASSWORD);
+const reader = cryptoMode
+  ? await createCryptoReader(HOMESERVER, {
+      credentialsPath: READER_CREDENTIALS,
+      username: process.env.PI_MATRIX_READER_USER,
+      password: process.env.PI_MATRIX_READER_PASSWORD,
+    })
+  : primary;
+if (cryptoMode) console.log(`crypto reader device: ${reader.userId} ${reader.deviceId}`);
 
 const ROOM = await primary.createRoom({
   name: `live-e2e-${RUN_ID}`,
   topic: `pi-matrix-integration live scenario run ${RUN_ID}`,
-  invite: [second.userId],
+  // Synapse 403s an invite of the room creator ("already in the room") —
+  // and the reader often IS a second device of the primary account.
+  invite: [second.userId, ...(cryptoMode ? [reader.userId] : [])].filter((u) => u !== primary.userId),
 });
 await second.join(ROOM);
 console.log(`live scenario run ${RUN_ID} — room ${ROOM} (pi=${primary.userId}, human=${second.userId})`);
 
 const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), `pi-matrix-live-${RUN_ID}-`));
 const credentialsPath = path.join(stateDir, "credentials.json");
-fs.writeFileSync(credentialsPath, JSON.stringify({ access_token: primary.token, device_id: "" }));
+fs.writeFileSync(credentialsPath, JSON.stringify({ access_token: primary.token, device_id: primary.deviceId ?? "" }));
 
 const config = {
   homeserver: HOMESERVER,
@@ -90,12 +107,41 @@ const config = {
   // Attachments plain for this suite: the round trip must be readable by the
   // independent reader over the plain client-server API. The E2EE attach path
   // is covered by the sdk crypto suites (offline) and test/live-sdk-*.
-  e2ee: "off",
+  // In crypto mode the ROOM is encrypted by server default, so the agent
+  // side speaks E2EE too (Megolm messages only — attachment crypto stays
+  // off) and the E2EE reader decrypts for the assertions.
+  e2ee: cryptoMode ? "on" : "off",
+  cryptoStoreDir: path.join(stateDir, "crypto-store"),
   attachEncryption: "off",
+  // The extension's stdout interceptor (logger.ts, made to keep the Pi TUI
+  // clean) captures every console write once the sdk connects — pin its
+  // target into the run's evidence dir so the scenario banners and [dbg]
+  // lines are findable, not lost to an SDK-internal default path.
+  logPath: path.join(RUN_DIR, "matrix.log"),
 };
 
 const outbox = createSdkOutbox({ ...config, pollInterval: undefined });
-const quietLogger = { debug: () => {}, info: (m) => console.log(`  [info] ${m}`), warn: (m) => console.log(`  [warn] ${m}`), error: (m) => console.log(`  [error] ${m}`) };
+// Swappable transport seam: scenario 10 (a Pi restart) replaces the live
+// outbox — with E2EE the crypto store + account lock are device-exclusive,
+// so the old one must go first. Everything downstream (thread manager,
+// message handler, room UX, delivery) binds to THIS proxy, so swapping the
+// target rebinds all of it; without it, post-restart sends died with
+// "sdk transport unavailable".
+const transport = { current: outbox };
+const outboxProxy = new Proxy({}, {
+  get: (_t, prop) => {
+    const target = transport.current;
+    const v = target?.[prop];
+    return typeof v === "function" ? v.bind(target) : v;
+  },
+});
+const liveDebug = process.env.PI_MATRIX_LIVE_DEBUG === "1";
+const quietLogger = {
+  debug: liveDebug ? (m) => console.log(`  [dbg] ${m}`) : () => {},
+  info: (m) => console.log(`  [info] ${m}`),
+  warn: (m) => console.log(`  [warn] ${m}`),
+  error: (m) => console.log(`  [error] ${m}`),
+};
 
 if (!(await outbox.connect())) {
   console.error("BOOT FAILED: outbox.connect() returned false");
@@ -122,11 +168,11 @@ const COMMAND_NAMES = [
 const threadManager = createThreadManager({
   enabled: true,
   roomKey: ROOM,
-  threadSend: outbox,
+  threadSend: outboxProxy,
   statePath: path.join(stateDir, "thread-state.json"),
   threadSummaryEvery: 0,
 });
-const messageHandler = createMessageHandler({ outbox, threadManager, logger: quietLogger });
+const messageHandler = createMessageHandler({ outbox: outboxProxy, threadManager, logger: quietLogger });
 const integrator = createSessionIntegrator(
   fakePi,
   () => ({ connected: true, connecting: false, roomId: ROOM, userId: primary.userId, lastError: undefined }),
@@ -137,15 +183,19 @@ integrator.registerMatrixMessageRenderer(fakePi);
 // Mirrors live per scenario; the delivery funnel consults the open one first.
 let openMirror = null;
 const roomUx = createRoomUx({
-  cfg: { ...config, cwd: EXT_DIR, messagePrefix: "[Matrix] " },
+  cfg: { ...config, cwd: EXT_DIR, messagePrefix: "[Matrix] ", remoteFilePicker: true },
+  // The picker state is an injected session-scoped dependency in production
+  // (the integration builds it once); without it the `@`/`@@` paths throw.
+  picker: new PickerState(),
   logger: quietLogger,
-  outbox,
+  outbox: outboxProxy,
   post: (text) => messageHandler.postMessage ? messageHandler.postMessage(text) : outbox.postMessage(text),
-  picker: {},
 });
 
 const injected = [];
-outbox.startDelivery({
+// Named so scenario 10 (a transport restart) can re-arm delivery on the
+// replacement outbox with the exact same funnel.
+const deliveryCallbacks = {
   onMessage: (m) => {
     if (openMirror?.tryConsumeReply(m.body ?? "")) return; // answer, not an injection
     if (!m.isFromPi && config.slashRelay !== false) {
@@ -165,10 +215,11 @@ outbox.startDelivery({
   onReaction: () => {},
   bumpUnread: () => {},
   onSyncError: (e) => console.log(`  [sync-error] ${e.message}`),
-});
+};
+outboxProxy.startDelivery(deliveryCallbacks);
 
 const lifecycle = createLifecycle({
-  cfg: { ...config, sendMilestones: true, sendFinalMessages: true, sendSessionStartStopMilestones: true, slashRelay: true, autoConnect: true },
+  cfg: { ...config, sendMilestones: true, sendFinalMessages: true, sendSessionStartStopMilestones: true, sendCompactionMilestones: true, slashRelay: true, autoConnect: true },
   logger: quietLogger,
   outbox,
   deliveryCallbacks: {},
@@ -176,16 +227,26 @@ const lifecycle = createLifecycle({
   threadManager,
   sessionIntegrator: integrator,
 });
+// The suite connects the outbox directly (no connectAndStart), so mirror
+// the post-connect state the production path leaves behind — without the
+// enabled flag the lifecycle silently drops turn_end/compaction broadcasts
+// ("integration not enabled"), which read as unsent milestones.
+lifecycle.setEnabled(true);
 
 // ---- scenario plumbing -------------------------------------------------------
 
 const ctx = {
-  room: ROOM, primary, second, outbox, config, stateDir, runDir: RUN_DIR,
+  room: ROOM, primary, second, outbox: outboxProxy, config, stateDir, runDir: RUN_DIR,
+  // Plain REST reader when the server leaves rooms unencrypted; the E2EE
+  // reader otherwise (same messages/waitUntil shape either way).
+  reader,
   messageHandler, threadManager, lifecycle, fakePi, injected,
   setOpenMirror: (m) => { openMirror = m; },
-  /** Wait for a fetched-room condition; returns the matching event. */
+  /** Wait for a fetched-room condition; returns the matching event.
+   * Reader-backed: the E2EE reader in crypto mode, the plain REST account
+   * otherwise (same {hit, all} contract either way). */
   room_(label, pred, timeoutMs = 45_000) {
-    return primary.waitUntil(ROOM, pred, { timeoutMs, label });
+    return reader.waitUntil(ROOM, pred, { timeoutMs, label });
   },
   /** Write this scenario's evidence file. */
   evidence(name, data) {
@@ -261,7 +322,8 @@ const SCENARIOS = [
         [{ question: `Ship it? ${marker}`, header: "Ship", multiSelect: false, options: [{ label: "yes" }, { label: "not yet" }] }],
         `$tc-live-${RUN_ID}-5`,
       );
-      await c.primary.waitUntil(c.room, (ev) => ev.find((e) => e.body.includes(marker) && /Ship it\?/.test(e.body)), { label: "questionnaire in the room" });
+      const { hit } = await c.room_("questionnaire in the room", (ev) =>
+        ev.find((e) => e.body.includes(marker) && /Ship it\?/.test(e.body)), 30_000);
       await c.second.send(c.room, "1"); // the human taps option 1 in the room
       await poll(30_000, () => answers.length > 0, "room answer emitted");
       c.setOpenMirror(null);
@@ -290,8 +352,12 @@ const SCENARIOS = [
         toolCallId,
       );
       // The terminal answers first; the room answer arrives one delivery
-      // cycle later and must lose.
+      // cycle later and must lose. In the live stack the terminal-side
+      // resolve emits `decision-closed`, which closes the mirror via
+      // onBlocked(false) (integration.ts) — the scenario must run the same
+      // close, or a late room reply still finds an open prompt.
       const terminalWon = mirror.tryConsumeReply("1");
+      mirror.onBlocked(false);
       await c.second.send(c.room, "2");
       await new Promise((r) => setTimeout(r, 5_000)); // a full window for a late room answer
       c.setOpenMirror(null);
@@ -342,7 +408,7 @@ const SCENARIOS = [
         ev.find((e) => /compacted context/i.test(e.body) && e.body.includes("🎯")));
       // The summary lives ON the thread root (a room event); compaction adds
       // a milestone, it does not touch the root. Assert both, room-side.
-      const all = await c.primary.messages(c.room, { limit: 100 });
+      const all = await c.reader.messages(c.room, { limit: 100 });
       const summaryStillOnRoot = all.some((e) => e.edited && e.body.includes("S8 summary"));
       if (!summaryStillOnRoot) throw new Error("thread summary is gone after /compact");
       return { compactEvent: hit, summaryStillOnRoot };
@@ -352,10 +418,16 @@ const SCENARIOS = [
     n: 10, name: "summary-survives-restart",
     async run(c) {
       const marker = `S10 restart ${RUN_ID}`;
-      // Rebuild the transport the way a Pi restart does: fresh outbox, same
-      // credentials + same thread-state file. The existing thread root must
-      // be found WITHOUT posting a new one, and the summary must still be on
-      // it — both proven from the room, not from memory.
+      // Rebuild the transport the way a Pi restart does: the old process
+      // goes away FIRST — with E2EE the account lock + crypto store are
+      // device-exclusive, so a second live outbox on the same credentials
+      // can never connect while the first one holds them — then reconnect
+      // fresh, same credentials + same thread-state file. The existing
+      // thread root must be found WITHOUT posting a new one, and the summary
+      // must still be on it — both proven from the room, not from memory.
+      await c.outbox.stopDelivery();
+      void c.outbox.disconnect();
+      await new Promise((r) => setTimeout(r, 500));
       const outbox2 = createSdkOutbox({ ...config });
       if (!(await outbox2.connect())) throw new Error("reconnect failed");
       const tm2 = createThreadManager({
@@ -366,13 +438,20 @@ const SCENARIOS = [
       const root = await tm2.ensureThreadRoot();
       const sent = await outbox2.postMessage(`reconnected after restart ${marker}`);
       if (!sent.success) throw new Error("post after restart failed");
+      // outbox2 takes over the suite's live transport for the scenarios
+      // after this one — via the proxy, so the message handler and thread
+      // manager follow without rebuilding them.
+      transport.current = outbox2;
+      outbox2.startDelivery(deliveryCallbacks);
       await c.room_("post after restart visible", (ev) => ev.find((e) => e.body.includes(marker)));
       // room-side truth: the root event with the summary still reads back:
-      const all = await c.primary.messages(c.room, { limit: 100 });
+      const all = await c.reader.messages(c.room, { limit: 100 });
       const rootStillSummarised = all.some((e) => e.edited && e.body.includes("S8 summary"));
-      await outbox2.stopDelivery();
-      void outbox2.disconnect();
-      if (!rootStillSummarised) throw new Error("summary missing from the root after restart");
+      if (!rootStillSummarised) {
+        outbox2.stopDelivery();
+        void outbox2.disconnect();
+        throw new Error("summary missing from the root after restart");
+      }
       return { marker, reconnected: true, rootStillSummarised, tm2Root: root?.eventId };
     },
   },
@@ -398,8 +477,8 @@ const SCENARIOS = [
       const bytes = Buffer.from(`attachment round trip ${marker}\n`);
       const sent = await c.outbox.sendFile("probe.txt", bytes, "text/plain");
       if (!sent.success) throw new Error(`sendFile failed: ${JSON.stringify(sent)}`);
-      const { hit } = await c.room_("m.file event with a media reference", (ev) =>
-        ev.find((e) => e.type === "m.file" && e.url));
+      const { hit } = await c.room_("m.file attachment with a media reference", (ev) =>
+        ev.find((e) => e.msgtype === "m.file" && e.url));
       const got = await c.second.downloadMxc(hit.url);
       if (!got.equals(bytes)) throw new Error("downloaded bytes differ from the sent bytes");
       // in: the human references a workspace file; the content is injected.
@@ -426,6 +505,43 @@ const SCENARIOS = [
       footer.clear(ctx);
       if (slots.matrix !== undefined) throw new Error(`clear() left a slot: ${slots.matrix}`);
       return { connectedSlot, downSlot, cleared: true };
+    },
+  },
+  {
+    n: 14, name: "scripted-tour",
+    async run(c) {
+      // The fixed runbook (src/tour.ts): every step is one exact message
+      // posted by code. Assert the room shows the whole sequence, in order,
+      // and — the anti-loop contract — that nothing was injected into the
+      // session on the way (the LLM never sees the tour).
+      const steps = buildTourScript(c.config);
+      const injectedBefore = c.injected.length;
+      const relayedBefore = c.fakePi.sentMessages.length;
+      await runTourScript(steps, (text, kind) => c.messageHandler.post(text, kind, { dedupe: false }));
+      // Poll the fetched room (not the 50-event waitUntil window — by here
+      // the run's history is larger) until every step has landed. In crypto
+      // mode this reads the E2EE reader's decrypted timeline.
+      const deadline = Date.now() + 45_000;
+      let all = [];
+      for (;;) {
+        all = await c.reader.messages(c.room, { limit: 200 });
+        if (steps.every((s) => all.some((e) => e.body.includes(s.text)))) break;
+        if (Date.now() > deadline) {
+          throw new Error(
+            `tour steps never fully landed in the room; last bodies: ${JSON.stringify(all.slice(-8).map((e) => e.body.slice(0, 45)))}`,
+          );
+        }
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      const idx = steps.map((s) => all.findIndex((e) => e.body.includes(s.text)));
+      if (idx.some((i) => i < 0)) throw new Error(`tour step missing from the room: ${JSON.stringify(idx)}`);
+      for (let i = 1; i < idx.length; i++) {
+        if (idx[i] <= idx[i - 1]) throw new Error(`tour steps out of order at ${i}: ${JSON.stringify(idx)}`);
+      }
+      if (c.injected.length !== injectedBefore || c.fakePi.sentMessages.length !== relayedBefore) {
+        throw new Error("tour posts leaked into the session — the own-user inbound guard failed");
+      }
+      return { stepCount: steps.length, order: idx, sessionUntouched: true };
     },
   },
 ];
@@ -465,8 +581,9 @@ for (const s of SCENARIOS) {
   }
 }
 
-outbox.stopDelivery();
-void outbox.disconnect();
+ctx.outbox.stopDelivery();
+void ctx.outbox.disconnect();
+if (cryptoMode) reader.stop();
 
 fs.writeFileSync(path.join(RUN_DIR, "summary.json"), JSON.stringify({ run: RUN_ID, room: ROOM, homeserver: HOMESERVER, summary }, null, 2));
 console.log(`\nlive scenarios: ${summary.length - failed}/${summary.length} passed — evidence in ${path.relative(EXT_DIR, RUN_DIR)}/`);

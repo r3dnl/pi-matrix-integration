@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "Template for the two throwaway accounts `npm run test:live` needs, in",
+    "the mtx account-manifest format (maintainer homeserver toolchain,",
+    "matrix-accounts). Apply with:",
+    "  npx tsx .../code/matrix-accounts run accounts-manifest.example.json \\",
+    "      --env <env> --base-dir .. --dry-run   # then without --dry-run",
+    "",
+    "The live suite connects as `primary` (Pi's own login — it also drives",
+    "scenario traffic) and `second` (the human seat). Scenario 14 adds a",
+    "crypto reader device that reuses the primary account (mtx-managed",
+    "account, own persistent device — see PI_MATRIX_READER_CREDENTIALS in",
+    "docs/dev/developing.md).",
+    "",
+    "In an E2EE-by-default homeserver the suite works WITHOUT server config",
+    "changes: the extension encrypts with its own device and shares room",
+    "keys with every member at send time, so any member account can read.",
+    "",
+    "Password below is a placeholder — set a throwaway value for the test",
+    "accounts; never reuse a real user's password."
+  ],
+  "defaults": {
+    "password": "REPLACE-throwaway-password",
+    "displayname_suffix": " (pi-matrix-integration test)",
+    "no deactivate": true
+  },
+  "projects": {
+    "pi-matrix-integration": {
+      "users": [
+        { "user": "REPLACE-primary-user", "comment": "primary seat: Pi's login + scenario driver" },
+        { "user": "REPLACE-second-user", "comment": "human seat: the other Matrix member" }
+      ]
+    }
+  }
+}
