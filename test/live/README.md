@@ -1,6 +1,6 @@
 # Live scenario suite — human walkthrough
 
-`npm run test:live` runs the 13 scenarios headlessly against a real
+`npm run test:live` runs the 14 scenarios headlessly against a real
 homeserver and writes evidence to `artifacts/live-<run-id>/`. A machine
 assertion proves the room received the right thing; this file proves what a
 human sees in Element. Do this pass once per release, next to a scenario run,
@@ -12,7 +12,13 @@ and record what you saw for the demo file.
    live tier"): `PI_MATRIX_HOMESERVER`, `PI_MATRIX_USERNAME`,
    `PI_MATRIX_PASSWORD` for the agent account, plus the second actor
    (`PI_MATRIX_SECOND_TOKEN`, or `PI_MATRIX_SECOND_USER` +
-   `PI_MATRIX_SECOND_PASSWORD`).
+   `PI_MATRIX_SECOND_PASSWORD`). Either actor may instead come from a
+   `credentials.json` path (`PI_MATRIX_PRIMARY_CREDENTIALS` /
+   `PI_MATRIX_SECOND_CREDENTIALS`) — the same file shape the extension's
+   login commands write. The two throwaway accounts are provisioned via an
+   mtx manifest; template: `test/live/accounts-manifest.example.json`.
+   On an E2EE-by-default homeserver the suite also reads through a real
+   encrypting client (`PI_MATRIX_READER_CREDENTIALS`, see developing.md).
 2. Run `npm run test:live` and keep the run's room name from the first log
    line (`live-e2e-<id>`).
 3. Open that room in Element **with the second actor's login** — the phone
@@ -36,6 +42,7 @@ and record what you saw for the demo file.
 | 11 | commands from room | typing `/matrix-help` in the room dispatches like typing it in the terminal — the room receives the help surface; `/skill:` invocations relay the same way (execution inside the live session: run one interactively once per release) |
 | 12 | attachment round trip | a `probe.txt` file appears in the room — download it, the bytes match; a `@path` file reference pulls a workspace file's content into the session |
 | 13 | footer status | on the agent machine, the Pi footer shows `[matrix] 💬` while connected (✗ while down) |
+| 14 | scripted tour | the fixed 9-message tour sequence lands in the room in order (welcome → talk → 🎯 milestone → commands → voice → decision → sub-agents → threads → controls); nothing reaches the terminal agent while it plays |
 
 ## Record
 

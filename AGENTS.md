@@ -14,10 +14,11 @@ npm run typecheck && npm run lint   # the gate
 npm test                             # offline tier: units + stubbed e2e
 npm run test:docs                    # docs surface gate
 npm run test:logic                   # deep behavioural suite
-npm run test:live                    # 13 named scenarios against a real
-                                     # homeserver; needs PI_MATRIX_HOMESERVER,
-                                     # PI_MATRIX_USERNAME, PI_MATRIX_PASSWORD
-                                     # plus a second room actor (see
+npm run test:live                    # 14 named scenarios against a real
+                                     # homeserver; needs PI_MATRIX_HOMESERVER
+                                     # plus two actors, each via a
+                                     # credentials.json path, a token, or a
+                                     # user + password (see
                                      # docs/dev/developing.md)
 npm run test:live:judge               # per-release LLM judge on summary
                                      # quality; not part of any gate
