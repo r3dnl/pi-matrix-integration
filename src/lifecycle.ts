@@ -172,6 +172,15 @@ export class Lifecycle {
    *  `agent_settled`, at the next run's start, or when a human message lands
    *  mid-pass. */
   private summaryPassRun = false;
+  /** True from any human `message_end` until the next final broadcast —
+   *  the ORDER-INDEPENDENT record that a real question is waiting for an
+   *  answer. Set regardless of the mute state: the 2026-11-10 swallowed-
+   *  answer incident was a question whose `message_end` fired BEFORE a
+   *  summary directive opened the run, so the mid-pass lift (which needs
+   *  the mute already set) never saw it. Consumed at the run's start —
+   *  `onBeforeAgentStart` arms the mute already-lifted when it is set —
+   *  and cleared by the broadcast that answers it. */
+  private humanInputPending = false;
   /** The live run was a summary pass whose mute was LIFTED by human input.
    *  The pass and the human answer now share one run, and no per-turn signal
    *  tells the pass's leftover report-out ("Root unchanged.") apart from the
@@ -548,6 +557,11 @@ export class Lifecycle {
     const humanInput =
       (incoming.role === "user" && incoming.customType === undefined) ||
       incoming.customType === MATRIX_MESSAGE_CUSTOM_TYPE;
+    if (humanInput && this.deps.cfg.sendFinalMessages) {
+      // Order-independent: a question queued ahead of a summary directive
+      // must still be answerable — see `humanInputPending`.
+      this.humanInputPending = true;
+    }
     if (this.summaryPassRun && humanInput) {
       this.summaryPassRun = false;
       this.summaryLiftedRun = true;
@@ -607,6 +621,9 @@ export class Lifecycle {
           await this.deps.messageHandler.sendFinalMessage(
             truncateFinalMessage(askText, this.deps.cfg.maxFinalMessageLength),
           );
+          // The question's context reached the room — the pending human
+          // input it answers is accounted for.
+          this.humanInputPending = false;
         } catch (error) {
           this.deps.logger.warn(`[matrix] ask_user context flush failed: ${error}`);
         }
@@ -664,6 +681,18 @@ export class Lifecycle {
     }
     if (muted) {
       this.summaryPassRun = true;
+      // A human message consumed before this run opened (queued while the
+      // previous run settled, ahead of the directive): the run answers a
+      // real question, so it starts already-lifted — every final ships and
+      // is booked as bookkeeping, same contract as a mid-pass lift.
+      if (this.humanInputPending) {
+        this.summaryPassRun = false;
+        this.summaryLiftedRun = true;
+        this.humanInputPending = false;
+        this.deps.logger.warn(
+          "[matrix] before_agent_start: human input queued before the summary directive, broadcast mute lifted at run start",
+        );
+      }
     }
   }
 
@@ -745,6 +774,7 @@ export class Lifecycle {
       const result = await this.deps.messageHandler.sendFinalMessage(
         truncateFinalMessage(finalText, this.deps.cfg.maxFinalMessageLength),
       );
+      if (result.success || result.deduped) this.humanInputPending = false;
       if (!result.success && !result.deduped) {
         this.deps.logger.warn(`[matrix] final message broadcast failed: ${result.error}`);
       }
