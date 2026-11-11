@@ -574,12 +574,12 @@ for (const s of SCENARIOS) {
     const evidence = await s.run(ctx);
     ctx.evidence(`${s.n}-${s.name}`, { ok: true, ms: Date.now() - t0, evidence });
     console.log(`  ok  ${s.n} ${s.name} (${Math.round((Date.now() - t0) / 1000)}s)`);
-    summary.push({ n: s.n, name: s.name, ok: true });
+    summary.push({ n: s.n, name: s.name, ok: true, ms: Date.now() - t0 });
   } catch (err) {
     failed++;
     ctx.evidence(`${s.n}-${s.name}`, { ok: false, ms: Date.now() - t0, error: String(err?.message ?? err) });
     console.error(`FAIL  ${s.n} ${s.name}: ${err?.message ?? err}`);
-    summary.push({ n: s.n, name: s.name, ok: false, error: String(err?.message ?? err) });
+    summary.push({ n: s.n, name: s.name, ok: false, ms: Date.now() - t0, error: String(err?.message ?? err) });
   }
 }
 
@@ -588,6 +588,14 @@ void ctx.outbox.disconnect();
 if (cryptoMode) reader.stop();
 
 fs.writeFileSync(path.join(RUN_DIR, "summary.json"), JSON.stringify({ run: RUN_ID, room: ROOM, homeserver: HOMESERVER, summary }, null, 2));
+
+// Outcome overview: one line per scenario so the verdict survives a run
+// whose per-scenario noise scrolls it away. Failures list first, then passes.
+const pad = (v, w) => String(v).padEnd(w);
+const row = (r) =>
+  `  ${pad(r.n, 3)}${pad(r.name, 34)}${r.ok ? "ok  " : "FAIL"} ${String(Math.round((r.ms ?? 0) / 1000)).padStart(4)}s${r.ok ? "" : "  " + (r.error ?? "").split("\n")[0].slice(0, 90)}`;
+console.log(`\n== live scenario results — run ${RUN_ID} ==`);
+for (const r of [...summary].sort((a, b) => Number(a.ok) - Number(b.ok))) console.log(row(r));
 console.log(`\nlive scenarios: ${summary.length - failed}/${summary.length} passed — evidence in ${path.relative(EXT_DIR, RUN_DIR)}/`);
 if (failed > 0) {
   console.error(`LIVE SCENARIOS: ${failed} FAILED`);
