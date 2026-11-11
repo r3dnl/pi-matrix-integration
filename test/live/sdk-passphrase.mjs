@@ -5,7 +5,7 @@
  * passphrase is reported (informational — the SDK may fail or degrade).
  * Opt-in, NOT part of test/run.mjs.
  *
- *   node test/live-sdk-passphrase.mjs [storeDir] [passphrase]
+ *   node test/live/sdk-passphrase.mjs [storeDir] [passphrase]
  */
 import os from "node:os";
 import path from "node:path";

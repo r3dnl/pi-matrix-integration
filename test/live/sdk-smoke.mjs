@@ -4,7 +4,7 @@
  * against the real homeserver. Opt-in (needs credentials + network),
  * NOT part of test/run.mjs.
  *
- *   node test/live-sdk-smoke.mjs [storeDir]
+ *   node test/live/sdk-smoke.mjs [storeDir]
  *
  * A fresh storeDir wipes the crypto state (first run); an existing one proves
  * restart persistence (resume). Exits 0 when every phase passes.

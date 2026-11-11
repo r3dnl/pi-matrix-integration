@@ -44,6 +44,17 @@ and record what you saw for the demo file.
 | 13 | footer status | on the agent machine, the Pi footer shows `[matrix] 💬` while connected (✗ while down) |
 | 14 | scripted tour | the fixed 9-message tour sequence lands in the room in order (welcome → talk → 🎯 milestone → commands → voice → decision → sub-agents → threads → controls); nothing reaches the terminal agent while it plays |
 
+## Manual sdk checks
+
+Three hand-run checks walk the raw sdk transport outside the suite (not in
+CI, run them when you touched `src/sdk-client.ts` or the crypto stack):
+`sdk-send.mjs` (one room send + read-back through the production
+`SdkOutbox` — the encrypted send/receive gate), `sdk-smoke.mjs` (connect
+path: rust-crypto init, `/sync`, alias resolution, delivery start),
+`sdk-passphrase.mjs` (at-rest store passphrase: same-passphrase resume
+must succeed, wrong passphrase must be reported).
+Same credentials as the suite, same throwaway accounts.
+
 ## Record
 
 For the demo file note: homeserver used, Node version, run id, anything that

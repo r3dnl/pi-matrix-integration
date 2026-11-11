@@ -61,12 +61,15 @@ homeserver. *Resolution:* a fake outbox.
 
 - **Setup:** `npm ci`, nothing else. Two seams make it hermetic:
   `PI_MATRIX_TEST_OUTBOX` swaps the real transport for
-  `test/fake-outbox.mjs`, `PI_MATRIX_TEST` marks the hermetic run.
+  `test/harness/fake-outbox.mjs`, `PI_MATRIX_TEST` marks the hermetic run.
 - **What is tested:** `npm test` — units plus one full stubbed e2e cycle,
   budget under 120 s. `npm run test:logic` — the deep per-subsystem
   contracts: funnel/config/attach, threading and the summary cadence
   (see `test/logic/01-threading.mjs`), transport and footer, and the sdk
-  crypto suite, which runs real Olm/Megolm code offline.
+  crypto suite, which runs real Olm/Megolm code offline. The tree mirrors
+  this tier: units live in `test/offline/` and `test/run.mjs` discovers the
+  directory (a new unit lands and runs — never a second runner); the deep
+  suites nest in `test/logic/`, standalone-runnable as `test:logic`.
   `npm run test:docs` — links resolve, no maintainer-only identifiers ship,
   no stale comment references.
 - **Matrix setup:** none. The fake records every would-be send and the
@@ -86,7 +89,10 @@ the outside. *Resolution:* drive a real homeserver, then read it back.
   questionnaire mirror, answer race (terminal vs room), thread-per-session,
   summary rewrites the root, summary survives `/compact` and a restart,
   commands from the room, attachment round trip, footer status, scripted
-  tour. Each scenario asserts on room bodies fetched over the API. The
+  tour. Each scenario asserts on room bodies fetched over the API. Three
+  manual sdk checks (`test/live/sdk-send.mjs`, `sdk-smoke.mjs`,
+  `sdk-passphrase.mjs`) walk the raw transport by hand — not in the suite,
+  not in CI. The
   human confirmation walkthrough per scenario:
   [test/live/README.md](../../test/live/README.md).
 - **Matrix setup:** a fresh room per run (`live-e2e-<run-id>`), so reruns
@@ -146,6 +152,7 @@ registry, on a machine with no repo checkout, no devDependencies, and no
 | Tool | Role |
 |---|---|
 | npm scripts in `test` | the test tiers themselves (§1) |
+| `npm run test:integration` | manual, maintainer-machine only: guards that the *installed* ask-user-question package still carries the local answer-channel patch, so a silent `pi install` can't un-detect it (§3 of AGENTS' spirit, never a gate) |
 | `Makefile` + `docker/` | the packaging ring: `make build`, `e2e`, `e2e-npm`, `e2e-offline` (§2.3), `shell` for a manual walkthrough, `clean` to tear down. The Pi version inside the container is pinned (`PI_VERSION`, default in the Makefile) — `make e2e` proves the pinned version, not the latest. |
 | `docker/sweep-test-rooms.mjs` | cleanup: purges agent-created `e2e-*`/`live-e2e-*`/`optout-*` rooms older than `SWEEP_TTL_DAYS` (default 7) via the Synapse admin API |
 | `docker/.env.example` | the tracked environment template; your filled copy under `docker/` stays git-ignored |

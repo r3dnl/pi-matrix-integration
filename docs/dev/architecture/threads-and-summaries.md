@@ -54,7 +54,7 @@ An October 2026 incident put the extension into a loop where summary output re-t
 1. **A pass must never re-arm itself.** Structural since PROP-001 P2/P3: the cadence gate and the content gate read `humanMsgCount`, which only `ThreadManager.recordHumanMessage()` advances — called solely from the human-input branch of `onMessageEnd` in `src/lifecycle.ts`. Own sends cannot tick it, so summary output cannot arm the next pass. The sink-side patch this replaced (recognising summarizer-started runs and muting their broadcasts) survives only as a broadcast filter — `summaryTriggerRun && !humanInputPending` in `onTurnEnd` keeps a pure-summary turn's chatty closing line out of the room — with no loop-prevention duty on it.
 2. **Directive kind is explicit.** A summary request is a typed directive, not free text that happens to mention summarising, so it cannot be provoked by room content that discusses summaries.
 
-`test/summarizer-wake.mjs` and `test/bug-summarizer-onfinal-loop.mjs` cover this area. If you touch `lifecycle.ts` or `classify.ts`, run them.
+`test/offline/summarizer-wake.mjs` covers this area. If you touch `lifecycle.ts` or `classify.ts`, run them.
 
 ## What survives what
 

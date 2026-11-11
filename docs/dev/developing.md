@@ -32,7 +32,7 @@ The remaining gate is the strict typecheck (`npm run typecheck`). The release ar
 
 | Command | Needs network | Needs a model | What it proves |
 |---------|--------------|---------------|----------------|
-| `npm test` | no | no | units and the full cycle against `test/fake-outbox.mjs` — milestone out, message in, question mirror reply, thread summary write (`test/e2e-stub-cycle.mjs`). Budget: under 120 s wall time; the runner fails the tier past it |
+| `npm test` | no | no | units and the full cycle against `test/harness/fake-outbox.mjs` — milestone out, message in, question mirror reply, thread summary write (`test/e2e-stub-cycle.mjs`). Budget: under 120 s wall time; the runner fails the tier past it |
 | `npm run test:logic` | no | no | the deep behavioural suite, split by subsystem: `test/logic/00-core` (funnel, config, attach), `01-threading`, `02-transport-footer`, `03-sdk-crypto` |
 | `npm run test:live` | yes | yes | the 14 named scenarios in `test/live/scenarios.mjs` against a real homeserver, asserting on room state fetched over the client-server API (never internal variables). `PI_MATRIX_HOMESERVER` from the environment; each actor authenticates via a credentials.json path (`PI_MATRIX_PRIMARY_CREDENTIALS` / `PI_MATRIX_SECOND_CREDENTIALS`), a token, or a user + password — missing ones fail the run by name |
 | `npm run test:live:judge` | yes | yes | per-release LLM judge on the thread-summary the scenario run rewrote into the thread root; verdict saved next to the run evidence, not part of any gate |
@@ -41,9 +41,9 @@ The remaining gate is the strict typecheck (`npm run typecheck`). The release ar
 
 The tiers are a policy, not a preference: deterministic checks belong in the offline tier because they have to run on every push and must never be flaky. Anything that reads the room belongs in `test:live`, and `test:live` must assert on what actually landed in the room — fetched over the client-server API — not on internal variables. An assertion on internal state can pass while the room shows nothing, and that has already happened once here.
 
-Scripts live in `test/` and use the hand-rolled harness in `test/_harness.mjs`. There is no test framework on purpose: 34 working scripts and one shared runner beat a migration nobody asked for. Add a new script to the offline tier's discovery rather than inventing a second runner.
+Scripts live in `test/` and use the hand-rolled harness in `test/harness/_harness.mjs`. There is no test framework on purpose: dozens of working scripts and one shared runner beat a migration nobody asked for. New offline units land in `test/offline/` — the runner discovers the directory; never invent a second runner.
 
-Two environment seams make the offline tier hermetic. `PI_MATRIX_TEST_OUTBOX` set to a module path replaces the real transport with the module's exported outbox (the fake lives in `test/fake-outbox.mjs`); `PI_MATRIX_TEST` marks the hermetic run and skips work that only makes sense against a live session. They are test-only; nothing user-facing reads them.
+Two environment seams make the offline tier hermetic. `PI_MATRIX_TEST_OUTBOX` set to a module path replaces the real transport with the module's exported outbox (the fake lives in `test/harness/fake-outbox.mjs`); `PI_MATRIX_TEST` marks the hermetic run and skips work that only makes sense against a live session. They are test-only; nothing user-facing reads them.
 
 ## Running the live tier against your own homeserver
 

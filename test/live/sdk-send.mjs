@@ -4,7 +4,7 @@
  * NOT part of test/run.mjs. Posts ONE identifiable message to the
  * configured room.
  *
- *   node test/live-sdk-send.mjs [storeDir]
+ *   node test/live/sdk-send.mjs [storeDir]
  */
 import os from "node:os";
 import fs from "node:fs";
