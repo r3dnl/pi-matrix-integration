@@ -169,7 +169,7 @@ member list is the security boundary — see [SECURITY.md](../../SECURITY.md).
 |---|---|---|---|---|
 | `enabled` | `threads` | `true` | `PI_MATRIX_THREADS` | Each session opens its own `🧵` thread. `/matrix-thread-toggle` switches at runtime. |
 | `threadIcon` | `threadIcon` | `🧵` | `PI_MATRIX_THREAD_ICON` | Thread marker. |
-| `summaryCadence` | `threadSummaryEvery` | `10` | `PI_MATRIX_THREAD_SUMMARY_EVERY` | One summary pass every Nth message; `0` = cadence off (teardown only). |
+| `summaryCadence` | `threadSummaryEvery` | `10` | `PI_MATRIX_THREAD_SUMMARY_EVERY` | One summary pass every Nth human message (your messages from the terminal or the room); the agent's and the summarizer's own output never counts. `0` = cadence off (teardown only). |
 | `useFibonacciCadence` | `threadSummaryFib` | `true` | `PI_MATRIX_THREAD_SUMMARY_FIB` | Ramp trigger points 1, 1, 2, 3, 5, 8… up to the cadence, so young threads summarize sooner. |
 | `summarizeOnFinalMessage` | `threadSummaryOnFinal` | `true` | `PI_MATRIX_THREAD_SUMMARY_ON_FINAL` | Run a pass right after the turn's final message lands in the thread. |
 | `useLlmForSummaries` | `threadSummaryByLlm` | `true` | `PI_MATRIX_THREAD_SUMMARY_BY_LLM` | `false` = a zero-cost heuristic line instead of an LLM pass. |

@@ -188,7 +188,7 @@ export class Lifecycle {
    *  swallowed) but is booked as bookkeeping via `suppressNextOnFinalTrigger`
    *  (same contract as `wakeFuelTurn`): no leftover line can dispatch a
    *  wasted summary pass. A suppressed trigger only delays a summary — the
-   *  content gate (`msgCount <= lastSummaryAtMsg`) catches up on the next
+   *  content gate (`runSummary`'s human-meter check) catches up on the next
    *  post; it never drops one. Cleared at run boundaries with
    *  `summaryPassRun`. */
   private summaryLiftedRun = false;
@@ -557,10 +557,15 @@ export class Lifecycle {
     const humanInput =
       (incoming.role === "user" && incoming.customType === undefined) ||
       incoming.customType === MATRIX_MESSAGE_CUSTOM_TYPE;
-    if (humanInput && this.deps.cfg.sendFinalMessages) {
-      // Order-independent: a question queued ahead of a summary directive
-      // must still be answerable — see `humanInputPending`.
-      this.humanInputPending = true;
+    if (humanInput) {
+      // Echo-isolated cadence (PROP-001 P2): the human meter ticks here and
+      // only here — own sends never reach it.
+      void this.deps.threadManager?.recordHumanMessage();
+      if (this.deps.cfg.sendFinalMessages) {
+        // Order-independent: a question queued ahead of a summary directive
+        // must still be answerable — see `humanInputPending`.
+        this.humanInputPending = true;
+      }
     }
     if (this.summaryPassRun && humanInput) {
       this.summaryPassRun = false;
@@ -652,7 +657,7 @@ export class Lifecycle {
    * the directive carries `details.kind` — the only reliable identities,
    * since the model-visible text is prose. The flag makes `onTurnEnd` skip
    * that turn's final broadcast: no thread message, so the cadence guard
-   * (`msgCount <= lastSummaryAtMsg`) stops spawning. The wake itself still
+   * (`runSummary`'s human-meter gate) stops spawning. The wake itself still
    * happens (pi-subagents 0.80.0 queues it for every async run); only its
    * room echo is muted — for every turn of that run, not only the first.
    */

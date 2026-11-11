@@ -58,7 +58,7 @@ function makeLifecycle(cfgOverrides = {}) {
   const logs = [];
   // BUG-SUMMARIZER-ONFINAL-LOOP A: the wake-answer final must tell the thread
   // manager to skip the report-out trigger.
-  const tm = { suppressed: 0, cleared: 0 };
+  const tm = { suppressed: 0, cleared: 0, humanTicks: 0 };
   // Leak guard: an absorbed notice must be followed by a quiet hint.
   const hints = [];
   const lc = new Lifecycle({
@@ -81,6 +81,7 @@ function makeLifecycle(cfgOverrides = {}) {
     threadManager: {
       suppressNextOnFinalTrigger: () => { tm.suppressed += 1; },
       clearOnFinalSuppression: () => { tm.cleared += 1; },
+      recordHumanMessage: () => { tm.humanTicks += 1; return Promise.resolve(); },
     },
   });
   lc.setEnabled(true);
@@ -336,6 +337,21 @@ const roomRelay = (text) => ({
   await lc.onTurnEnd(assistantTurn("Root unchanged."));
   check("unlifted pass posts nothing", sent.length === 0, `sent=${JSON.stringify(sent)}`);
   check("unlifted pass books no suppression", tm.suppressed === 0, JSON.stringify(tm));
+}
+
+// 3c) Echo-isolated cadence wiring (PROP-001 P2): the human meter ticks
+//     for human input on both channels — terminal (bare user message) and
+//     room relay (matrix-message) — and never for the extension's own
+//     channels (a summary directive carries matrix-directive; Matrix
+//     echoes of own sends are dropped upstream by sender id, so they never
+//     reach this handler at all).
+{
+  const { lc, tm } = makeLifecycle();
+  await lc.onMessageEnd({ message: { role: "user", content: [{ type: "text", text: "a question" }] } });
+  await lc.onMessageEnd({ message: { role: "user", customType: "matrix-message", content: [{ type: "text", text: "room question" }] } });
+  await lc.onMessageEnd({ message: directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }) });
+  check("3c: ticks for the two human channels, none for the directive",
+    tm.humanTicks === 2, String(tm.humanTicks));
 }
 
 // 4) A notice carrying real work is NOT muted — that report belongs in the room.

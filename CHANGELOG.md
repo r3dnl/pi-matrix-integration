@@ -114,6 +114,17 @@ come with a major version bump.
   begins already-lifted when a question is pending: the answer ships, the
   summary's leftover report-out stays booked as bookkeeping.
 
+- The summary cadence is now echo-isolated (the same bug family's root
+  cause, PROP-001 P2): it counts HUMAN messages — your terminal input and
+  room relays — instead of the extension's own thread sends. Before, every
+  own send advanced `msgCount`, so the system armed itself and the mute /
+  lift / bookkeeping-subtraction machinery existed only to undo that
+  self-fuel; a leaked echo could still re-arm a pass. Now nothing the
+  extension posts can advance the meter, so a pass can never spawn the
+  next one. `threadSummaryEvery` / `summaryCadence` therefore mean "every
+  Nth human message"; state files written by earlier versions keep working
+  (the new counter starts at 0 for them).
+
 - A decision poll that throws no longer eats the decision. `postPoll` was
   awaited unguarded, so a poll transport that raised (rather than returning
   `{success: false}`) escaped `onPrompt` and took the whole questionnaire

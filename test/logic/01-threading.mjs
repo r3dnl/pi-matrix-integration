@@ -192,13 +192,22 @@ console.log("== threading: ThreadManager lifecycle (fake cs) ==");
   check("post routes into the active root", p1.success === true, JSON.stringify(p1));
   check("post is an in-thread reply to the root", fake.calls.find((c) => c[0] === "reply")?.[2] === "$froot-1", JSON.stringify(fake.calls));
 
-  // summarizer: every 3rd in-thread send edits the root
+  // summarizer: the cadence counts HUMAN messages (PROP-001 P2) — these
+  // posts alone run no summarizer; the ticks do.
   const editsBefore = fake.calls.filter((c) => c[0] === "edit").length;
   await tm.post("b", "other");
   await tm.post("c", "other");
+  check(
+    "own posts alone (no human tick) run no summarizer",
+    fake.calls.filter((c) => c[0] === "edit").length === editsBefore,
+    `edits=${fake.calls.filter((c) => c[0] === "edit").length}`,
+  );
+  await tm.recordHumanMessage();
+  await tm.recordHumanMessage();
+  await tm.recordHumanMessage(); // 3rd human message = cadence point (fixed every=3)
   const editsAfter = fake.calls.filter((c) => c[0] === "edit").length;
   check(
-    "3rd in-thread send triggers a root edit (summarizer)",
+    "3rd human message triggers a root edit (summarizer)",
     editsAfter === editsBefore + 1,
     `before=${editsBefore} after=${editsAfter}`,
   );
@@ -216,6 +225,9 @@ console.log("== threading: ThreadManager lifecycle (fake cs) ==");
   await tm.post("🎯 Milestone: second", "milestone");
   await tm.post("🎯 Milestone: third", "milestone");
   await tm.post("d", "other");
+  await tm.recordHumanMessage();
+  await tm.recordHumanMessage();
+  await tm.recordHumanMessage(); // 6th human message = next cadence point
   const editCall2 = fake.calls.filter((c) => c[0] === "edit").pop();
   check(
     "summary shows main milestones + latest status",
@@ -296,12 +308,18 @@ console.log("== threading: LLM summarization runs (fake cs) ==");
   tm.beginSession("new", "llm-1");
   await tm.ensureThreadRoot("llm topic");
 
-  // LLM mode: the cadence fires the directive, NOT a matrix-http edit
+  // LLM mode: the cadence fires the directive, NOT a matrix-http edit.
+  // PROP-001 P2 (echo isolation): the human ticks drive the meter; own
+  // sends are inert against the cadence.
   await tm.post("🎯 Milestone: one", "milestone");
   await tm.post("b", "other");
-  await tm.post("c", "other");
+  check("own sends do not drive the cadence", requests.length === 0, String(requests.length));
+  await tm.recordHumanMessage();
+  await tm.recordHumanMessage();
+  check("two human ticks (fixed every=3) are not due yet", requests.length === 0, String(requests.length));
+  await tm.recordHumanMessage();
   check(
-    "3rd send requests an LLM run (no root edit yet)",
+    "3rd human tick requests an LLM run (no root edit yet)",
     requests.length === 1 && fake.calls.filter((c) => c[0] === "edit").length === 0,
     `requests=${requests.length} edits=${fake.calls.filter((c) => c[0] === "edit").length}`,
   );
@@ -312,7 +330,7 @@ console.log("== threading: LLM summarization runs (fake cs) ==");
   const ok = await tm.updateSummary(md);
   const edit = fake.calls.filter((c) => c[0] === "edit").pop();
   check("LLM update edits the root with 🧵 topic + grey session line + markdown", ok === true && edit[2] === `🧵 llm topic\n\`llm-1\`\n${md}`, JSON.stringify(edit?.[2]));
-  check("run bookkeeping persisted", tm.activeRoot()?.lastSummary === md && tm.activeRoot()?.lastSummaryAtMsg === 3, JSON.stringify({ s: tm.activeRoot()?.lastSummaryAtMsg }));
+  check("run bookkeeping persisted", tm.activeRoot()?.lastSummary === md && tm.activeRoot()?.lastSummaryAtHuman === 3, JSON.stringify({ s: tm.activeRoot()?.lastSummaryAtHuman }));
   // TO-BE §1.5: the edit request carries no caller html — the pipeline's
   // editInThread owns the always-html rule (markdown.ts converts at write).
   check(
@@ -321,11 +339,13 @@ console.log("== threading: LLM summarization runs (fake cs) ==");
     JSON.stringify(edit?.[3]),
   );
 
-  // more sends → a new run is requested (there is delta since the last completed run)
+  // more human ticks → a new run is requested (there is delta since the last
+  // completed run); an interleaved own send changes nothing (echo isolation)
   await tm.post("d", "other");
-  await tm.post("e", "other");
-  await tm.post("f", "other");
-  check("6th send requests another LLM run", requests.length === 2, String(requests.length));
+  await tm.recordHumanMessage();
+  await tm.recordHumanMessage();
+  await tm.recordHumanMessage();
+  check("6th human tick requests another LLM run", requests.length === 2, String(requests.length));
 
   // manual run: LLM mode fires the directive; heuristic mode does the edit itself
   const bare = createThreadManager({ enabled: true, roomKey: "!room:nx", threadSend: fake });
@@ -377,13 +397,13 @@ console.log("== threading: single-flight summary dispatch ==");
   tm.beginSession("new", "fl-1");
   await tm.ensureThreadRoot("flight topic");
 
-  await tm.post("a", "other"); // cadence point 1 → dispatch #1 (in flight)
-  await tm.post("b", "other"); // cadence point 2 → skipped while in flight
+  await tm.recordHumanMessage(); // cadence point 1 → dispatch #1 (in flight)
+  await tm.recordHumanMessage(); // cadence point 2 → skipped while in flight
   check("second cadence point skipped while a run is in flight", requests.length === 1, String(requests.length));
 
   release();
   await new Promise((res) => setImmediate(res)); // flush the settle/finally chain
-  await tm.post("c", "other"); // point 3 → dispatch #2 after the settle
+  await tm.recordHumanMessage(); // point 3 → dispatch #2 after the settle
   check("cadence re-arms once the run settles", requests.length === 2, String(requests.length));
 
   // manual run while in flight: reports wired, does NOT double-dispatch
@@ -465,7 +485,8 @@ console.log("== threading: fibonacci-capped summary cadence ==");
   check("cap<1 is never due, fib and fixed alike", summaryDue(5, 0, true) === false && summaryDue(5, 0, false) === false && summaryDue(5, -1, true) === false);
 
   // Manager level: every=3 caps the fib intervals at 1,1,2,3,3…
-  // → LLM runs fire at in-thread sends 1, 2, 4, 7.
+  // → LLM runs fire at HUMAN ticks 1, 2, 4, 7 (PROP-001 P2: the meter is
+  // human messages; own sends never reach the gate).
   const fake = makeFakeMatrixHttp();
   const requests = [];
   const tm = createThreadManager({
@@ -476,13 +497,16 @@ console.log("== threading: fibonacci-capped summary cadence ==");
     threadIcon: "🧵",
     threadSummaryEvery: 3,
     threadSummaryByLlm: true,
-    onSummarizeRequest: (root) => { requests.push(root.msgCount); },
+    onSummarizeRequest: (root) => { requests.push(root.humanMsgCount); },
   });
   tm.beginSession("new", "fib-1");
   await tm.ensureThreadRoot("fib topic");
-  for (let i = 1; i <= 8; i++) await tm.post(`m${i}`, "other");
+  for (let i = 1; i <= 8; i++) {
+    await tm.recordHumanMessage();
+    await tm.post(`m${i}`, "other"); // own send: inert against the cadence
+  }
   check(
-    "fib cadence (every=3) fires at sends 1, 2, 4, 7",
+    "fib cadence (every=3) fires at human ticks 1, 2, 4, 7",
     JSON.stringify(requests) === "[1,2,4,7]",
     JSON.stringify(requests),
   );
@@ -517,18 +541,22 @@ console.log("== threading: report-out (final) summary trigger ==");
     threadIcon: "🧵",
     threadSummaryEvery: 0,
     threadSummaryByLlm: true,
-    onSummarizeRequest: (root) => { reqsL.push(root.msgCount); },
+    onSummarizeRequest: (root) => { reqsL.push(root.humanMsgCount); },
   });
   tmL.beginSession("new", "fin-1");
   await tmL.ensureThreadRoot("fin topic");
+  await tmL.recordHumanMessage();
   await tmL.post("report one", "final");
-  check("first report-out fires an LLM summary request", reqsL.length === 1 && reqsL[0] === 1, JSON.stringify(reqsL));
+  check("first report-out after a human message fires an LLM summary request", reqsL.length === 1 && reqsL[0] === 1, JSON.stringify(reqsL));
   await tmL.post("still working", "other");
   await tmL.post("report two", "final");
   check("pending request is the watermark (no duplicate request)", reqsL.length === 1, JSON.stringify(reqsL));
   await tmL.updateSummary("# Topic: fin topic\n## Points\n- done");
   await tmL.post("report three", "final");
-  check("completed run re-arms the trigger (new material → request)", reqsL.length === 2 && reqsL[1] === 4, JSON.stringify(reqsL));
+  check("no new human input → the completed run does not re-fire for own sends", reqsL.length === 1, JSON.stringify(reqsL));
+  await tmL.recordHumanMessage();
+  await tmL.post("report four", "final");
+  check("completed run re-arms on new human material → request", reqsL.length === 2 && reqsL[1] === 2, JSON.stringify(reqsL));
 
   // Wake-answer final (BUG-SUMMARIZER-ONFINAL-LOOP A): the answer still lands
   // in the thread, the report-out trigger does not fire for it — once.
@@ -542,18 +570,21 @@ console.log("== threading: report-out (final) summary trigger ==");
     threadIcon: "🧵",
     threadSummaryEvery: 0,
     threadSummaryByLlm: true,
-    onSummarizeRequest: (root) => { reqsW.push(root.msgCount); },
+    onSummarizeRequest: (root) => { reqsW.push(root.humanMsgCount); },
   });
   tmW.beginSession("new", "finwake-1");
   await tmW.ensureThreadRoot("fin wake");
+  await tmW.recordHumanMessage();
   tmW.suppressNextOnFinalTrigger();
   await tmW.post("wake answer, still waiting", "final");
   check("wake-answer final posts, no summary request", reqsW.length === 0 && fakeW.calls.filter((c) => c[0] === "reply").length === 1, JSON.stringify(reqsW));
   await tmW.post("real report", "final");
-  check("the suppression is one-shot (next final fires)", reqsW.length === 1 && reqsW[0] === 2, JSON.stringify(reqsW));
+  check("the suppression is one-shot (next final fires)", reqsW.length === 1 && reqsW[0] === 1, JSON.stringify(reqsW));
 
-  // Content gate (BUG-SUMMARIZER-ONFINAL-LOOP B): a pass whose whole delta is
-  // wake-answer bookkeeping re-summarises its own output — skipped.
+  // Echo isolation (PROP-001 P2, replaces the bookkeeping content gate
+  // BUG-SUMMARIZER-ONFINAL-LOOP B): a pass's own posts — finals, milestones,
+  // even at a cadence point — advance no meter, so the pass can never
+  // re-summarise its own output. Only a human tick re-arms.
   const fakeB = makeFakeMatrixHttp();
   const reqsB = [];
   const tmB = createThreadManager({
@@ -565,17 +596,17 @@ console.log("== threading: report-out (final) summary trigger ==");
     threadSummaryEvery: 2,
     threadSummaryFib: false,
     threadSummaryByLlm: true,
-    onSummarizeRequest: (root) => { reqsB.push(root.msgCount); },
+    onSummarizeRequest: (root) => { reqsB.push(root.humanMsgCount); },
   });
   tmB.beginSession("new", "finbook-1");
   await tmB.ensureThreadRoot("fin book");
-  tmB.suppressNextOnFinalTrigger();
   await tmB.post("wake answer 1", "final");
-  tmB.suppressNextOnFinalTrigger();
   await tmB.post("wake answer 2", "final");
-  check("bookkeeping-only delta fires no pass (cadence point included)", reqsB.length === 0, JSON.stringify(reqsB));
   await tmB.post("real report after waiting", "final");
-  check("real content after bookkeeping still fires the pass", reqsB.length === 1 && reqsB[0] === 3, JSON.stringify(reqsB));
+  check("own posts alone never fire a pass (cadence point included)", reqsB.length === 0, JSON.stringify(reqsB));
+  await tmB.recordHumanMessage();
+  await tmB.post("final after a human message", "final");
+  check("human material still fires the pass", reqsB.length === 1 && reqsB[0] === 1, JSON.stringify(reqsB));
 
   // Heuristic mode: the final-triggered run edits the root immediately
   // (zero LLM cost) and re-arms on every report-out.
@@ -1011,8 +1042,9 @@ console.log("== threading: cross-instance lastSummary sync (refreshFromDisk) =="
     JSON.stringify(main.activeRoot()?.lastSummary),
   );
 
-  // Cadence fire passes the FRESH baseline into the request callback.
-  await main.post("next send", "other");
+  // Cadence fire passes the FRESH baseline into the request callback
+  // (a human tick, not an own send — PROP-001 P2).
+  await main.recordHumanMessage();
   check(
     "cadence request carries the disk-fresh baseline",
     requests.length === 1 && requests[0]?.includes("done by sub") === true,
