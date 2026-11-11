@@ -153,6 +153,36 @@ const directive = (details) => ({
   );
 }
 
+// 3b2) THE SWALLOWED ANSWER (2026-11-10 incident): the question was queued
+//     BEFORE the directive opened the run — its message_end fired while no
+//     mute was set, so the mid-pass lift never saw it and the answer died at
+//     turn_end. The pending human-input flag must start the run lifted.
+{
+  const { lc, sent, logs } = makeLifecycle();
+  await lc.onMessageEnd({ message: { role: "user", content: [{ type: "text", text: "the queued question" }] } });
+  lc.onBeforeAgentStart({
+    messageType: "custom",
+    message: directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }),
+  });
+  await lc.onTurnEnd(assistantTurn("answer to the queued question"));
+  check(
+    "a question queued before the directive gets answered in the room",
+    sent.length === 1 && sent[0] === "answer to the queued question",
+    `sent=${JSON.stringify(sent)}`,
+  );
+  check(
+    "the start-time lift is observable",
+    logs.some((l) => /broadcast mute lifted at run start/.test(l)),
+    JSON.stringify(logs),
+  );
+  await lc.onTurnEnd(assistantTurn("Root unchanged."));
+  check(
+    "the lifted run ships its leftover too (indistinguishable, kept)",
+    sent.length === 2 && sent[1] === "Root unchanged.",
+    `sent=${JSON.stringify(sent)}`,
+  );
+}
+
 // 3c) A TODO-progress milestone inside a pass stays out of the room too.
 {
   const { lc, milestones } = makeLifecycle({ sendMilestones: true });

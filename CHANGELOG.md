@@ -104,6 +104,16 @@ come with a major version bump.
 
 ### Fixed
 
+- A question queued while the previous run settled is no longer swallowed
+  when a thread-summary directive opens the next run. The run-scoped
+  summary mute armed on the directive and the escape hatch only lifted on a
+  human `message_end` arriving after the mute — so the agent answered in the
+  terminal and the room got nothing (the third recurrence of the
+  "agent went quiet" family, reported 2026-11-10). Human input is now
+  recorded on arrival regardless of mute state and a directive-started run
+  begins already-lifted when a question is pending: the answer ships, the
+  summary's leftover report-out stays booked as bookkeeping.
+
 - A decision poll that throws no longer eats the decision. `postPoll` was
   awaited unguarded, so a poll transport that raised (rather than returning
   `{success: false}`) escaped `onPrompt` and took the whole questionnaire
