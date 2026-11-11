@@ -57,7 +57,7 @@ The tree carries roughly 1 900 line comments and 770 doc blocks. That is a delib
 |------|------|
 | Behaviour changes come with a test in the right tier: deterministic in the offline tier, anything touching a real room in the live tier | review |
 | Live tests assert on fetched room state, never on internal variables | review |
-| No test framework. Add scripts to the shared runner in `test/_harness.mjs` | review |
+| No test framework. Add scripts to the shared runner in `test/harness/_harness.mjs` | review |
 | A live script fails loudly when its credentials are missing, naming the variable | the tier guard |
 
 ## Naming
