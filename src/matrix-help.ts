@@ -7,11 +7,16 @@
  * a feature; it names it and says where the answer shows up.
  *
  * Kept a pure function of `MatrixConfig` (like the tour) so it is unit-testable
- * without the pi API, and deliberately HTML-free: the pipeline converts
- * markdown to `formatted_body` under the `sendFormatted` gate, and plain-text
- * clients get the same document. Color is not available here for the same
- * reason it is unavailable to any agent message — the converter escapes raw
- * HTML before it parses markdown.
+ * without the pi API, and deliberately HTML-free. The card body ships as ONE
+ * fenced block: Element X (iOS) shows the plain-text fallback for
+ * table-heavy messages — where a single newline collapses and a markdown
+ * table is just pipes — and a fenced block is the one layout that renders
+ * identically in every client: monospace via `<pre>` when the formatted HTML
+ * is used, monospace via the markdown code-block fallback when it is not.
+ * Ceiling: no links or emphasis inside the fence (escaped verbatim), so the
+ * intro line and the configuration-reference link ride outside it, where
+ * bold and links do render on Element X (verified live). If Element X grows
+ * full table rendering, the card may move back to markdown tables.
  */
 import type { MatrixConfig } from "./types.js";
 
@@ -26,15 +31,22 @@ import type { MatrixConfig } from "./types.js";
 const CONFIG_DOC_URL =
   "https://github.com/r3dnl/pi-matrix-integration/blob/main/docs/user/configuration.md";
 
-/** Marks a room action this deployment switched off. */
-const off = (enabled: boolean): string => (enabled ? "" : " *(off here)*");
+/** Marks a room action this deployment switched off (verbatim monospace —
+ *  no markdown emphasis, the card body is a fenced block). */
+const off = (enabled: boolean): string => (enabled ? "" : " (off here)");
+
+/** One aligned row inside the fenced card: pad the command to its column. */
+const row = (left: string, right: string): string =>
+  `  ${left.padEnd(26)}${right}`.trimEnd();
 
 /**
- * The guide, as GitHub-flavoured markdown: three tables and a settings
- * pointer. Every command `src/commands.ts` registers is listed (the docs gate
- * fails either way it is wrong: a missing command, or one that does not
- * exist), and the "answer shows" column carries the split the room cannot
- * guess — most commands answer in the terminal, not here.
+ * The guide: a bold intro line, then the reference card as ONE fenced block
+ * of aligned plain text (see the header comment for why), then the settings
+ * link outside the fence so it stays clickable where HTML renders. Every
+ * command `src/commands.ts` registers is listed (the docs gate fails either
+ * way it is wrong: a missing command, or one that does not exist), and each
+ * command row carries the split the room cannot guess — most commands answer
+ * in the terminal, not here.
  */
 export function buildMatrixHelp(config: MatrixConfig): string {
   const picker = config.remoteFilePicker !== false;
@@ -49,64 +61,66 @@ export function buildMatrixHelp(config: MatrixConfig): string {
   );
   lines.push("");
 
-  lines.push("**Actions** — send these in the room");
-  lines.push("");
-  lines.push("| You send | What happens |");
-  lines.push("| --- | --- |");
-  lines.push("| plain text | the agent picks it up on its next poll and answers in this thread |");
-  lines.push(
-    "| `/name …` | runs in the terminal as if typed there — any extension command, `/skill:` stage, or prompt template. A misspelling comes back with the closest match; anything that is not a command is read as text |",
-  );
-  lines.push(
-    `| \`@src/\` or \`@src/*.ts\` | lists the matches, shortest path first; reply with the number and that file's contents go to the agent${off(picker)} |`,
-  );
-  lines.push(
-    `| \`@@readme\` | opens the artifact picker; pick one and it is uploaded and attached here${off(attach)} |`,
-  );
-  lines.push(
-    `| a voice note | transcribed and treated as typed text, with a 🗣️ echo naming the engine${off(voice)} |`,
-  );
-  lines.push(
-    "| `1` · `Q2: 3` · `Custom: …` · `confirm` | answers a decision the agent posted (option number, answer for question 2, a free-text answer, then send it) |",
-  );
-  lines.push("| `help` | re-posts this card |");
+  // The fenced block. No backticks, links or *emphasis* inside — verbatim
+  // monospace is the point; alignment comes from the spaces.
+  lines.push("```");
+  lines.push("YOU SEND (in the room)");
+  lines.push(row("plain text", "agent answers in this thread"));
+  lines.push(row("/name …", "runs in the terminal as typed"));
+  lines.push(row("", "there; misspellings get the"));
+  lines.push(row("", "closest match"));
+  lines.push(row("@src/  @src/*.ts", `list matching files${off(picker)}`));
+  lines.push(row("", "reply with a number to send"));
+  lines.push(row("", "that file to the agent"));
+  lines.push(row("@@readme", `artifact picker${off(attach)}`));
+  lines.push(row("", "pick one, it is attached here"));
+  lines.push(row("a voice note", `transcribed → text${off(voice)}`));
+  lines.push(row("1 · Q2: 3 · confirm", "answer a 🤖 decision card"));
+  lines.push(row("help", "re-posts this card"));
   lines.push("");
 
-  lines.push("**Commands** — typed here they run in the terminal; the last column says where you see the answer");
-  lines.push("");
-  lines.push("| Command | Does | Answer shows |");
-  lines.push("| --- | --- | --- |");
-  lines.push("| `/matrix-help` (alias `/pi-help`) | this card | room |");
-  lines.push("| `/matrix-introduction-tour` | replays the guided tour | room |");
-  lines.push("| `/matrix-send TEXT` | posts TEXT into the room | room |");
-  lines.push(
-    "| `/matrix-thread-summarize` (alias `/matrix-summarize-thread`) | refreshes this thread's root summary now | room (the root message edits) |",
-  );
-  lines.push("| `/matrix-messages [n]` | reads back the last n room messages | terminal |");
-  lines.push("| `/matrix-status` | server, room, user, threading, encryption | terminal |");
-  lines.push("| `/matrix-subagents` | the session's live and settled sub-agent spawns | terminal |");
-  lines.push("| `/matrix-thread-toggle` | threading on or off (footer 🧵 bright or faded) | terminal |");
-  lines.push("| `/matrix-connect` · `/matrix-disconnect` | start or stop the connection | terminal (a connect posts its 🎯) |");
-  lines.push("| `/matrix-toggle` | the whole integration on or off | terminal |");
-  lines.push("| `/matrix-switch [profile]` | switch to another config profile | terminal |");
-  lines.push("| `/matrix-login` | re-authenticate or add an account (its dialogue is terminal-side) | terminal |");
+  lines.push("COMMANDS — typed in the room, run in the terminal;");
+  lines.push("the answer shows in the terminal unless (room)");
+  lines.push(row("/matrix-help  /pi-help", "this card (room)"));
+  lines.push(row("/matrix-introduction-tour", "replays the tour (room)"));
+  lines.push(row("/matrix-send TEXT", "posts TEXT here (room)"));
+  lines.push(row("/matrix-thread-summarize", "refreshes this thread's"));
+  lines.push(row("/matrix-summarize-thread", "root summary now (room)"));
+  lines.push(row("/matrix-messages [n]", "reads back the last n messages"));
+  lines.push(row("/matrix-status", "server, room, user, encryption"));
+  lines.push(row("/matrix-subagents", "live/settled sub-agent spawns"));
+  lines.push(row("/matrix-thread-toggle", "threading on/off (footer 🧵)"));
+  lines.push(row("/matrix-connect", "start (a connect posts its 🎯)"));
+  lines.push(row("/matrix-disconnect", "stop the connection"));
+  lines.push(row("/matrix-toggle", "the whole integration on/off"));
+  lines.push(row("/matrix-switch [profile]", "switch config profile"));
+  lines.push(row("/matrix-login", "re-authenticate / add account"));
   lines.push("");
 
-  lines.push("**What the agent posts here, on its own**");
-  lines.push("");
-  lines.push(
-    "🎯 milestones at checkpoints · 📋 TODO progress · 💬 the turn's final answer · 🧑 the prompts you type in the terminal (room-typed ones are never echoed back) · ⚡ sub-agent spawn and result lines · 🤖 decision questionnaires · 🗣️ voice transcripts · 🧵 one thread per conversation, its root carrying a summary the agent keeps current",
-  );
-  lines.push("");
-  lines.push(
-    "Pi's own terminal built-ins (`/new`, `/reload`, `/settings`, `/hotkeys`) do not run from the room.",
-  );
+  lines.push("WHAT THE AGENT POSTS HERE, ON ITS OWN");
+  lines.push("  🎯 milestones    📋 TODO progress");
+  lines.push("  💬 final answer  🧑 your terminal prompts");
+  lines.push("     (room-typed ones are never echoed back)");
+  lines.push("  ⚡ sub-agent lines   🤖 decision cards");
+  lines.push("  🗣️ voice transcripts");
+  lines.push("  🧵 one thread per conversation; its root");
+  lines.push("     carries a summary the agent keeps current");
   lines.push("");
 
-  lines.push("**Settings live in the config, not in commands**");
+  lines.push("Pi built-ins (/new, /reload, /settings, /hotkeys)");
+  lines.push("are terminal-only — they do not run from here.");
+  lines.push("");
+
+  lines.push("SETTINGS — in the config, not in commands");
+  lines.push("  matrix-config.json(.c) in the .pi/matrix/ folder");
+  lines.push("  of the project pi was started in;");
+  lines.push("  ~/.config/pi-matrix-integration/ config.json(.c)");
+  lines.push("  covers projects that have none. Every key takes");
+  lines.push("  a PI_MATRIX_* env override.");
+  lines.push("```");
   lines.push("");
   lines.push(
-    `The file is \`matrix-config.json\` (or \`.jsonc\`) in the \`.pi/matrix/\` folder of the directory pi was started in, so each project carries its own; \`~/.config/pi-matrix-integration/config.json\` (or \`.jsonc\`) covers projects that have none. Every key takes a \`PI_MATRIX_*\` override. Full reference, each key with its default: [docs/user/configuration.md](${CONFIG_DOC_URL})`,
+    `Full reference, each key with its default: [docs/user/configuration.md](${CONFIG_DOC_URL})`,
   );
   return lines.join("\n");
 }

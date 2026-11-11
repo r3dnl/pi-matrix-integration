@@ -35,14 +35,25 @@ come with a major version bump.
 
 ### Changed
 
+- The RPIV decision questionnaire the ask-user mirror posts to the room
+  ships its option lists as fenced monospace blocks (`1. label`, description
+  indented below) instead of GFM pipe tables — the same Element X iOS
+  finding as the `/matrix-help` card: the client falls back to the plain
+  body on table-heavy HTML. Question lines and the reply grammar stay
+  outside the fences, where rich rendering works; the review message is
+  unchanged.
 - `/matrix-help` (and its alias `/pi-help`) is now a reference card instead of
   a prose walkthrough — the guided version is `/matrix-introduction-tour`, so
   the guide no longer re-explains features. It lists what the room accepts
   (plain text, `/commands`, `@` picker, `@@` attach, voice notes, the decision
-  reply grammar, `help`) and every command the extension registers in a table
-  whose last column says where the answer shows up: room or terminal. That
+  reply grammar, `help`) and every command the extension registers, each
+  command line saying where the answer shows up: room or terminal. That
   split was the guide's blind spot — typing `/matrix-status` from the room
-  looks like silence. It closes by saying where behavior is actually changed:
+  looks like silence. The card ships as one fenced monospace block, not
+  markdown tables: Element X (iOS) falls back to the plain-text body for
+  table-heavy HTML, where newlines collapse and tables are bare pipes, and
+  a fenced block is the one layout that renders identically everywhere —
+  verified live on Element X iOS. It closes by saying where behavior is actually changed:
   the config file, the `~/.config` file that covers projects without one, the
   `PI_MATRIX_*` overrides — and links the configuration reference for the key
   list rather than copying it, so there is one source to keep current. Which

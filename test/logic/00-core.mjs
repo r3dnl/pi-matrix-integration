@@ -1326,7 +1326,7 @@ check(
 );
 check(
   "guide covers the room's actions, not a re-run of the tour",
-  ["plain text", "`/name …`", "`@src/`", "`@@readme`", "voice note", "`confirm`", "`help`"]
+  ["plain text", "/name …", "@src/", "@@readme", "voice note", "confirm", "help"]
     .every((needle) => helpOn.includes(needle)),
   JSON.stringify(helpOn.slice(0, 80)),
 );
@@ -1344,34 +1344,34 @@ check(
   JSON.stringify(HELP_COMMANDS.filter((c) => !helpOn.includes(`/${c}`))),
 );
 check(
-  "guide names the three sections and the tour it defers to",
-  helpOn.includes("**Actions**") && helpOn.includes("**Commands**") &&
-    helpOn.includes("**What the agent posts here, on its own**") &&
-    helpOn.includes("**Settings live in the config, not in commands**") &&
+  "guide names the four card sections and the tour it defers to",
+  helpOn.includes("YOU SEND (in the room)") && helpOn.includes("COMMANDS — typed in the room") &&
+    helpOn.includes("WHAT THE AGENT POSTS HERE, ON ITS OWN") &&
+    helpOn.includes("SETTINGS — in the config, not in commands") &&
     helpOn.includes("`/matrix-introduction-tour`"),
-  JSON.stringify(helpOn.match(/\*\*[^*]+\*\*/g)),
+  JSON.stringify(helpOn.slice(0, 120)),
 );
 check(
   "guide marks where each command's answer shows (room vs terminal)",
-  helpOn.includes("| Command | Does | Answer shows |") &&
-    helpOn.includes("| `/matrix-messages [n]` | reads back the last n room messages | terminal |") &&
-    helpOn.includes("| `/matrix-send TEXT` | posts TEXT into the room | room |"),
-  "the split the room cannot guess must be in the table",
+  helpOn.includes("the answer shows in the terminal unless (room)") &&
+    helpOn.includes("reads back the last n messages") &&
+    helpOn.includes("posts TEXT here (room)"),
+  "the split the room cannot guess must be in the card",
 );
 check(
   "guide points at the config tiers that survive an npm install, the env overrides and the linked reference",
-  helpOn.includes(".pi/matrix/") && helpOn.includes("`matrix-config.json`") &&
-    helpOn.includes("~/.config/pi-matrix-integration/config.json") &&
+  helpOn.includes(".pi/matrix/") && helpOn.includes("matrix-config.json") &&
+    helpOn.includes("~/.config/pi-matrix-integration/") &&
     !helpOn.includes("~/.pi/agent/extensions/pi-matrix-integration/config/") && helpOn.includes("PI_MATRIX_") &&
     helpOn.includes("](https://github.com/r3dnl/pi-matrix-integration/blob/main/docs/user/configuration.md)") &&
     !helpOn.includes("piMatrixMessageFormatting"),
   "settings are config; the linked doc stays the single source for the key list",
 );
 check(
-  "guide formats as markdown the pipeline can render",
-  helpOn.includes("| --- | --- |") && helpOn.includes("`@src/*.ts`") &&
-    helpOn.includes("🎯 milestones"),
-  "tables + code spans, no hand-built HTML",
+  "guide ships the card as one fenced monospace block (Element X iOS safe)",
+  helpOn.includes("```\nYOU SEND") && (helpOn.match(/```/g) ?? []).length === 2 &&
+    !helpOn.includes("| --- |") && helpOn.includes("🎯 milestones"),
+  "fenced plain text renders identically as HTML <pre> and as markdown fallback; no tables",
 );
 check(
   "guide is plain text (no HTML tags)",
@@ -1379,14 +1379,14 @@ check(
   "guide must be portable plain text",
 );
 check(
-  "actions table marks the @ picker live when remoteFilePicker is on",
-  !/\| `@src\/`[^\n]*\(off here\)/.test(helpOn),
-  JSON.stringify(helpOn.split("\n").find((l) => l.startsWith("| `@src/`")) ?? ""),
+  "card marks the @ picker live when remoteFilePicker is on",
+  !/^ {2}@src\/.*\(off here\)$/m.test(helpOn),
+  JSON.stringify(helpOn.split("\n").find((l) => l.startsWith("  @src/")) ?? ""),
 );
 check(
-  "actions table marks the @ picker off when remoteFilePicker is off",
-  /\| `@src\/`[^\n]*\(off here\)/.test(helpOff) && !/\| `@src\/`[^\n]*\(off here\)/.test(helpOn),
-  JSON.stringify(helpOff.split("\n").find((l) => l.startsWith("| `@src/`")) ?? ""),
+  "card marks the @ picker off when remoteFilePicker is off",
+  /^ {2}@src\/.*\(off here\)$/m.test(helpOff) && !/^ {2}@src\/.*\(off here\)$/m.test(helpOn),
+  JSON.stringify(helpOff.split("\n").find((l) => l.startsWith("  @src/")) ?? ""),
 );
 
 // isAgentHelp: agent-directed "help" detection
