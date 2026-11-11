@@ -18,7 +18,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createPiJiti, EXT_DIR } from "../_harness.mjs";
+import { createPiJiti, EXT_DIR } from "../harness/_harness.mjs";
 import { readCredentials } from "./room-api.mjs";
 
 const RUN_TAG = String(Date.now());

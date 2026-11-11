@@ -1,5 +1,7 @@
 # Configuration and room behaviour
 
+**REVIEW COMMENT: IMO THESE ARE 2 SEPERATE TOPICS THAT DESERVE A SEPERATE MD FILE**
+
 Covers: how the extension finds its config, how profiles work, how the room drives the agent, and where the security boundary sits.
 
 ## Finding the configuration

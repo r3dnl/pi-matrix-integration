@@ -70,7 +70,8 @@
   "scripts": {
     "test": "node test/run.mjs",
     "test:docs": "node test/docs-consistency.mjs",
-    "test:repro": "node test/repro.mjs",
+    "test:repro": "node test/offline/load-check.mjs",
+    "test:integration": "node test/integration/installed-patches.mjs && node test/integration/partial-channel.mjs",
     "test:logic": "node test/logic/00-core.mjs && node test/logic/01-threading.mjs && node test/logic/02-transport-footer.mjs && node test/logic/03-sdk-crypto.mjs",
     "test:live": "node test/live/scenarios.mjs",
     "test:live:judge": "node test/live/judge-summary.mjs",

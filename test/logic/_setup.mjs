@@ -6,8 +6,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createPiJiti, EXT_DIR } from "../_harness.mjs";
-import { createTestOutbox } from "../fake-outbox.mjs";
+import { createPiJiti, EXT_DIR } from "../harness/_harness.mjs";
+import { createTestOutbox } from "../harness/fake-outbox.mjs";
 
 const jiti = await createPiJiti(import.meta.url);
 

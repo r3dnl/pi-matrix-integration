@@ -1,26 +1,42 @@
 /**
- * Runs the full test suite for pi-matrix-integration:
- *   1. repro.mjs             — extension loads + factory + handlers, like pi does
- *   2. test-logic.mjs        — handler/funnel logic against the fake outbox
- *   3. test-gates.mjs        — config gates (sendMilestones, autoConnect) via factory
- *   4. test-unread-model.mjs — the D1 unread model (port of mtx unread.py + thread dim)
- *   5. shadow-diff.mjs       — §5.2/§5.3 comparator selftest over the fixture NDJSON pairs
+ * Ring 1 runner — the offline tier (docs/dev/testing.md §1).
+ *
+ * Membership is the test/offline/ DIRECTORY: a new unit lands there and
+ * runs (the developing.md rule: add to discovery, never a second runner).
+ * Order: config-contract.mjs pins first — the cheap schema/wiring gate
+ * every other suite assumes — then the rest sorted, then the deep logic/
+ * suites (nested Ring-1 content, also runnable standalone as test:logic),
+ * and deps-contract.mjs last: it audits the package manifest, which no
+ * other suite depends on.
  */
 import { spawn } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-// config-contract first: it is the cheap schema/wiring gate, and every other
-// suite assumes the config chains it checks are intact.
-const tests = ["config-contract.mjs", "config-migration.mjs", "repro.mjs", "logic/00-core.mjs", "logic/01-threading.mjs", "logic/02-transport-footer.mjs", "logic/03-sdk-crypto.mjs", "e2e-stub-cycle.mjs", "test-gates.mjs", "test-unread-model.mjs", "test-project-provision.mjs", "test-sdk-logger.mjs", "test-stdout-capture.mjs", "test-sdk-delivery.mjs", "test-account-lock.mjs", "test-polls.mjs", "login-check.mjs", "login-wiring-check.mjs", "qr2025-check.mjs", "subagent-bus.mjs", "owner-bus.mjs", "tintinweb-provider.mjs", "nicobailon-provider.mjs", "summarizer-wake.mjs", "summarize-cadence.mjs", "tour-check.mjs", "stale-message-guard.mjs", "room-thread-root.mjs", "deps-contract.mjs", "security-boundary.mjs"];
+const offline = fs
+  .readdirSync(path.join(here, "offline"))
+  .filter((f) => f.endsWith(".mjs"))
+  // shadow-diff is a two-file CLI; it joins the tier only as --selftest below.
+  .filter((f) => f !== "shadow-diff.mjs")
+  .sort();
+const tests = [
+  "offline/config-contract.mjs",
+  ...offline.filter((f) => f !== "config-contract.mjs").map((f) => `offline/${f}`),
+  "logic/00-core.mjs",
+  "logic/01-threading.mjs",
+  "logic/02-transport-footer.mjs",
+  "logic/03-sdk-crypto.mjs",
+  "deps-contract.mjs",
+];
 // Wall-time budget (release story 8): the offline tier is the per-push
 // gate; past two minutes it stops being run on every save. CI asserts on
 // the printed total.
 const BUDGET_MS = 120_000;
 // shadow-diff runs its fixture selftest (the §5.3 gate: "runs on two fixture
-// NDJSON files") rather than the two-file CLI.
-const testFiles = [...tests, { file: "shadow-diff.mjs", args: ["--selftest"] }];
+// NDJSON files") on top of its bare discovery run.
+const testFiles = [...tests, { file: "offline/shadow-diff.mjs", args: ["--selftest"] }];
 
 async function run(spec) {
   const file = typeof spec === "string" ? spec : spec.file;

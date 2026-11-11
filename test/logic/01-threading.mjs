@@ -5,8 +5,8 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { createPiJiti, EXT_DIR, makeCheck, waitUntil } from "../_harness.mjs";
-import { createTestOutbox } from "../fake-outbox.mjs";
+import { createPiJiti, EXT_DIR, makeCheck, waitUntil } from "../harness/_harness.mjs";
+import { createTestOutbox } from "../harness/fake-outbox.mjs";
 
 const jiti = await createPiJiti(import.meta.url);
 const { check, finish } = makeCheck();

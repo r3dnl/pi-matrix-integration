@@ -40,6 +40,7 @@ client-server API, by a client that is not the one under test.
 | **Packaging** | `make e2e`, `make e2e-npm`, `make e2e-offline` | Does a clean machine that installed the way a user does end up working? | at release | yes / no¹ |
 
 ¹ the offline container target has *no* network at all, on purpose.
+**REVIEW COMMENT: this footnote does not make sense. It refers to the packaging network/model column, where it states `yes / no¹`. The footnote refers to the model (which says "no"), and then the value before for network says "yes" - which contradicts what the footnote is saying. So what was the point being made here?**
 
 Ad hoc, never gates: `npm run test:repro` (one bug, one script),
 `npm run test:live:judge` (an LLM grades summary quality once per release),

@@ -30,7 +30,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createPiJiti, EXT_DIR, requireLiveEnv } from "../_harness.mjs";
+import { createPiJiti, EXT_DIR, requireLiveEnv } from "../harness/_harness.mjs";
 import { connectPrimaryActor, connectSecondActor } from "./room-api.mjs";
 import { createCryptoReader } from "./crypto-reader.mjs";
 
