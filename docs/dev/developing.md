@@ -47,80 +47,21 @@ Two environment seams make the offline tier hermetic. `PI_MATRIX_TEST_OUTBOX` se
 
 ## Running the live tier against your own homeserver
 
-The live scripts read the homeserver and the agent's credentials from the environment. Nothing secret is committed, and nothing secret belongs in a script — when you see a hard-coded hostname or account name in a test file, that is a defect to fix, not a convention to copy.
-
-```bash
-export PI_MATRIX_HOMESERVER=https://matrix.example.org
-# each actor presents, in order of preference: a credentials.json path (the
-# same account-file layout /matrix-login writes), a token, or a password.
-export PI_MATRIX_PRIMARY_CREDENTIALS=~/.config/mtx/accounts/pi_agent--example.org/credentials.json
-# (or: PI_MATRIX_USERNAME=pi_agent + PI_MATRIX_PASSWORD='<from your secret store>')
-# the scenarios need a second actor — "the human" who posts into the room:
-export PI_MATRIX_SECOND_CREDENTIALS=~/.config/mtx/accounts/you--example.org/credentials.json
-# (or: PI_MATRIX_SECOND_TOKEN='<access token>', or PI_MATRIX_SECOND_USER=you +
-#     PI_MATRIX_SECOND_PASSWORD='<from your secret store>')
-npm run test:live
-```
-
-The scenario suite creates one fresh room per run, drives the real extension
-seams, and writes per-scenario evidence to `artifacts/live-<run-id>/` (the
-the live-nightly workflow uploads it). Once per
-release, judge the summary quality too: point `PI_MATRIX_JUDGE_BASE_URL` /
-`PI_MATRIX_JUDGE_MODEL` at any OpenAI-compatible server and run
-`npm run test:live:judge`. The human confirmation pass for each scenario is
-`test/live/README.md`.
-
-A test homeserver that only speaks `http://` on a non-local address needs
-an explicit opt-in as well: `PI_MATRIX_ALLOW_INSECURE_HTTP=1`. Without it
-the login dialogue refuses `http://` unless the address is loopback or a
-`.local` name, or a human confirms the risk in the dialogue. Nothing else
-changes; the variable never applies to `https://`. Create a fresh room per
-run (the scripts do) so reruns cannot interfere, and expect the suite to
-write messages to that room.
+The live scripts read the homeserver and the actors' credentials from the
+environment; nothing secret is committed, and a hard-coded hostname or
+account name in a test file is a defect, not a convention. The full setup —
+the three test identities (agent, human seat, crypto reader), the
+`docker/.env` environment file and its tracked sample, the evidence layout
+and the failure triage — is the runbook: [testing.md](testing.md).
 
 ## What CI runs
 
-Four workflows live in `.github/workflows/`:
-
-| Workflow | Trigger | Jobs |
-|---|---|---|
-| `ci.yml` | every push / PR | `gate`: credential scan (plus a self-test that the scan can bite), typecheck, lint, `npm test`, docs-consistency. `manifest`: `npm ci --omit=dev` in a clean tree, the dependency contract, the secret scan on the unpacked tarball, and the tarball file allowlist |
-| `deps.yml` | schedule + lockfile changes | `npm audit --omit=dev` (fails on high/critical), registry signature verification |
-| `live-nightly.yml` | daily 04:30 UTC + manual dispatch, `main` only | `npm run test:live` and `npm run test:perf` against a real homeserver using repository secrets; evidence uploaded, a failing run opens (or reuses) one tracking issue |
-| `release.yml` | version tag | the `prepack` publish guard, then publish |
-
-The nightly is the only workflow that touches the network with credentials,
-and it never runs on a fork or a pull request — the secrets are repository
-secrets, exposed only to this scheduled run on `main`.
-
-### Setting up the nightly's secrets
-
-In GitHub: **Settings → Secrets and variables → Actions → New repository
-secret**, one secret per name (exact case):
-
-- `PI_MATRIX_HOMESERVER` — the https URL of your test homeserver
-- `PI_MATRIX_USERNAME` + `PI_MATRIX_PASSWORD` — the primary (agent) test
-  account
-- `PI_MATRIX_SECOND_USER` + `PI_MATRIX_SECOND_PASSWORD`, or
-  `PI_MATRIX_SECOND_TOKEN` — the human-seat account (the workflow reads the
-  token variable too, but a token stops working when the session it belongs
-  to expires; a password does not)
-
-These are throwaway test identities — provision them with the manifest
-shape in `test/live/accounts-manifest.example.json`.
-If the nightly homeserver auto-encrypts new rooms (a default-encryption
-Synapse), the suite reads through the crypto reader. Locally the reader is
-a persistent device (`credentials.json` + crypto store beside it, the
-layout under `~/.config/mtx/accounts/`). A CI runner is stateless and
-cannot carry the store — and a stored `device_id` with an empty store means
-a NEW identity registered under the OLD device, so Olm key shares
-encrypted to the registered identity can never be unwrapped (the failure
-shows as `NoOlm` / withheld-key in the reader's crypto log). The nightly
-therefore mints a fresh reader device per run: `PI_MATRIX_READER_USER` /
-`PI_MATRIX_READER_PASSWORD` (reusing the primary account's secrets) log in
-as a brand-new device, which is exactly the path a first local run takes.
-No reader secret is needed; `PI_MATRIX_READER_CREDENTIALS_JSON` is not read
-by the workflow.
+Four workflows: the PR gate (`ci.yml`, no network, no secrets), the supply
+chain gate (`deps.yml`), the live nightly (`live-nightly.yml` — the only
+workflow that touches the network with credentials, `main` only), and the
+release publish guard (`release.yml`). What each job runs, the five required
+repository secrets and how the nightly derives the crypto reader without a
+sixth one are in [testing.md — GitHub Actions setup](testing.md#github-actions-setup).
 
 ## Architecture
 
