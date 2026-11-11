@@ -817,8 +817,8 @@ await runPhase(
     );
     check(
       "guide reflects the live config (remoteFilePicker on here → the @ row carries no off marker)",
-      /^\| `@src\/` /m.test(guide) && !/\| `@src\/`[^\n]*\(off here\)/.test(guide),
-      JSON.stringify(guide?.split("\n").find((l) => l.startsWith("| `@src/`")) ?? ""),
+      /^ {2}@src\//m.test(guide) && !/^ {2}@src\/.*\(off here\)$/m.test(guide),
+      JSON.stringify(guide?.split("\n").find((l) => l.startsWith("  @src/")) ?? ""),
     );
 
     // pi-help alias shares the same handler → also posts the guide.

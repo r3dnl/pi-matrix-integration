@@ -1144,14 +1144,15 @@ console.log("== ask-user mirror: format + parse + emit side ==");
 
   const fmtMd = formatQuestionnaireMd(qs);
   check(
-    "formatQuestionnaireMd ships GFM pipe-tables + the sentinel row",
-    fmtMd.includes("| 1 | lodash |") && fmtMd.includes("| --- | --- | --- |") &&
+    "formatQuestionnaireMd ships fenced option blocks + the sentinel row",
+    fmtMd.includes("```\n  1. lodash") && !fmtMd.includes("| --- |") &&
       fmtMd.includes("[multi]") && fmtMd.includes("Type something."),
     fmtMd,
   );
   check(
-    "md table cells escape pipes",
-    formatQuestionnaireMd([{ question: "q", options: [{ label: "a|b" }] }]).includes("a\\|b"),
+    "fenced layout keeps a pipe label verbatim (no table escaping needed)",
+    formatQuestionnaireMd([{ question: "q", options: [{ label: "a|b" }] }]).includes("a|b") &&
+      !formatQuestionnaireMd([{ question: "q", options: [{ label: "a|b" }] }]).includes("a\\|b"),
     "",
   );
   const fmtMdAll = formatQuestionnaireMd(qs);
@@ -1661,8 +1662,8 @@ console.log("== ask-user mirror: format + parse + emit side ==");
   await mirror.onPrompt(qs, "$tcMain");
   check("onPrompt opens the mirror + posts the questionnaire", mirror.isOpen() === true && posts.length === 1 && posts[0].includes("Q1"), "");
   check(
-    "onPrompt ships GFM pipe-table markdown (the pipeline formats)",
-    posts[0].includes("| 1 |") && posts[0].includes("| --- |") && posts[0].includes("Type something."),
+    "onPrompt ships fenced option-block markdown (the pipeline formats)",
+    posts[0].includes("```") && !posts[0].includes("| --- |") && posts[0].includes("Type something."),
     JSON.stringify(posts[0] ?? ""),
   );
   check(

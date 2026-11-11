@@ -100,7 +100,7 @@ export const INSTRUCTION_GREEN = "#1a7f37";
  * TUI): the model is told the user declined. If the terminal answers first,
  * `onBlocked(false)` closes the mirror and the buffered review is dropped;
  * a late confirm's emission is refused (`not_found`) and ignored. Each
- * question's table also offers the TUI's "Type something." row — answered
+ * question's option block also offers the TUI's "Type something." row — answered
  * in the room as "Custom: free text".
  */
 
@@ -332,12 +332,13 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
     questionByPoll = new Map();
     answersByPoll = new Map();
     open = true;
-    // configuration-and-room-behaviour.md: the questionnaire ships as GFM
-    // pipe-table markdown — the mirror does not pre-compute HTML for it (the
-    // third copy-pasted conversion site is gone). The pipeline converts
+    // configuration-and-room-behaviour.md: the questionnaire ships as
+    // markdown with fenced option blocks (Element X iOS safe, see
+    // formatQuestionnaireMd) — the mirror does not pre-compute HTML for it
+    // (the third copy-pasted conversion site is gone). The pipeline converts
     // markdown → `formatted_body` under the `sendFormatted` gate; plain
-    // clients render the pipe table. The review message is the one deliberate
-    // exception: `formatReview` ships raw HTML, see its comment.
+    // clients get the same monospace fences. The review message is the one
+    // deliberate exception: `formatReview` ships raw HTML, see its comment.
     const result = await deps.post(formatQuestionnaireMd(questions));
     if (!result.success) {
       deps.warn?.(`[matrix] ask-user mirror post failed: ${result.error || "unknown error"}`);
@@ -977,31 +978,53 @@ function looksLikeReplyAttempt(text: string): boolean {
   );
 }
 
+/** Wrap text to the fenced block's width; `indent` prefixes every line. */
+function wrappedLines(text: string, indent: string, width = 56): string[] {
+  const out: string[] = [];
+  let cur = indent;
+  for (const word of text.split(/\s+/)) {
+    if (!word) continue;
+    if (cur.length + word.length > width && cur.length > indent.length) {
+      out.push(cur.trimEnd());
+      cur = indent;
+    }
+    cur += `${word} `;
+  }
+  if (cur.length > indent.length) out.push(cur.trimEnd());
+  return out;
+}
+
 /**
- * Format the questionnaire as GFM markdown — the single payload the
- * mirror ships: per-question pipe tables (`| # | Option |
- * Description |` + `---` separator + option rows + the "Type something."
- * sentinel row), plain lines for the question text and the reply-grammar
- * hint. The pipeline converts it to `formatted_body` HTML (markdown.ts
- * renders GFM pipe tables in `renderTableBlock`); the semantic accent-color
- * palette is dropped by design — Element's GFM rendering carries the
- * structure.
+ * Format the questionnaire — the single payload the mirror ships. Same
+ * Element X iOS decision as the /matrix-help card: the option lists render
+ * as fenced monospace blocks (Element X falls back to the plain-text body
+ * for table-heavy HTML, where the pipe table collapses into bare pipes),
+ * the question line and the reply-grammar hint ride outside the fences
+ * where bold/links do render. Inside the fence one row per option —
+ * `N  label`, with the description on the indented line below (no columns:
+ * a 60-char label or an emoji would break any column alignment anyway).
+ * A label containing ``` is neutralised so it cannot close the fence early.
  */
 export function formatQuestionnaireMd(questions: MirrorQuestion[]): string {
-  // GFM table cells break on raw pipes — escape them.
-  const cell = (s: string) => s.replace(/\|/g, "\\|");
+  const safe = (s: string) => s.replace(/```/g, "`` ");
   const lines: string[] = [
-    `🤖 Pi decision (RPIV) — ${questions.length} question${questions.length === 1 ? "" : "s"}. Answer here or in the terminal:`,
+    `🤖 **Pi decision (RPIV)** — ${questions.length} question${questions.length === 1 ? "" : "s"}. Answer here or in the terminal:`,
     "",
   ];
   questions.forEach((q, i) => {
-    lines.push(`Q${i + 1}${q.header ? ` (${q.header})` : ""}${q.multiSelect ? " [multi]" : ""}: ${q.question}`);
-    lines.push("| # | Option | Description |", "| --- | --- | --- |");
+    lines.push(
+      `**Q${i + 1}${q.header ? ` (${q.header})` : ""}${q.multiSelect ? " [multi]" : ""}** — ${q.question}`,
+    );
+    lines.push("```");
     (q.options ?? []).forEach((o, j) => {
-      lines.push(`| ${j + 1} | ${cell(o.label)} | ${cell(o.description ?? "")} |`);
+      lines.push(...wrappedLines(`${j + 1}. ${safe(o.label)}`, "  "));
+      const desc = (o.description ?? "").trim();
+      if (desc) lines.push(...wrappedLines(safe(desc), "     "));
     });
-    // The TUI's final "Type something." row, as a table sentinel row.
-    lines.push(`| ${(q.options?.length ?? 0) + 1} | Type something. | reply "Custom: your answer" |`);
+    // The TUI's final "Type something." row, as a sentinel option row.
+    lines.push(`  ${(q.options?.length ?? 0) + 1}. Type something.`);
+    lines.push('     reply "Custom: your answer"');
+    lines.push("```");
     lines.push("");
   });
   lines.push(
