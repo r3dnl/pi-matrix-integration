@@ -558,8 +558,9 @@ console.log("== threading: report-out (final) summary trigger ==");
   await tmL.post("report four", "final");
   check("completed run re-arms on new human material → request", reqsL.length === 2 && reqsL[1] === 2, JSON.stringify(reqsL));
 
-  // Wake-answer final (BUG-SUMMARIZER-ONFINAL-LOOP A): the answer still lands
-  // in the thread, the report-out trigger does not fire for it — once.
+  // Wake-answer final (PROP-001 P3): the suppression API is deleted. A
+  // posted final fires the report-out trigger exactly when the HUMAN meter
+  // advanced since the last completed run — nothing else to distinguish.
   const fakeW = makeFakeMatrixHttp();
   const reqsW = [];
   const tmW = createThreadManager({
@@ -574,12 +575,11 @@ console.log("== threading: report-out (final) summary trigger ==");
   });
   tmW.beginSession("new", "finwake-1");
   await tmW.ensureThreadRoot("fin wake");
+  await tmW.post("final with no human input yet", "final");
+  check("a final without human input posts, dispatches nothing", reqsW.length === 0 && fakeW.calls.filter((c) => c[0] === "reply").length === 1, JSON.stringify(reqsW));
   await tmW.recordHumanMessage();
-  tmW.suppressNextOnFinalTrigger();
-  await tmW.post("wake answer, still waiting", "final");
-  check("wake-answer final posts, no summary request", reqsW.length === 0 && fakeW.calls.filter((c) => c[0] === "reply").length === 1, JSON.stringify(reqsW));
-  await tmW.post("real report", "final");
-  check("the suppression is one-shot (next final fires)", reqsW.length === 1 && reqsW[0] === 1, JSON.stringify(reqsW));
+  await tmW.post("final after a human message", "final");
+  check("the next final fires the trigger off the human meter", reqsW.length === 1 && reqsW[0] === 1, JSON.stringify(reqsW));
 
   // Echo isolation (PROP-001 P2, replaces the bookkeeping content gate
   // BUG-SUMMARIZER-ONFINAL-LOOP B): a pass's own posts — finals, milestones,

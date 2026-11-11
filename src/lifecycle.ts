@@ -161,43 +161,25 @@ export class Lifecycle {
   /** Set when THIS session is a side chain (sub-agent) — the hooks then
    *  route through the owner bus and never touch the connection. */
   private subagent: SubagentSelf | null = null;
-  /** The RUN currently live is a thread-summary pass — started by a
+  /** The RUN currently live was OPENED by a summarizer trigger — a
    *  summarizer completion notice (Engine B) or the in-session summarize
-   *  directive (Engine A); its report-out stays out of the room (see
-   *  `onBeforeAgentStart` + the 2026-10 summary-loop incident).
-   *  Run-scoped on purpose: a pass is ≥2 turns (tool call, then a closing
-   *  line) and pi fires `before_agent_start` once per run, so a flag released
-   *  on the first `turn_end` un-muted the closing line and leaked it into the
-   *  room (the 2026-11 repeat of the summary-loop incident). Released at
-   *  `agent_settled`, at the next run's start, or when a human message lands
-   *  mid-pass. */
-  private summaryPassRun = false;
+   *  directive (Engine A). While it is set AND no human input is pending,
+   *  the run's output is bookkeeping: its report-out stays out of the room
+   *  (a pure-summary turn has no answer in it). This is a broadcast filter,
+   *  not a loop guard — PROP-001 P2 made loops structurally impossible by
+   *  keying the cadence on the human meter — so nothing here needs to
+   *  "lift": a human message anywhere flips `humanInputPending` and the
+   *  next turn's final ships, whatever opened the run. Cleared at
+   *  `agent_settled` and at the next run's start. */
+  private summaryTriggerRun = false;
   /** True from any human `message_end` until the next final broadcast —
    *  the ORDER-INDEPENDENT record that a real question is waiting for an
-   *  answer. Set regardless of the mute state: the 2026-11-10 swallowed-
-   *  answer incident was a question whose `message_end` fired BEFORE a
-   *  summary directive opened the run, so the mid-pass lift (which needs
-   *  the mute already set) never saw it. Consumed at the run's start —
-   *  `onBeforeAgentStart` arms the mute already-lifted when it is set —
-   *  and cleared by the broadcast that answers it. */
+   *  answer. Set regardless of run state: the 2026-11-10 swallowed-answer
+   *  incident was a question whose `message_end` fired BEFORE a summary
+   *  directive opened the run; every shipping decision reads this live
+   *  flag, so arrival order cannot hide the question. Cleared by the
+   *  broadcast that answers it. */
   private humanInputPending = false;
-  /** The live run was a summary pass whose mute was LIFTED by human input.
-   *  The pass and the human answer now share one run, and no per-turn signal
-   *  tells the pass's leftover report-out ("Root unchanged.") apart from the
-   *  answer — so every final of this run ships (answers must never be
-   *  swallowed) but is booked as bookkeeping via `suppressNextOnFinalTrigger`
-   *  (same contract as `wakeFuelTurn`): no leftover line can dispatch a
-   *  wasted summary pass. A suppressed trigger only delays a summary — the
-   *  content gate (`runSummary`'s human-meter check) catches up on the next
-   *  post; it never drops one. Cleared at run boundaries with
-   *  `summaryPassRun`. */
-  private summaryLiftedRun = false;
-  /** A summarizer wake notice was absorbed into the run currently live (see
-   *  `onMessageEnd`). Its report-out must still reach the room, but it must
-   *  not re-arm the on-final summary trigger — that answer is the wake's own
-   *  bookkeeping (the 2026-10 summary loop, fix A). Cleared at the next
-   *  `before_agent_start`. */
-  private wakeFuelTurn = false;
 
   constructor(deps: LifecycleDeps) {
     this.deps = deps;
@@ -546,13 +528,11 @@ export class Lifecycle {
   async onMessageEnd(event: MessageEndEvent): Promise<void> {
     if (this.subagent) return this.onSubagentMessageEnd(event);
     if (!this.isEnabled()) return;
-    // A human message folded into a live pass ends the mute: swallowing a
-    // real question is worse than one leaked line. Human input arrives on
-    // two channels: the terminal (a bare user message — every OTHER message
-    // this extension injects, directive or wake notice, carries a
-    // `customType` that this check rejects) and the room (a relay, injected
-    // as `MATRIX_MESSAGE_CUSTOM_TYPE`): the room is
-    // this integration's primary input channel, so it must lift too).
+    // Human input arrives on two channels: the terminal (a bare user
+    // message — every OTHER message this extension injects, directive or
+    // wake notice, carries a `customType` that this check rejects) and the
+    // room (a relay, injected as `MATRIX_MESSAGE_CUSTOM_TYPE`): the room is
+    // this integration's primary input channel. Structural, not prose.
     const incoming = event.message as { role?: string; customType?: unknown };
     const humanInput =
       (incoming.role === "user" && incoming.customType === undefined) ||
@@ -561,42 +541,27 @@ export class Lifecycle {
       // Echo-isolated cadence (PROP-001 P2): the human meter ticks here and
       // only here — own sends never reach it.
       void this.deps.threadManager?.recordHumanMessage();
-      if (this.deps.cfg.sendFinalMessages) {
-        // Order-independent: a question queued ahead of a summary directive
-        // must still be answerable — see `humanInputPending`.
-        this.humanInputPending = true;
-      }
+      // Order-independent: a question is waiting for an answer. Every
+      // shipping decision reads this live flag (see `humanInputPending`),
+      // so a question queued before a summary directive opened the run is
+      // answered whatever order the messages arrived in (PROP-001).
+      this.humanInputPending = true;
     }
-    if (this.summaryPassRun && humanInput) {
-      this.summaryPassRun = false;
-      this.summaryLiftedRun = true;
-      this.deps.logger.warn(
-        "[matrix] message_end: user input during a summary pass, broadcast mute lifted",
-      );
-    }
-    // Busy-parent observability (the 2026-10 summary-loop incident):
-    // a wake notice / summarize directive delivered WHILE a run is live is
-    // queued INTO that run — before_agent_start never fires for it, so it
-    // cannot be muted. Muting is also wrong here: the run's report answers
-    // real work the user asked for. The loop still dies: once the parent
-    // goes idle, the next notice starts its own run and IS muted, so an
-    // absorbed notice adds at most one legitimate content-driven pass.
-    // Logged, never muted. Detection is structural (details), not prose.
+    // A wake notice or summarize directive landing WHILE a run is live is
+    // folded into that run — before_agent_start never fires for it, so it
+    // cannot set `summaryTriggerRun`. That is correct: the live run answers
+    // real work and its report-out ships. The folded notice cannot arm a
+    // summary pass — PROP-001 P2 keyed the cadence on the human meter, so
+    // an absorbed notice adds no fuel, and the run it wakes later starts
+    // its own (then-filtered) run. Nothing to book, nothing to suppress;
+    // the absorbed-notice quiet directive this replaced is gone with the
+    // loop it guarded (the meter is the guard now).
     if (
-      !this.summaryPassRun &&
+      !this.summaryTriggerRun &&
       (isSummarizerWakeNotice(event.message) || isSummarizeDirectiveNotice(event.message))
     ) {
-      this.wakeFuelTurn = true;
       this.deps.logger.warn(
-        "[matrix] summary fuel notice absorbed by live run: broadcast kept, on-final trigger suppressed",
-      );
-      // Leak guard (wake lands mid-turn): the notice content is already in
-      // this run's context and cannot be unsent — ride a hidden quiet
-      // directive after it so the model keeps it out of the user-facing
-      // reply. triggerTurn:false → no-ops when the run is already over.
-      this.deps.sessionIntegrator?.injectQuietDirective(
-        "The completion notice just added to this conversation is internal bookkeeping (a background summary run finishing). Do not quote it, summarize it, or hint at its content in user-visible output; continue the current turn as if it had not appeared.",
-        { kind: "absorbed-notice-hint" },
+        "[matrix] summary fuel notice absorbed by live run: broadcast kept, cadence immune (P2)",
       );
     }
     // Decision-context flush (ask_user_question ordering): pi fires
@@ -611,9 +576,8 @@ export class Lifecycle {
       ? messageText(event.message)
       : null;
     if (askText) {
-      // Same loop guard as the turn_end broadcast (one flag for the whole
-      // pass, read — never consumed — by both).
-      if (this.summaryPassRun) {
+      // Same shipping gate as the turn_end broadcast (read, never consumed).
+      if (this.summaryTriggerRun && !this.humanInputPending) {
         this.deps.logger.debug(
           "[matrix] message_end: wake-turn ask_user context flush skipped (loop guard)",
         );
@@ -649,56 +613,40 @@ export class Lifecycle {
   }
 
   /**
-   * before_agent_start — flag a run started by a summarizer completion
-   * notice (Engine B) or by the extension's own thread-summary directive
-   * (Engine A, the subagent-unavailable fallback). Pi hands the starting
-   * custom message to the hook (`messageType: "custom"` + `message`);
-   * pi-subagents carries the finished runs in `message.details.runs` and
-   * the directive carries `details.kind` — the only reliable identities,
-   * since the model-visible text is prose. The flag makes `onTurnEnd` skip
-   * that turn's final broadcast: no thread message, so the cadence guard
-   * (`runSummary`'s human-meter gate) stops spawning. The wake itself still
-   * happens (pi-subagents 0.80.0 queues it for every async run); only its
-   * room echo is muted — for every turn of that run, not only the first.
+   * before_agent_start — note a run OPENED by a summarizer trigger: a
+   * summarizer completion notice (Engine B) or the extension's own
+   * thread-summary directive (Engine A, the subagent-unavailable fallback).
+   * Pi hands the starting custom message to the hook (`messageType:
+   * "custom"` + `message`); pi-subagents carries the finished runs in
+   * `message.details.runs` and the directive carries `details.kind` —
+   * declared identities, since the model-visible text is prose. While the
+   * flag is set and no human input is pending, `onTurnEnd` keeps that run's
+   * final out of the room: a pure-summary turn has no answer in it, and a
+   * room line per pass is noise. Not a loop guard — the cadence cannot
+   * self-arm since PROP-001 P2 — and no lift machinery: a human message
+   * flips `humanInputPending` and the next final ships, mid-pass or
+   * queued-before-the-trigger.
    */
   onBeforeAgentStart(event: BeforeAgentStartEvent): void {
     if (this.subagent) return;
-    // A new run begins: a wake-fuel flag or a summary-pass mute left over from
-    // the previous run (a run that died before `agent_settled`) must not
-    // silence this run's report-out. A wake absorbed mid-run never fires this
-    // hook, so clearing here cannot drop the flag it set.
-    this.wakeFuelTurn = false;
-    this.summaryPassRun = false;
-    this.summaryLiftedRun = false;
-    this.deps.threadManager?.clearOnFinalSuppression();
+    // A new run begins: a summary-run filter left over from the previous
+    // run (one that died before `agent_settled`) must not silence this
+    // run's report-out.
+    this.summaryTriggerRun = false;
     if (event.messageType !== "custom") return;
-    const muted = isSummarizerWakeNotice(event.message) || isSummarizeDirectiveNotice(event.message);
+    const summaryTrigger = isSummarizerWakeNotice(event.message) || isSummarizeDirectiveNotice(event.message);
     // warn (not debug): the live default logLevel is INFO, and the debug-only
     // guard lines made the wake loop unverifiable during the incident (and
     // this verification). A notice observed here is rare (one per summary
     // pass) and load-bearing — the mismatch case (customType/runs shape)
     // names exactly why a notice did NOT match.
     const customType = (event.message as { customType?: string } | undefined)?.customType ?? "?";
-    if (customType === "subagent-notify" || customType === "matrix-directive" || muted) {
+    if (customType === "subagent-notify" || customType === "matrix-directive" || summaryTrigger) {
       const runs = (event.message as { details?: { runs?: { agent?: string }[] } } | undefined)?.details?.runs;
       const agents = Array.isArray(runs) ? runs.map((r) => r?.agent ?? "?").join(",") : "-";
-      this.deps.logger.warn(`[matrix] before_agent_start custom=${customType} runs=[${agents}] summary-turn-muted=${muted}`);
+      this.deps.logger.warn(`[matrix] before_agent_start custom=${customType} runs=[${agents}] summary-run-filter=${summaryTrigger}`);
     }
-    if (muted) {
-      this.summaryPassRun = true;
-      // A human message consumed before this run opened (queued while the
-      // previous run settled, ahead of the directive): the run answers a
-      // real question, so it starts already-lifted — every final ships and
-      // is booked as bookkeeping, same contract as a mid-pass lift.
-      if (this.humanInputPending) {
-        this.summaryPassRun = false;
-        this.summaryLiftedRun = true;
-        this.humanInputPending = false;
-        this.deps.logger.warn(
-          "[matrix] before_agent_start: human input queued before the summary directive, broadcast mute lifted at run start",
-        );
-      }
-    }
+    this.summaryTriggerRun = summaryTrigger;
   }
 
   /**
@@ -708,12 +656,12 @@ export class Lifecycle {
    */
   async onTurnEnd(event: TurnEndEvent): Promise<void> {
     if (this.subagent) return this.onSubagentTurnEnd(event);
-    // Read, never consumed here: the mute covers the whole summary-pass run
-    // and is released at `agent_settled`, at the next run's start, or by a
-    // human message landing mid-pass. The side-chain branch above cannot mute
-    // a real run: a side-chain instance never sets the flag, because
-    // `onBeforeAgentStart` exits as soon as `subagent` is bound.
-    const mutedRun = this.summaryPassRun;
+    // The shipping gate for a summarizer-opened run: filter set, and no
+    // human question waiting on this run. Read, never consumed here —
+    // `humanInputPending` is cleared by the final that actually answers,
+    // `summaryTriggerRun` at the run boundary. A lifted mid-pass case needs
+    // no special path: the pending flag alone flips the gate (PROP-001).
+    const suppressed = this.summaryTriggerRun && !this.humanInputPending;
     if (!this.isEnabled()) {
       // Observable (not silent): a dropped final answer here was invisible
       // for a whole session because no turn_end log line ever appeared.
@@ -721,10 +669,10 @@ export class Lifecycle {
       return;
     }
     try {
-      // The loop guard, ahead of every room write this turn can make — a
-      // TODO-progress milestone from inside a pass would re-arm the cadence
-      // exactly like the leaked final answer did.
-      if (mutedRun) {
+      // The gate, ahead of every room write this turn can make — a
+      // TODO-progress milestone from inside a pure-summary pass is room
+      // noise exactly like the leaked final answer ever was.
+      if (suppressed) {
         // warn (not debug): this is the line the live verification greps for
         // at the default INFO level (wording kept from the 2026-10 incident).
         // The excerpt names what was dropped:
@@ -738,7 +686,7 @@ export class Lifecycle {
           ? ` dropped: "${droppedText.replace(/\s+/g, " ").slice(0, 80)}"`
           : "";
         this.deps.logger.warn(
-          `[matrix] turn_end: summarizer wake turn, skipping final broadcast (loop guard)${excerpt}`,
+          `[matrix] turn_end: summarizer pass turn, final broadcast held (no human input pending)${excerpt}`,
         );
         return;
       }
@@ -769,13 +717,9 @@ export class Lifecycle {
         );
         return;
       }
-      // Wake-fuel report-out: the answer ships, the summary re-arm does not.
-      // Same contract for a lifted summary pass: the pass's leftover line is
-      // indistinguishable from the human answer at this point, so every
-      // final of the lifted run is booked as bookkeeping — each ships, none
-      // dispatches a wasted pass (a suppressed trigger delays the next
-      // summary one post at most; the content gate never loses it).
-      if (this.wakeFuelTurn || this.summaryLiftedRun) this.deps.threadManager?.suppressNextOnFinalTrigger();
+      // Ship the answer. No trigger-suppression anymore (PROP-001 P3): a
+      // posted final can no longer dispatch a pass — the on-final cadence
+      // gate reads the human meter, which own output never advances.
       const result = await this.deps.messageHandler.sendFinalMessage(
         truncateFinalMessage(finalText, this.deps.cfg.maxFinalMessageLength),
       );
@@ -868,10 +812,10 @@ export class Lifecycle {
 
   /** agent_settled — the single settle source (transport-and-state.md Q4, PO: agreed). */
   onAgentSettled(): void {
-    // The summary-pass mute ends with its run. Before the side-chain
-    // early-return below, which the flag-owning (main) session always hits.
-    this.summaryPassRun = false;
-    this.summaryLiftedRun = false;
+    // The summary-run broadcast filter ends with its run. Before the
+    // side-chain early-return below, which the flag-owning (main) session
+    // always hits.
+    this.summaryTriggerRun = false;
     const sa = this.subagent;
     if (!sa || !sa.bound) return;
     const bus = this.deps.subagentBus?.();

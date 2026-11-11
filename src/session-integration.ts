@@ -104,8 +104,8 @@ export class SessionIntegrator {
    * participates in LLM context and triggers a turn when Pi is idle.
    * `details` travels with the message as structured identity — the
    * thread-summary injections tag it `{ kind: "summarize" }` so
-   * `isSummarizeDirectiveNotice` can mute its report-out without prose
-   * matching (the 2026-10 summary-loop incident, Engine A).
+   * `isSummarizeDirectiveNotice` can name the run-start trigger without
+   * prose matching (the 2026-10 summary-loop incident, Engine A).
    */
   injectDirective(content: string, details?: unknown): void {
     this.pi.sendMessage(
@@ -116,26 +116,6 @@ export class SessionIntegrator {
         details,
       },
       { deliverAs: "followUp", triggerTurn: true }
-    );
-  }
-
-  /**
-   * Quiet sibling of `injectDirective`: `triggerTurn: false` — never starts
-   * a run when Pi is idle; absorbed into the live run exactly like the
-   * notice it annotates (the 2026-10 summary loop, leak variant "wake
-   * lands mid-turn"). Lifecycle calls this right after classifying an
-   * absorbed summarizer wake, so the instruction rides the same context
-   * that already carries the notice's content.
-   */
-  injectQuietDirective(content: string, details?: unknown): void {
-    this.pi.sendMessage(
-      {
-        customType: "matrix-directive",
-        content,
-        display: false,
-        details,
-      },
-      { deliverAs: "followUp", triggerTurn: false }
     );
   }
 
