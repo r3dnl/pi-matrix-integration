@@ -193,12 +193,14 @@ const SUBAGENT_NOTIFY_CUSTOM_TYPE = "subagent-notify";
  * True when a run was started by a pi-subagents completion notice that
  * reports ONLY summarizer runs.
  *
- * Such a wake must not report out to the room: the echo is room noise — a
- * background-task notice is extension bookkeeping, not a turn answer. (The
+ * Such a wake run's report-out stays out of the room: the echo is room
+ * noise — a background-task notice is extension bookkeeping, not a turn
+ * answer (the lifecycle ships a run's finals only while no human input is
+ * pending, so this classifier only names the trigger at run start). The
  * historical motive was stronger: the send-ledger cadence let the echo
  * re-arm the next pass and starve the loop — PROP-001 P2 removed that fuel
- * by keying the cadence on the human meter; the mute now only keeps the
- * room clean.)
+ * by keying the cadence on the human meter; P3 removed the mute this
+ * classifier used to arm.
  *
  * Mixed notices (a summarizer plus real work in one grouped notice) are NOT
  * muted — that notice carries a report the user needs, and its cadence re-arm
@@ -228,11 +230,11 @@ export function isSummarizerWakeNotice(
 const MATRIX_DIRECTIVE_CUSTOM_TYPE = "matrix-directive";
 
 /** The relayed-room-message customType (session-integration.ts
- *  `injectMatrixMessage`). Exported so the summary-pass mute lift can
- *  recognise a room message as human input — swallowing a mid-pass room
- *  question is what the 2026-11 live incident did.
+ *  `injectMatrixMessage`). Exported so the human-input check in
+ *  `onMessageEnd` can recognise a room relay as human input — a room
+ *  question is this integration's primary input.
  *  Distinct from the directive/wake-notice types: matching this one can
- *  never self-unmute a pass. */
+ *  never count as a summarizer trigger. */
 export const MATRIX_MESSAGE_CUSTOM_TYPE = "matrix-message";
 
 /** `details.kind` set by the thread-summary directive injections
@@ -243,10 +245,11 @@ export const SUMMARIZE_DIRECTIVE_KIND = "summarize";
  * True when a run was started by the extension's own in-session
  * thread-summary directive (Engine A of the 2026-10 summary-loop incident:
  * the subagent-unavailable fallback injects the directive into the main
- * session; its "Pass done" report-out is the message that re-armed the
- * cadence). Same mute contract as `isSummarizerWakeNotice`: the summary
- * itself lands through `matrix_update_thread_summary` (a root edit, not a
- * new thread message), only the confirmation echo is dropped.
+ * session; its "Pass done" report-out was the message that re-armed the
+ * cadence). Same run-start identity role as `isSummarizerWakeNotice`: the
+ * summary itself lands through `matrix_update_thread_summary` (a root edit,
+ * not a new thread message), so only the confirmation echo is filtered out
+ * of the broadcast — while no human input is pending.
  */
 export function isSummarizeDirectiveNotice(message: unknown): boolean {
   const msg = message as { customType?: unknown; details?: { kind?: unknown } } | undefined;

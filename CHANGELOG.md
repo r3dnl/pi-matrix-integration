@@ -125,6 +125,16 @@ come with a major version bump.
   Nth human message"; state files written by earlier versions keep working
   (the new counter starts at 0 for them).
 
+- The summary-pass broadcast mute is gone, and with it the lift, the
+  already-lifted-at-run-start case, the wake-fuel flag, the on-final
+  trigger-suppression handshake and the absorbed-notice quiet directive
+  (PROP-001 P3, ~120 lines deleted). What remains is one shipping gate read
+  per turn: a run opened by a summary trigger holds its report-out only
+  while no human input is pending — `summaryTriggerRun &&
+  !humanInputPending`. A question queued before the directive, a relay
+  folded mid-run, or a notice absorbed by a live run all ship the same
+  way: the pending flag, never message arrival order, decides.
+
 - A decision poll that throws no longer eats the decision. `postPoll` was
   awaited unguarded, so a poll transport that raised (rather than returning
   `{success: false}`) escaped `onPrompt` and took the whole questionnaire

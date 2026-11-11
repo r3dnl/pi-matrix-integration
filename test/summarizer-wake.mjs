@@ -56,10 +56,10 @@ function makeLifecycle(cfgOverrides = {}) {
   const sent = [];
   const milestones = [];
   const logs = [];
-  // BUG-SUMMARIZER-ONFINAL-LOOP A: the wake-answer final must tell the thread
-  // manager to skip the report-out trigger.
+  // PROP-001 P3 deleted the trigger-suppression and quiet-hint machinery; the
+  // stubs stay so the tests can ASSERT nothing calls them (counters must
+  // remain 0 / hints 0).
   const tm = { suppressed: 0, cleared: 0, humanTicks: 0 };
-  // Leak guard: an absorbed notice must be followed by a quiet hint.
   const hints = [];
   const lc = new Lifecycle({
     cfg: { roomId: "!room:tst", sendFinalMessages: true, sendMilestones: false, maxFinalMessageLength: 2000, ...cfgOverrides },
@@ -105,7 +105,7 @@ const directive = (details) => ({
   check("wake turn posts nothing to the room", sent.length === 0, `sent=${JSON.stringify(sent)}`);
   check(
     "the skip is observable in the log",
-    logs.some((l) => /summarizer wake turn, skipping final broadcast/.test(l)),
+    logs.some((l) => /summarizer pass turn, final broadcast held/.test(l)),
   );
 }
 
@@ -148,16 +148,17 @@ const directive = (details) => ({
   await lc.onTurnEnd(assistantTurn("Summary pass done."));
   check("a multi-turn pass leaks no closing line", sent.length === 0, `sent=${JSON.stringify(sent)}`);
   check(
-    "every muted turn is observable",
-    logs.filter((l) => /summarizer wake turn, skipping final broadcast/.test(l)).length === 3,
+    "every filtered turn is observable",
+    logs.filter((l) => /summarizer pass turn, final broadcast held/.test(l)).length === 3,
     JSON.stringify(logs),
   );
 }
 
 // 3b2) THE SWALLOWED ANSWER (2026-11-10 incident): the question was queued
-//     BEFORE the directive opened the run — its message_end fired while no
-//     mute was set, so the mid-pass lift never saw it and the answer died at
-//     turn_end. The pending human-input flag must start the run lifted.
+//     BEFORE the directive opened the run — its message_end fired before
+//     any run flag existed, so the old mid-pass lift never saw it and the
+//     answer died at turn_end. The shipping gate reads the pending flag
+//     live: no lift machinery, no arrival-order dependency (PROP-001).
 {
   const { lc, sent, logs } = makeLifecycle();
   await lc.onMessageEnd({ message: { role: "user", content: [{ type: "text", text: "the queued question" }] } });
@@ -172,14 +173,14 @@ const directive = (details) => ({
     `sent=${JSON.stringify(sent)}`,
   );
   check(
-    "the start-time lift is observable",
-    logs.some((l) => /broadcast mute lifted at run start/.test(l)),
+    "the summary trigger is named at run start (declared, logged)",
+    logs.some((l) => /summary-run-filter=true/.test(l)),
     JSON.stringify(logs),
   );
   await lc.onTurnEnd(assistantTurn("Root unchanged."));
   check(
-    "the lifted run ships its leftover too (indistinguishable, kept)",
-    sent.length === 2 && sent[1] === "Root unchanged.",
+    "the pass leftover stays filtered once the answer shipped (pending cleared)",
+    sent.length === 1,
     `sent=${JSON.stringify(sent)}`,
   );
 }
@@ -195,8 +196,8 @@ const directive = (details) => ({
   check("a pass cannot post a milestone", milestones.length === 0, JSON.stringify(milestones));
 }
 
-// 3d) A human message folded into a live pass lifts the mute — the pass
-//     answers it in the room instead of swallowing the question.
+// 3d) A human message folded into a live summary pass answers in the room:
+//     the pending flag flips the gate for the next final — no mute to lift.
 {
   const { lc, sent } = makeLifecycle();
   lc.onBeforeAgentStart({
@@ -205,7 +206,7 @@ const directive = (details) => ({
   });
   await lc.onMessageEnd({ message: { role: "user", content: [{ type: "text", text: "actual question" }] } });
   await lc.onTurnEnd(assistantTurn("answer to the human"));
-  check("user input mid-pass un-mutes the run", sent.length === 1 && sent[0] === "answer to the human", `sent=${JSON.stringify(sent)}`);
+  check("user input mid-pass ships the next final", sent.length === 1 && sent[0] === "answer to the human", `sent=${JSON.stringify(sent)}`);
 }
 
 // 3e) The pass's own injected directive must NOT lift the mute — and neither
@@ -245,8 +246,8 @@ const roomRelay = (text) => ({
   });
   await lc.onMessageEnd({ message: roomRelay("Show me the code of serve.mjs") });
   check(
-    "a room relay mid-pass lifts the mute",
-    logs.some((l) => /broadcast mute lifted/.test(l)),
+    "no lift machinery left: the shipping gate reads the pending flag",
+    !logs.some((l) => /mute lifted/.test(l)),
     JSON.stringify(logs),
   );
   await lc.onTurnEnd(assistantTurn("Here is serve.mjs …"));
@@ -260,8 +261,8 @@ const roomRelay = (text) => ({
   lc.onBeforeAgentStart({ messageType: "user", prompt: "hello" });
   await lc.onMessageEnd({ message: roomRelay("follow-up from the room") });
   check(
-    "unmuted relay does not log a lift",
-    !logs.some((l) => /broadcast mute lifted/.test(l)),
+    "a plain relay ships normally (nothing held, nothing lifted)",
+    !logs.some((l) => /mute lifted|final broadcast held/.test(l)),
     JSON.stringify(logs),
   );
   await lc.onTurnEnd(assistantTurn("answer with the follow-up"));
@@ -294,10 +295,10 @@ const roomRelay = (text) => ({
   );
 }
 
-// 3i) A2: a lifted run books EVERY final as non-content — the pass's leftover
-//     line ships but cannot dispatch a wasted summary pass. The answer ships
-//     too (answer-after-edit ordering, the case re-muting after the root edit
-//     would swallow). Suppression dies with the run.
+// 3i) PROP-001 P3: a summary pass that answers a human question ships the
+//     answer and nothing else. No trigger-suppression exists anymore — a
+//     posted final cannot dispatch a pass, because the on-final cadence gate
+//     reads the human meter (test/summarize-cadence.mjs pins that).
 {
   const { lc, sent, tm } = makeLifecycle();
   lc.onBeforeAgentStart({
@@ -309,18 +310,16 @@ const roomRelay = (text) => ({
   await lc.onMessageEnd({ message: roomRelay("Show me the code of serve.mjs") });
   await lc.onTurnEnd(assistantTurn("Here is serve.mjs …"));
   check("the answer emitted after the edit ships", sent.length === 1 && sent[0] === "Here is serve.mjs …", `sent=${JSON.stringify(sent)}`);
-  check("the answer's report-out dispatches no pass", tm.suppressed === 1, JSON.stringify(tm));
+  check("no suppression machinery is called", tm.suppressed === 0, JSON.stringify(tm));
   await lc.onTurnEnd(assistantTurn("Root unchanged."));
-  check("the leftover line ships", sent.length === 2 && sent[1] === "Root unchanged.", `sent=${JSON.stringify(sent)}`);
-  check("the leftover line dispatches no wasted pass", tm.suppressed === 2, JSON.stringify(tm));
-  // The lifted-run booking ends at the run boundary: the next run's final
-  // keeps its report-out trigger.
+  check("the pass leftover stays filtered once the answer shipped", sent.length === 1, `sent=${JSON.stringify(sent)}`);
+  // The next run ships normally — the filter died with its run boundary.
   lc.onAgentSettled();
   lc.onBeforeAgentStart({ messageType: "user", prompt: "next question" });
   await lc.onTurnEnd(assistantTurn("later answer"));
   check(
-    "the next run keeps its report-out trigger",
-    sent.length === 3 && tm.suppressed === 2,
+    "the next run ships its report-out normally",
+    sent.length === 2 && sent[1] === "later answer" && tm.suppressed === 0,
     `sent=${JSON.stringify(sent)} tm=${JSON.stringify(tm)}`,
   );
 }
@@ -339,7 +338,7 @@ const roomRelay = (text) => ({
   check("unlifted pass books no suppression", tm.suppressed === 0, JSON.stringify(tm));
 }
 
-// 3c) Echo-isolated cadence wiring (PROP-001 P2): the human meter ticks
+// 3k) Echo-isolated cadence wiring (PROP-001 P2): the human meter ticks
 //     for human input on both channels — terminal (bare user message) and
 //     room relay (matrix-message) — and never for the extension's own
 //     channels (a summary directive carries matrix-directive; Matrix
@@ -350,7 +349,7 @@ const roomRelay = (text) => ({
   await lc.onMessageEnd({ message: { role: "user", content: [{ type: "text", text: "a question" }] } });
   await lc.onMessageEnd({ message: { role: "user", customType: "matrix-message", content: [{ type: "text", text: "room question" }] } });
   await lc.onMessageEnd({ message: directive({ kind: classify.SUMMARIZE_DIRECTIVE_KIND }) });
-  check("3c: ticks for the two human channels, none for the directive",
+  check("3k: ticks for the two human channels, none for the directive",
     tm.humanTicks === 2, String(tm.humanTicks));
 }
 
@@ -407,8 +406,11 @@ check(
 // Its report answers real work → it must still broadcast; the extension only
 // makes the event observable.
 
-// 7) Absorbed notice: real-work report survives, the event is logged, and the
-//    report-out trigger is disarmed for that one final.
+// 7) Absorbed notice: real-work report survives, the event is logged. The
+//    trigger-disarm and the quiet do-not-surface hint are gone with the loop
+//    they guarded: the cadence cannot self-arm (P2) and the folded notice
+//    adds no fuel — an echoed notice line costs one room message at worst,
+//    never another pass.
 {
   const { lc, sent, logs, tm, hints } = makeLifecycle();
   await lc.onMessageEnd({ message: { role: "custom", ...notice(["pi-matrix-integration-thread-summarizer"]) } });
@@ -419,12 +421,8 @@ check(
     logs.some((l) => /summary fuel notice absorbed by live run/.test(l)),
     JSON.stringify(logs),
   );
-  check("its final does not re-arm the summary trigger", tm.suppressed === 1, JSON.stringify(tm));
-  check(
-    "a quiet do-not-surface hint rides after the absorbed notice",
-    hints.length === 1 && hints[0].details?.kind === "absorbed-notice-hint",
-    JSON.stringify(hints),
-  );
+  check("no suppression machinery is called", tm.suppressed === 0, JSON.stringify(tm));
+  check("the quiet-hint machinery is deleted", hints.length === 0, JSON.stringify(hints));
 }
 
 // 7b) A run with no absorbed wake keeps today's report-out trigger.
@@ -442,14 +440,14 @@ check(
   check("no notice, no hint", hints.length === 0, JSON.stringify(hints));
 }
 
-// 7c) The wake-fuel flag lives one run: the next run's start clears it, so a
-//     later real report-out still re-arms.
+// 7c) Nothing survives the run boundary: a notice absorbed by one run
+//     cannot filter a later run's report-out.
 {
   const { lc, sent, tm } = makeLifecycle();
   await lc.onMessageEnd({ message: { role: "custom", ...notice(["pi-matrix-integration-thread-summarizer"]) } });
   lc.onBeforeAgentStart({ messageType: "user", prompt: "next question" });
   await lc.onTurnEnd(assistantTurn("later answer"));
-  check("a stale wake flag does not silence the next run", sent.length === 1 && tm.suppressed === 0 && tm.cleared === 1, JSON.stringify(tm));
+  check("an absorbed notice cannot silence the next run", sent.length === 1 && tm.suppressed === 0 && tm.cleared === 0, JSON.stringify(tm));
 }
 
 // 8) Termination contract: absorbed wake during real work + idle wake after.

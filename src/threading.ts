@@ -232,14 +232,6 @@ export class ThreadManager {
    * the root. Set when a run is dispatched, cleared when its promise settles.
    */
   private summaryInFlight = false;
-  /**
-   * One-shot: the next `"final"` post answers a summarizer wake absorbed into
-   * the live run (lifecycle sets it right before that broadcast). It is
-   * bookkeeping, not new thread content, so it must not re-arm the report-out
-   * trigger (the 2026-10 summary loop, fix A). Consumed by the post, cleared by
-   * the lifecycle at the next run start.
-   */
-  private suppressOnFinalOnce = false;
 
   constructor(opts: ThreadManagerOptions) {
     this.opts = opts;
@@ -458,24 +450,13 @@ export class ThreadManager {
     }
 
     this.recordOnRoot(root, kind, text);
-    // A wake-answer final (lifecycle set `suppressOnFinalOnce` before this
-    // broadcast) skips the report-out trigger once: the answer ships, the
-    // pass does not fire for it. PROP-001 P2 narrowed this to the trigger
-    // skip: with the cadence running on the human meter, own sends cannot
-    // arm anything, so the old `bookkeepingSinceSummary` subtraction went
-    // away with the bug class. The flag is consumed by ANY final post, so
-    // it cannot leak into the next turn.
-    const wakeAnswer = kind === "final" && this.suppressOnFinalOnce;
-    if (wakeAnswer) {
-      this.suppressOnFinalOnce = false;
-      this.logger.warn("[matrix] on-final summary trigger suppressed (wake-answer final)");
-    }
     // Report-out trigger: a `"final"` post is the turn's report-out to the
     // user — run a summary pass right after it lands (gated; default on).
     // The pass only fires when the HUMAN meter advanced since the last
     // completed run (`runSummary` gate), so this send-side hook cannot spin
-    // (PROP-001 P2). Skipped for the one suppressed wake-answer final.
-    if (!wakeAnswer && kind === "final" && this.opts.threadSummaryOnFinal !== false) {
+    // and a pass can never re-summarise its own output (PROP-001 P2; the
+    // wake-answer suppression flag this needed died with the mute, P3).
+    if (kind === "final" && this.opts.threadSummaryOnFinal !== false) {
       // LLM mode: skip when a run is already queued — its room-sourced
       // delta read lands after this send, so it covers the report-out;
       // no duplicate request. Heuristic mode re-posts the ledger line so
@@ -590,18 +571,6 @@ export class ThreadManager {
     if (!root) return;
     root.openDecisions = Math.max(0, root.openDecisions - 1);
     this.save();
-  }
-
-  /** Skip the on-final summary trigger for the next `"final"` post (see
-   *  `suppressOnFinalOnce`). */
-  suppressNextOnFinalTrigger(): void {
-    this.suppressOnFinalOnce = true;
-  }
-
-  /** Drop an unconsumed suppression (a run started → the previous run's
-   *  bookkeeping is done). */
-  clearOnFinalSuppression(): void {
-    this.suppressOnFinalOnce = false;
   }
 
   private stripMarker(body: string | undefined): string | undefined {
