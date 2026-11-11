@@ -7,6 +7,8 @@ config/
 manifests/
 .env
 .env.*
+# the tracked sample of the harness environment (the rules above ignore it)
+!docker/.env.example
 
 # logs and run artifacts
 *.log
@@ -22,9 +24,9 @@ pi-matrix-integration-*.tgz
 .pi/state
 .archify
 
-# local test harness, restored from git history (commit 39c0297); intentionally untracked
-docker/
-Makefile
-artifacts/
-
+# script for demo
 .video-demo-script.md
+
+# proposal and design docs
+docs/dev/architecture/
+docs/dev/proposals/
