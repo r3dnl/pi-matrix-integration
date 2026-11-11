@@ -1,154 +1,202 @@
-# Test setup and runbook
+# QA: strategy, setup, and how to run the tests
 
-One page for everything that runs tests: which identities you need, where
-the environment lives, what to run locally, the cold-install container, and
-the GitHub Actions setup. What each tier proves and why it is scoped the way
-it is lives in [developing.md — The test tiers](developing.md#the-test-tiers);
-this page is the setup and the commands.
+**The whole QA design follows from one rule: trust only what the room can
+read back.** An integration bug in this extension looks like silence — the
+agent answered in the terminal, the room shows nothing. A test that asserts
+on internal variables passes while the user sees nothing; that has already
+happened here. So every claim about user-visible behaviour is asserted on
+the room itself, fetched over the client-server API, by a client that is
+*not* the one under test. That rule shapes the three rings of testing, the
+Matrix identities they need, and the tools that run them.
 
-## The three test identities
+## 1. Strategy: three rings
 
-The live tier drives a real homeserver with three distinct identities. They
-are throwaway accounts on a test homeserver only — AGENTS.md rule 1 permits
-no other target.
+| Ring | Commands | Question it answers | When | Network / model |
+|---|---|---|---|---|
+| **Offline gate** | `npm test`, `npm run test:logic`, `npm run test:docs`, `typecheck`, `lint` | Does every branch behave, deterministically, with no network to flake on? | every push (CI) + the local loop | no / no |
+| **Live scenarios** | `npm run test:live` | Does what the extension claims actually land in a real Matrix room, and can a stranger read it back? | nightly CI + on demand | yes / yes |
+| **Packaging** | `make e2e`, `make e2e-npm`, `make e2e-offline` | Does a clean machine that installed the way a user does end up working? | at release | yes / no¹ |
 
-| Actor | Env vars | What it does |
+¹ the offline container target has *no* network at all, on purpose.
+
+Ad hoc, never gates: `npm run test:repro` (one bug, one script),
+`npm run test:live:judge` (an LLM grades summary quality once per release),
+`npm run test:perf` (reserved — fails until the perf stories land).
+
+Why three rings and not one big suite: the push ring must never be flaky,
+so it gets no network; the live ring is where claims meet reality, so it is
+allowed to be slow and needs accounts; the packaging ring tests the
+*artifact*, which neither of the other two ever installs.
+
+## 2. Each ring: what is tested, and on what Matrix setup
+
+### 2.1 Offline gate — a fake Matrix, all of the logic
+
+**SCQ:** the code has to run its full cycle — milestones out, messages in,
+question mirrors, thread summaries — but a push gate cannot depend on a
+homeserver. *Resolution:* a fake outbox.
+
+- **Setup:** `npm ci`, nothing else. Two seams make it hermetic:
+  `PI_MATRIX_TEST_OUTBOX` swaps the real transport for
+  `test/fake-outbox.mjs`, `PI_MATRIX_TEST` marks the hermetic run.
+- **What is tested:** `npm test` — units plus one full stubbed e2e cycle,
+  budget under 120 s. `npm run test:logic` — the deep per-subsystem
+  contracts: funnel/config/attach, threading and the summary cadence
+  (see `test/logic/01-threading.mjs`), transport and footer, and the sdk
+  crypto suite, which runs real Olm/Megolm code offline.
+  `npm run test:docs` — links resolve, no maintainer-only identifiers ship,
+  no stale comment references.
+- **Matrix setup:** none. The fake records every would-be send and the
+  assertions read the recording.
+
+### 2.2 Live scenarios — the room is the witness
+
+**SCQ:** the fake outbox cannot tell you what Synapse really did with your
+event. The only witness a maintainer can trust is the room, fetched from
+the outside. *Resolution:* drive a real homeserver, then read it back.
+
+- **Setup:** a throwaway **test homeserver** plus three identities (below),
+  exported from `docker/.env` (see §4). Never a real account — AGENTS.md
+  rule 1 permits no other target.
+- **What is tested:** the 14 named scenarios in `test/live/scenarios.mjs`:
+  milestone out, TODO progress, turn final out, message-in attribution,
+  questionnaire mirror, answer race (terminal vs room), thread-per-session,
+  summary rewrites the root, summary survives `/compact` and a restart,
+  commands from the room, attachment round trip, footer status, scripted
+  tour. Each scenario asserts on room bodies fetched over the API. The
+  human confirmation walkthrough per scenario:
+  [test/live/README.md](../../test/live/README.md).
+- **Matrix setup:** a fresh room per run (`live-e2e-<run-id>`), so reruns
+  cannot interfere; per-scenario evidence (JSON + SDK log) in
+  `artifacts/live-<run-id>/`; a sweep tool (§3) purges old test rooms. A
+  test homeserver that only speaks `http://` on a non-local address needs
+  the explicit opt-in `PI_MATRIX_ALLOW_INSECURE_HTTP=1` (never applies to
+  `https://`).
+
+**The three test identities.**
+
+| Persona | `.env` name | Who it plays |
 |---|---|---|
-| **Agent (primary)** | `PI_MATRIX_USERNAME` + `PI_MATRIX_PASSWORD` (or `PI_MATRIX_PRIMARY_CREDENTIALS`) | The extension identity under test. It logs in, joins the room, posts and relays. |
-| **Human seat** | `PI_MATRIX_SECOND_USER` + `PI_MATRIX_SECOND_PASSWORD` (or `PI_MATRIX_SECOND_TOKEN`) | Plays the human: posts into the room so the inbound path has something to read. Also the Synapse admin identity the room sweep uses for purges. |
-| **Crypto reader** | `PI_MATRIX_READER_USER` + `PI_MATRIX_READER_PASSWORD` (or `PI_MATRIX_READER_CREDENTIALS`) | A separate *device* that decrypts Megolm so the assertions can read room bodies. **Not the second user.** Needed whenever the homeserver auto-encrypts new rooms; the CI nightly derives it from the primary account's login (a fresh device per run). |
+| **Agent** | `pi_agent` (`PI_MATRIX_USERNAME`) | The extension under test: the bot that joins, posts, relays, and summarizes. |
+| **Human** | `you` (`PI_MATRIX_SECOND_USER`) | The scripted phone user: joins the room, posts messages, answers questions. Also the Synapse admin identity for the room sweep. |
+| **Reader** | often a second device of `pi_agent` (`PI_MATRIX_READER_*`) | The verifier: a third Matrix client that sits in the room and reads it back so the assertions have a witness. |
 
-Provision the accounts with the manifest shape in
-[test/live/accounts-manifest.example.json](../../test/live/accounts-manifest.example.json).
+**Why the reader has to exist.** On a homeserver without room encryption,
+the reading client can just borrow the agent's token — that is what the
+suite does when no reader is configured. But a default-encryption Synapse
+encrypts every new room and there is no client-side opt-out, and *reading
+then means decrypting*. Decryption needs a device with its own Olm/Megolm
+crypto store, and a crypto store is device-exclusive: the agent's store is
+locked by the very process under test, and the human's login is there to
+post, not to verify. So the third identity exists: it logs in (the first
+run mints a fresh device and a `credentials.json` with a persistent crypto
+store beside it; later runs reuse that device), gets invited to the room
+like any member, and receives the room keys like any member. The nightly
+mints a fresh reader device from the agent account's login every run,
+because a stateless CI runner cannot carry a crypto store — and reusing a
+stored `device_id` with an empty store registers a *new* identity under the
+*old* device, whose keys can never be unwrapped (it shows up as `NoOlm` /
+withheld-key).
 
-## The local environment: `docker/.env`
+### 2.3 Packaging — prove the artifact, not the tree
 
-`docker/.env` is the single place the local harness reads its secrets from.
-It is git-ignored; copy the tracked sample and fill it in:
+**SCQ:** users install Pi and this extension from a tarball or the npm
+registry, on a machine with no repo checkout, no devDependencies, and no
+`$HOME` full of working config. No other ring ever tests that machine.
+*Resolution:* a container that starts clean and installs like a user.
 
-```bash
-cp docker/.env.example docker/.env   # then edit the values
-source docker/.env                   # loads the exports into your shell
-npm run test:live
-```
+- **Setup:** Docker + compose plugin; `npm ci` on the host (node_modules
+  rides into the offline target); credentials arrive only as environment
+  variables at run time — nothing secret lives in the image.
+- **What is tested:** cold install → the extension logs in → it runs the
+  live scenario tier *inside* the container (`make e2e`), or from the
+  published npm artifact (`make e2e-npm`), or the offline tier with
+  `network_mode: "none"` to prove `npm test` is really offline
+  (`make e2e-offline`). Full notes: [docker/README.md](../../docker/README.md).
+- **Matrix setup:** the same test homeserver and accounts as §2.2 — the
+  container reads them from `docker/.env` through compose. If the reader
+  vars are missing, the in-container live tier fails exactly the way a
+  host-side run does (see §5).
 
-`docker compose` reads `docker/.env` by itself for `${VAR}` interpolation, so
-`make e2e` works without sourcing — but if your compose version does not
-expand `$VAR` references inside the file, write the reader values out in
-full instead of `$PI_MATRIX_USERNAME`-style references.
+## 3. Tools and their roles
 
-If the suite was run without the reader against an encrypting homeserver,
-you will have seen the cascade described in the triage section below.
-
-## What to run
-
-The daily loop (every push must be green on all of it):
-
-```bash
-npm ci
-npm run typecheck && npm run lint   # the gate
-npm test                             # offline tier: units + stubbed e2e
-npm run test:docs                    # docs surface gate
-npm run test:logic                   # deep behavioural suite
-```
-
-Beyond the loop:
-
-```bash
-source docker/.env
-npm run test:live                    # 14 scenarios against the test homeserver
-npm run test:live:judge              # release-time LLM judge on summary quality
-                                     # (needs PI_MATRIX_JUDGE_BASE_URL / _MODEL)
-npm run test:repro                   # single-bug reproduction, not a gate
-npm run test:perf                    # reserved: fails until the perf stories land
-```
-
-The live suite creates one fresh room per run, asserts on room state fetched
-over the client-server API (never internal variables), and writes per-run
-evidence to `artifacts/live-<run-id>/` — per-scenario JSON plus the SDK log.
-The human confirmation walkthrough per scenario is
-[test/live/README.md](../../test/live/README.md).
-
-An `http://`-only test homeserver on a non-local address additionally needs
-`PI_MATRIX_ALLOW_INSECURE_HTTP=1` (never applies to `https://`).
-
-## The cold-install container (`make`)
-
-`docker/` + `Makefile` carry the release-story harness: a clean container
-installs Pi and the extension the way a user does and proves it against the
-real homeserver. Credentials arrive as environment variables at run time —
-nothing secret lives in these files or the image. Full notes:
-[docker/README.md](../../docker/README.md).
-
-| Target | What it proves |
+| Tool | Role |
 |---|---|
-| `make build` | builds the harness image (Pi version pinned via `PI_VERSION`, default in the Makefile) |
-| `make e2e` | cold install from the local tarball → log in → run the live tier inside the container |
-| `make e2e-npm` | same, installed from the npm registry (proves the published artifact) |
-| `make e2e-offline` | `npm test` with no network at all (run `npm ci` on the host first — `node_modules` rides along) |
-| `make shell` | interactive container for the manual walkthrough |
-| `make clean` | tear down images and volumes |
+| npm scripts | the test tiers themselves (§1) |
+| `Makefile` + `docker/` | the packaging ring: `make build`, `e2e`, `e2e-npm`, `e2e-offline` (§2.3), `shell` for a manual walkthrough, `clean` to tear down. The Pi version inside the container is pinned (`PI_VERSION`, default in the Makefile) — `make e2e` proves the pinned version, not the latest. |
+| `docker/sweep-test-rooms.mjs` | janitor: purges agent-created `e2e-*`/`live-e2e-*`/`optout-*` rooms older than `SWEEP_TTL_DAYS` (default 7) via the Synapse admin API |
+| `docker/.env.example` | the tracked environment template; your filled copy under `docker/` stays git-ignored |
+| GitHub Actions | runs the push gate, the nightly live tier, the supply-chain audit, and the release publish — see §4 |
 
-Keep the container's Pi pin and the nightly's `PI_MATRIX_TEST_PI_PKG` story
-in mind when Pi releases move: `make e2e` proves *the pinned version*, not
-whatever is latest.
+## 4. GitHub Actions setup
 
-Test rooms pile up on the test homeserver between runs; sweep them:
-
-```bash
-source docker/.env
-node docker/sweep-test-rooms.mjs     # purges agent-created e2e-*/live-e2e-*/optout-*
-                                     # rooms older than SWEEP_TTL_DAYS (default 7)
-```
-
-## GitHub Actions setup
-
-Four workflows live in `.github/workflows/`:
+**SCQ:** a test suite that touches credentials must never run where a
+stranger's pull request can reach them. *Resolution:* only one workflow
+holds secrets, and it runs on `main` alone.
 
 | Workflow | Trigger | Jobs |
 |---|---|---|
-| `ci.yml` | every push / PR | `gate`: credential scan (plus a self-test that the scan can bite), typecheck, lint, `npm test`, docs-consistency. `manifest`: `npm ci --omit=dev` in a clean tree, the dependency contract, the secret scan on the unpacked tarball, the tarball file allowlist |
+| `ci.yml` | every push / PR | `gate`: credential scan (plus a self-test that the scan can bite), typecheck, lint, `npm test`, docs-consistency. `manifest`: clean `npm ci --omit=dev`, dependency contract, secret scan on the unpacked tarball, tarball file allowlist. No secrets, no network. |
 | `deps.yml` | schedule + lockfile changes | `npm audit --omit=dev` (fails on high/critical), registry signature verification |
-| `live-nightly.yml` | daily 04:30 UTC + manual dispatch, `main` only | `npm run test:live`; `npm run test:perf` (continue-on-error until the perf stories land). Evidence uploaded; a failing run opens (or reuses) one tracking issue |
-| `release.yml` | version tag | the `prepack` publish guard, then publish |
+| `live-nightly.yml` | daily 04:30 UTC + manual dispatch, `main` only | `npm run test:live`; `npm run test:perf` (continue-on-error until perf lands). Evidence uploaded; a failure opens (or reuses) one tracking issue |
+| `release.yml` | version tag | `prepack` publish guard, then publish |
 
-The nightly is the only workflow that touches the network with credentials.
-It never runs on a fork or a PR — the secrets are repository secrets, visible
-only to the scheduled run on `main`.
-
-### The required secrets (five, exact case)
-
-GitHub → Settings → Secrets and variables → Actions:
+**The five repository secrets** (GitHub → Settings → Secrets and variables
+→ Actions, exact case):
 
 - `PI_MATRIX_HOMESERVER` — the https URL of the test homeserver
 - `PI_MATRIX_USERNAME` + `PI_MATRIX_PASSWORD` — the agent account
 - `PI_MATRIX_SECOND_USER` + `PI_MATRIX_SECOND_PASSWORD` — the human seat
-  (`PI_MATRIX_SECOND_TOKEN` is read too, but tokens expire; passwords do not)
+  (`PI_MATRIX_SECOND_TOKEN` is read too; tokens expire, passwords do not)
 
-No reader secret is needed: the workflow sets `PI_MATRIX_READER_USER` /
-`PI_MATRIX_READER_PASSWORD` from the primary account's secrets, minting a
-fresh reader device per run. A stateless runner must never carry a stored
-`device_id` with an empty crypto store — that registers a new identity under
-the old device and Olm key shares can never be unwrapped (the failure shows
-as `NoOlm` / withheld-key in the reader log). A fresh device per run is the
-path a first local run takes, so it is the path CI takes.
+No sixth secret for the reader: the workflow derives `PI_MATRIX_READER_USER`
+/ `PI_MATRIX_READER_PASSWORD` from the agent account's secrets — the fresh
+device per run described in §2.2. The workflow also points
+`PI_MATRIX_TEST_PI_PKG` at the devDependency-installed Pi package, because a
+runner has no `pi` on `PATH`.
 
-The workflow also sets `PI_MATRIX_TEST_PI_PKG` to the devDependency-installed
-Pi package — on a runner there is no `pi` on `PATH`, so the harness points
-the seam at `node_modules/@earendil-works/pi-coding-agent` explicitly.
+Provision the accounts with the manifest shape in
+[test/live/accounts-manifest.example.json](../../test/live/accounts-manifest.example.json).
 
-## Triage signatures
+## 5. Setup and run: the first hour
+
+```bash
+# 1 — offline gate: no accounts, no network needed
+npm ci
+npm run typecheck && npm run lint
+npm test && npm run test:docs && npm run test:logic
+
+# 2 — environment for the live rings
+cp docker/.env.example docker/.env     # fill in homeserver + accounts
+source docker/.env
+
+# 3 — provision the three test identities on the TEST homeserver
+#     (manifest shape: test/live/accounts-manifest.example.json;
+#      the reader may reuse the agent account's login — one extra device)
+
+# 4 — live tier
+npm run test:live                      # expect 14/14
+
+# 5 — on any failure, read the witness
+less artifacts/live-<run-id>/summary.json
+less artifacts/live-<run-id>/pi-matrix-http-sdk.log
+```
+
+## 6. Triage signatures
 
 - **`This room is configured to use encryption, but your client does not
-  support encryption`** in `artifacts/live-<run-id>/pi-matrix-http-sdk.log`,
-  followed by a cascade of timeouts (questionnaire, thread roots, restart
-  post) and `sdk transport unavailable`: the reader env pair is missing and
-  the homeserver auto-encrypts new rooms. Early scenarios may pass — their
-  sends left before the first sync revealed the room's encryption. Fix:
-  export `PI_MATRIX_READER_USER` + `PI_MATRIX_READER_PASSWORD` (see the
-  sample file) and rerun.
-- **Empty `""` bodies in the timeout evidence** — the same diagnosis from
-  the reading side: a non-crypto reader cannot see Megolm event bodies.
-- **`nightly live gate failed` issue opened** — read the uploaded
+  support encryption`** in the SDK log, followed by a cascade of timeouts
+  (questionnaire, thread roots, restart post) and `sdk transport
+  unavailable`: the reader env pair is missing on an auto-encrypting
+  homeserver. Early scenarios may pass — their sends left before the first
+  sync revealed the room's encryption. Fix: export
+  `PI_MATRIX_READER_USER` + `PI_MATRIX_READER_PASSWORD` and rerun.
+- **Empty `""` bodies in timeout evidence** — same diagnosis from the
+  reading side: a reader without crypto cannot see Megolm event bodies.
+- **`NoOlm` / withheld-key in the reader log** — a stored `device_id`
+  against an empty crypto store: a new identity wearing an old device's
+  name. Mint a fresh device (CI does this by design; locally, remove the
+  reader's stale `device_id`).
+- **Nightly opens a `Nightly live gate failed` issue** — read the uploaded
   `live-nightly-<run>` artifact; the per-scenario JSON names the marker and
   the last-seen room bodies.
