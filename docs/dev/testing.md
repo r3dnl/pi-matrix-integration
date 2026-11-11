@@ -1,13 +1,35 @@
 # QA: strategy, setup, and how to run the tests
 
-**The whole QA design follows from one rule: trust only what the room can
-read back.** An integration bug in this extension looks like silence — the
-agent answered in the terminal, the room shows nothing. A test that asserts
-on internal variables passes while the user sees nothing; that has already
-happened here. So every claim about user-visible behaviour is asserted on
-the room itself, fetched over the client-server API, by a client that is
-*not* the one under test. That rule shapes the three rings of testing, the
-Matrix identities they need, and the tools that run them.
+This document is the QA overview for the extension. It covers four things:
+the test strategy — three rings and what each proves (§1); how each ring
+is set up and what Matrix topology it runs on, including the three test
+identities (§2); which tool does what — npm scripts, `make`, docker, CI
+(§3–§4); and the concrete steps to set up and run everything yourself
+([§5. Test Setup and Run](#5-test-setup-and-run)).
+
+```mermaid
+flowchart LR
+  subgraph R1 [Ring 1 — offline gate, every push]
+    A["npm test · test:logic · test:docs · typecheck · lint"] --> FAKE["fake outbox<br/>no network, no secrets"]
+  end
+  subgraph R2 [Ring 2 — live scenarios, nightly + on demand]
+    B["npm run test:live — 14 scenarios"] --> ROOM["test homeserver, fresh room<br/>agent + human + reader"]
+  end
+  subgraph R3 [Ring 3 — packaging, at release]
+    C["make e2e · e2e-npm · e2e-offline"] --> CLEAN["clean container<br/>installs like a user"]
+  end
+  CI["GitHub Actions<br/>ci.yml · live-nightly.yml"] -.runs.-> A
+  CI -.runs.-> B
+  SECRETS["5 repo secrets<br/>agent + human + homeserver"] -.used by.-> B
+```
+
+One rule shapes all of it: **trust only what the room can read back.** An
+integration bug in this extension looks like silence — the agent answered
+in the terminal, the room shows nothing. A test that asserts on internal
+variables passes while the user sees nothing; that has already happened
+here. So every claim about user-visible behaviour is asserted on the room
+itself, fetched over the client-server API, by a client that is *not* the
+one under test.
 
 ## 1. Strategy: three rings
 
@@ -32,7 +54,7 @@ allowed to be slow and needs accounts; the packaging ring tests the
 
 ### 2.1 Offline gate — a fake Matrix, all of the logic
 
-**SCQ:** the code has to run its full cycle — milestones out, messages in,
+**Context:** the code has to run its full cycle — milestones out, messages in,
 question mirrors, thread summaries — but a push gate cannot depend on a
 homeserver. *Resolution:* a fake outbox.
 
@@ -49,9 +71,9 @@ homeserver. *Resolution:* a fake outbox.
 - **Matrix setup:** none. The fake records every would-be send and the
   assertions read the recording.
 
-### 2.2 Live scenarios — the room is the witness
+### 2.2 Live scenarios — a real Matrix room
 
-**SCQ:** the fake outbox cannot tell you what Synapse really did with your
+**Context:** the fake outbox cannot tell you what Synapse really did with your
 event. The only witness a maintainer can trust is the room, fetched from
 the outside. *Resolution:* drive a real homeserver, then read it back.
 
@@ -100,7 +122,7 @@ withheld-key).
 
 ### 2.3 Packaging — prove the artifact, not the tree
 
-**SCQ:** users install Pi and this extension from a tarball or the npm
+**Context:** users install Pi and this extension from a tarball or the npm
 registry, on a machine with no repo checkout, no devDependencies, and no
 `$HOME` full of working config. No other ring ever tests that machine.
 *Resolution:* a container that starts clean and installs like a user.
@@ -122,17 +144,25 @@ registry, on a machine with no repo checkout, no devDependencies, and no
 
 | Tool | Role |
 |---|---|
-| npm scripts | the test tiers themselves (§1) |
+| npm scripts in `test` | the test tiers themselves (§1) |
 | `Makefile` + `docker/` | the packaging ring: `make build`, `e2e`, `e2e-npm`, `e2e-offline` (§2.3), `shell` for a manual walkthrough, `clean` to tear down. The Pi version inside the container is pinned (`PI_VERSION`, default in the Makefile) — `make e2e` proves the pinned version, not the latest. |
-| `docker/sweep-test-rooms.mjs` | janitor: purges agent-created `e2e-*`/`live-e2e-*`/`optout-*` rooms older than `SWEEP_TTL_DAYS` (default 7) via the Synapse admin API |
+| `docker/sweep-test-rooms.mjs` | cleanup: purges agent-created `e2e-*`/`live-e2e-*`/`optout-*` rooms older than `SWEEP_TTL_DAYS` (default 7) via the Synapse admin API |
 | `docker/.env.example` | the tracked environment template; your filled copy under `docker/` stays git-ignored |
 | GitHub Actions | runs the push gate, the nightly live tier, the supply-chain audit, and the release publish — see §4 |
 
 ## 4. GitHub Actions setup
 
-**SCQ:** a test suite that touches credentials must never run where a
-stranger's pull request can reach them. *Resolution:* only one workflow
-holds secrets, and it runs on `main` alone.
+**REVIEW COMMENT: I MISS HERE HOW THE 4 WORKFLOWS (CI, Dependencies, Live nightly and Release) MATCH WHICH RING.**
+
+We run 4 workflows in our CI process — each belongs to a ring of §1, or
+protects the ground the rings run on:
+
+| Workflow | Ring | What it covers |
+|---|---|---|
+| `ci.yml` | **Ring 1** (offline gate) + packaging ground | `gate` runs exactly Ring 1's commands; `manifest` proves the *artifact's* ground is sound — clean install, dependency contract, secret scan on the packed tarball — without a network or a container |
+| `deps.yml` | supply chain (supports Ring 3) | never runs code of ours: audits what the rings would install |
+| `live-nightly.yml` | **Ring 2** (live scenarios) | the nightly run of `test:live` on the real homeserver; the only workflow holding secrets |
+| `release.yml` | Ring 3's gate, not Ring 3 itself | the `prepack` guard and publish; the `make e2e*` container proofs stay a maintainer act, run by hand at release time |
 
 | Workflow | Trigger | Jobs |
 |---|---|---|
@@ -140,6 +170,10 @@ holds secrets, and it runs on `main` alone.
 | `deps.yml` | schedule + lockfile changes | `npm audit --omit=dev` (fails on high/critical), registry signature verification |
 | `live-nightly.yml` | daily 04:30 UTC + manual dispatch, `main` only | `npm run test:live`; `npm run test:perf` (continue-on-error until perf lands). Evidence uploaded; a failure opens (or reuses) one tracking issue |
 | `release.yml` | version tag | `prepack` publish guard, then publish |
+
+**Concern:** the live nightly requires credentials, but they must never run where a
+stranger's pull request can reach them. *Resolution:* only one workflow
+holds secrets, and it runs on `main` alone.
 
 **The five repository secrets** (GitHub → Settings → Secrets and variables
 → Actions, exact case):
@@ -151,14 +185,30 @@ holds secrets, and it runs on `main` alone.
 
 No sixth secret for the reader: the workflow derives `PI_MATRIX_READER_USER`
 / `PI_MATRIX_READER_PASSWORD` from the agent account's secrets — the fresh
-device per run described in §2.2. The workflow also points
-`PI_MATRIX_TEST_PI_PKG` at the devDependency-installed Pi package, because a
-runner has no `pi` on `PATH`.
+device per run described in §2.2. **This is not a privilege CI has and you
+do not.** "Derive" means nothing more than exporting those two variables
+from the agent username/password that are already in the environment. The
+suite only reads env vars; it does not know or care who set them. Locally
+the identical derivation belongs in your env file —
+`docker/.env.example` ships exactly these two lines (reader user/password
+referencing the agent's). A run fails the way today's did only because the
+env file predates that sample.
+
+Why is it a variable at all instead of hardcoded into the suite? Two
+reasons. On a server without auto-encryption no reader is needed — the
+plain reader just borrows the agent's token. And on an encrypting server
+the reader mints a real device and, locally, a persistent crypto store on
+disk; the suite will not silently create devices and store key material in
+your accounts. The env var is the explicit go-ahead — CI simply carries it
+in the workflow file instead of an env file.
+
+The workflow also points `PI_MATRIX_TEST_PI_PKG` at the devDependency-installed
+Pi package, because a runner has no `pi` on `PATH`.
 
 Provision the accounts with the manifest shape in
 [test/live/accounts-manifest.example.json](../../test/live/accounts-manifest.example.json).
 
-## 5. Setup and run: the first hour
+## 5. Test Setup and Run
 
 ```bash
 # 1 — offline gate: no accounts, no network needed
