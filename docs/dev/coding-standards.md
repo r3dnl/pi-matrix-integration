@@ -1,5 +1,8 @@
 # Coding standards
 
+**REVIEW COMMENTS: ADD A WHAT AND HOW SECTION ON DOING TRUNC BASED DEVELOPMENT, THAT WE DO SEMANTIC VERSIONING.**
+
+
 Every rule below names its gate: the command, test or review step that enforces it. A rule with no gate is marked **(judgement)** — do not pretend otherwise, and do not add aspirational rules with no enforcement.
 
 ## Language

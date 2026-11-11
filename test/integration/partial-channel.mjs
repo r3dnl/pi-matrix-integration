@@ -17,7 +17,7 @@ import { createRequire } from "node:module";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
-import { createPiJiti } from "../_harness.mjs";
+import { createPiJiti } from "../harness/_harness.mjs";
 
 const PKG_DIR = path.dirname(path.dirname(path.dirname(process.execPath))) +
 	"/lib/node_modules/@earendil-works/pi-coding-agent";

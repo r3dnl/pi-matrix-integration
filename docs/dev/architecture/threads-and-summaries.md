@@ -28,7 +28,7 @@ flowchart TD
 
 ## When a summary runs
 
-The cadence is configuration, not code: `piMatrixThreading.summaryCadence` counts turns, and `useFibonacciCadence` switches the spacing to a Fibonacci progression so early turns are summarised more often than late ones. `summarizeOnFinalMessage` triggers a pass on the turn's final answer. Size is bounded per pass by `summarizeLimit`, `summarizeMilestoneMax`, `summarizeRecentMax` and `summarizeMaxLines`, with a wall-clock ceiling in `summarizeRunTimeoutMs`.
+The cadence is configuration, not code: `piMatrixThreading.summaryCadence` counts HUMAN messages — terminal input and room relays only (PROP-001 P2). The extension's own output (milestones, report-outs, the summary root itself) advances no meter: `ThreadManager.recordHumanMessage()` is the only thing that ticks it, so a pass can never extend or re-arm its own cadence. `useFibonacciCadence` switches the spacing to a Fibonacci progression so early messages are summarised more often than late ones. `summarizeOnFinalMessage` triggers a pass on the turn's final answer, gated on the same human meter. Size is bounded per pass by `summarizeLimit`, `summarizeMilestoneMax`, `summarizeRecentMax` and `summarizeMaxLines`, with a wall-clock ceiling in `summarizeRunTimeoutMs`.
 
 All of it is off unless you turn it on: `piMatrixThreading.enabled` is the master gate, and `/matrix-threads`-style toggles flip it at runtime.
 
@@ -51,7 +51,7 @@ The in-session tool is the reason the extension owns the summary's shape: the to
 
 An October 2026 incident put the extension into a loop where summary output re-triggered summarisation until the session was unusable. Two guards exist because of it, and both must survive any refactor:
 
-1. **A pass must never re-arm itself.** `src/classify.ts` recognises a run that was started by a sub-agent completion notice (`SUMMARIZE_DIRECTIVE_KIND`), and `src/lifecycle.ts` mutes summary work for those runs. Spawn-time suppression is not available from the sub-agent provider, so the recognition happens on the notice side — the `ponytail:` ceiling on that heuristic is stated in `src/classify.ts`.
+1. **A pass must never re-arm itself.** Structural since PROP-001 P2/P3: the cadence gate and the content gate read `humanMsgCount`, which only `ThreadManager.recordHumanMessage()` advances — called solely from the human-input branch of `onMessageEnd` in `src/lifecycle.ts`. Own sends cannot tick it, so summary output cannot arm the next pass. The sink-side patch this replaced (recognising summarizer-started runs and muting their broadcasts) survives only as a broadcast filter — `summaryTriggerRun && !humanInputPending` in `onTurnEnd` keeps a pure-summary turn's chatty closing line out of the room — with no loop-prevention duty on it.
 2. **Directive kind is explicit.** A summary request is a typed directive, not free text that happens to mention summarising, so it cannot be provoked by room content that discusses summaries.
 
 `test/summarizer-wake.mjs` and `test/bug-summarizer-onfinal-loop.mjs` cover this area. If you touch `lifecycle.ts` or `classify.ts`, run them.

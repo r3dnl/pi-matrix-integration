@@ -1,5 +1,7 @@
 # Transport, identity and state
 
+**REVIEW COMMENTS: THE HISTORY THAT THERE WERE 2 TRANSPORTS IS IRRELEVANT; REMOVE. ALSO IT DOES NOT REALLY EXPLAIN WHAT TRANSPORT THE EXTENSION HAS (Pi <-> Extension <-> Matrix Homeserver), HOW THAT WORKS, THE SDK AND ITS RESPONSIBILITIES, WHAT IDENTITY IS IN MATRIX, HOW AUTHENTICATION WORSK, AND HOW IDENTITY GETS MANAGED WITH THE CREDENTIALS JSON FILE. IMO ROOM ENCRYPTION KEYS ALSO NEED TO BE EXPLAINED HERE.**
+
 Covers: how the extension talks to a homeserver, why only one component may do it, how encrypted messages are handled, and what is written to disk.
 
 ## The two transports, and why there is now one
@@ -61,6 +63,7 @@ Reads are tolerant: `UnreadModel` returns an empty model for a missing or corrup
 Credentials are separate from state and separate from config: `~/.config/mtx/projects/<project>/accounts/<user>--<domain>/credentials.json`, path built by `getProjectCredentialsPath`, file mode `0600`. Never log their contents, and never echo them in a tool result.
 
 ## Invariants to keep
+**REVIEW COMMENT: THIS SECTION IS TOO MUCH WORD SOUP, PLAIN AND SIMPLE TERMS AND USE SCQ CONSTRUCT IF THE SCENE NEEDS TO BE SET**
 
 1. One identity, one writer, one Outbox.
 2. Transport failure degrades the UI; it never throws into Pi's event loop.

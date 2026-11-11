@@ -24,6 +24,10 @@ npm run test:live:judge               # per-release LLM judge on summary
                                      # quality; not part of any gate
 npm run test:perf                    # reserved: fails until the perf stories land
 npm run test:repro                   # single-bug reproduction
+npm run test:integration             # manual: guards that the installed
+                                     # ask-user-question package still carries
+                                     # the local patch (maintainer machine;
+                                     # never a gate)
 npm run prepack                      # publish guard: runs the typecheck
 ```
 
