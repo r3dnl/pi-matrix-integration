@@ -61,7 +61,7 @@ chain gate (`deps.yml`), the live nightly (`live-nightly.yml` — the only
 workflow that touches the network with credentials, `main` only), and the
 release publish guard (`release.yml`). What each job runs, the five required
 repository secrets and how the nightly derives the crypto reader without a
-sixth one are in [testing.md — GitHub Actions setup](testing.md#github-actions-setup).
+sixth one are in [testing.md — GitHub Actions setup](testing.md#4-github-actions-setup).
 
 ## Architecture
 
