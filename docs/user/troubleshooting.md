@@ -62,9 +62,11 @@ loses old messages for good.
   run through the `pi-subagents` extension. Without it, the extension falls
   back to summarizing in the current session. Install `pi-subagents` if you
   want summaries that survive `/compact` and restarts.
-- **Cadence.** The first passes happen early (Fibonacci ramp: 1, 1, 2, 3, 5,
-  8 …) and settle at `threadSummaryEvery` (default 10). A quiet thread simply
-  has no new material.
+- **Cadence.** The cadence counts YOUR messages (terminal and room), never
+  the agent's own output. The first passes happen early (Fibonacci ramp: 1,
+  1, 2, 3, 5, 8 …) and settle at `threadSummaryEvery` (default 10). A quiet
+  thread simply has no new human material — agent chatter alone will not
+  produce a pass.
 - **A failed pass never clobbers.** If the summarizer returns empty or
   errors, the root keeps its last good summary — the root looking stale while
   the log records passes is the summarizer failing; read the log for the

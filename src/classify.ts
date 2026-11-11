@@ -193,11 +193,12 @@ const SUBAGENT_NOTIFY_CUSTOM_TYPE = "subagent-notify";
  * True when a run was started by a pi-subagents completion notice that
  * reports ONLY summarizer runs.
  *
- * Such a wake must not report out to the room: the report-out is a new
- * thread message, and a new thread message re-arms the summary cadence
- * (threading.ts `recordOnRoot` bumps `msgCount`, which is exactly what
- * `runSummary`'s guard compares against `lastSummaryAtMsg`). Muting it
- * starves the loop.
+ * Such a wake must not report out to the room: the echo is room noise — a
+ * background-task notice is extension bookkeeping, not a turn answer. (The
+ * historical motive was stronger: the send-ledger cadence let the echo
+ * re-arm the next pass and starve the loop — PROP-001 P2 removed that fuel
+ * by keying the cadence on the human meter; the mute now only keeps the
+ * room clean.)
  *
  * Mixed notices (a summarizer plus real work in one grouped notice) are NOT
  * muted — that notice carries a report the user needs, and its cadence re-arm

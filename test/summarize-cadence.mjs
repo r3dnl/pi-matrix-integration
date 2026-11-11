@@ -1,15 +1,20 @@
 /**
  * Summary-cadence integration contract (INCIDENT-2026-10-22-SUMMARY-LOOP).
  *
- * The loop's fuel: a summary pass re-arms itself with exactly one message —
- * its own report-out (`post()` → `recordOnRoot` bumps `msgCount`, which is
- * what `runSummary`'s guard compares against `lastSummaryAtMsg`). The wake /
- * directive guards (summarizer-wake.mjs) keep that report-out out of the
- * room; THIS test pins the cadence side of the same contract end-to-end:
+ * The loop's historical fuel: a summary pass re-armed itself with exactly
+ * one message — its own report-out (`post()` → `recordOnRoot` bumped the
+ * send ledger `msgCount`, the number `runSummary`'s guard compared against
+ * `lastSummaryAtMsg`). PROP-001 P2 removed the fuel: the cadence now runs
+ * off `humanMsgCount`, which own sends never advance. The wake / directive
+ * guards (summarizer-wake.mjs) keep the report-out out of the room;
+ * THIS test pins the cadence side of the same contract end-to-end:
  *
- *   1. one real "final" post  → exactly one dispatched pass;
- *   2. no further thread post → no further pass, ever (the loop starves);
- *   3. a real post again      → the pass re-arms (summaries follow content).
+ *   1. a human message then a real "final" post → exactly one dispatched pass;
+ *   2. no further HUMAN tick → no further pass, ever — the extension's own
+ *      posts (report-outs, milestones, echoes) advance no meter
+ *      (PROP-001 P2 echo isolation);
+ *   3. a real human message again → the pass re-arms (summaries follow
+ *      human content).
  *
  * No fake clock is needed: the cadence path has no timers (Date.now feeds
  * `lastActivity` bookkeeping only), so the contract is deterministic with
@@ -64,35 +69,41 @@ function makeCadenceManager(overrides = {}) {
   tm.beginSession("new", "sess-1");
   await tm.ensureThreadRoot("cadence");
 
-  // A non-final post never triggers a pass.
+  // Echo isolation (PROP-001 P2): own sends — even the report-out itself —
+  // advance no meter and dispatch nothing.
   await tm.post("user work", "other");
   await tm.post("milestone body", "milestone");
-  check("non-final posts do not dispatch", dispatched.length === 0, `n=${dispatched.length}`);
-
-  // The report-out ("final") dispatches exactly one pass.
   await tm.post("final report", "final");
-  check("final post dispatches one pass", dispatched.length === 1, `n=${dispatched.length}`);
+  for (let i = 0; i < 3; i++) await new Promise((r) => setImmediate(r));
+  check("own sends dispatch nothing without a human tick", dispatched.length === 0, `n=${dispatched.length}`);
+
+  // A human message then the report-out dispatches exactly one pass.
+  await tm.recordHumanMessage();
+  await tm.post("final report", "final");
+  check("final post after a human tick dispatches one pass", dispatched.length === 1, `n=${dispatched.length}`);
 
   // Single-flight: a second final while the pass is in flight is deduped.
   await tm.post("another final", "final");
   check("in-flight second final does not double-dispatch", dispatched.length === 1, `n=${dispatched.length}`);
 
   // The pass completes (subagent path posts via updateSummary — a root edit,
-  // NOT a new thread message; this is what the muted wake would otherwise be).
+  // NOT a new thread message; even that edit advances no meter).
   tm.updateSummary("## summary v1", "$rep-2").then(() => {});
   await new Promise((r) => setImmediate(r));
   dispatched[0].resolve();
   await new Promise((r) => setImmediate(r));
 
-  // The incident's contract: with the wake report-out muted, NOTHING posts —
-  // so no second pass can ever fire. Poll every settled microtask.
+  // The incident's contract, now structural: with no HUMAN tick, NOTHING
+  // re-arms — no post, no echo, no cadence point. Poll every settled
+  // microtask.
   for (let i = 0; i < 5; i++) await new Promise((r) => setImmediate(r));
-  check("muted wake (no post) starves the loop", dispatched.length === 1, `n=${dispatched.length}`);
+  check("no human tick starves the loop forever", dispatched.length === 1, `n=${dispatched.length}`);
 
-  // Real activity again re-arms: summaries follow content.
+  // Human activity again re-arms: summaries follow human content.
+  await tm.recordHumanMessage();
   await tm.post("new real work final", "final");
   for (let i = 0; i < 3; i++) await new Promise((r) => setImmediate(r));
-  check("a new real final re-arms one pass", dispatched.length === 2, `n=${dispatched.length}`);
+  check("a final after a human tick re-arms one pass", dispatched.length === 2, `n=${dispatched.length}`);
 }
 
 // ---- Part 2: Engine A wiring — the fallback directive's structured identity --
@@ -207,7 +218,7 @@ function makeRejectManager(threadSend, stateFile) {
   const root = entry.roots.find((r) => r.topic === "giveup");
   check(
     "a failed edit leaves baseline + watermark for the next pass",
-    root.lastSummary === undefined && root.lastSummarizedEventId === undefined && root.lastSummaryAtMsg === undefined,
+    root.lastSummary === undefined && root.lastSummarizedEventId === undefined && root.lastSummaryAtHuman === undefined,
     JSON.stringify(root),
   );
 }

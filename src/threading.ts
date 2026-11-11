@@ -29,29 +29,34 @@ export interface ThreadSubThread {
 export interface ThreadRootState {
   eventId: string;
   topic: string;
+  /** Outgoing-send ledger (display only since PROP-001 P2 —
+   * `commands.ts` shows it; it no longer drives the cadence). */
   msgCount: number;
+  /**
+   * Human-conversation meter (PROP-001 P2, echo isolation): the count of
+   * human messages the session consumed while this root was active, fed
+   * ONLY by `recordHumanMessage()` (terminal input and room relays). The
+   * summary cadence and the content gates run on this number — the
+   * extension's own output can never advance it, so no echo can re-arm a
+   * pass (the 2026-10 self-arming summary loop). `undefined` on pre-P2
+   * state files reads as 0.
+   */
+  humanMsgCount?: number;
   lastMilestone?: string;
   /** Most recent milestone payloads (newest last, capped at 5). */
   milestones: string[];
   /** Last LLM-authored summary markdown (the baseline for the next run). */
   lastSummary?: string;
-  /** Ledger msgCount of the last completed LLM summary run. */
-  lastSummaryAtMsg?: number;
-  /** Ledger msgCount at which the last LLM run was requested. */
-  summaryRequestedAtMsg?: number;
-  /**
-   * Outgoing posts since the last completed summary that are bookkeeping
-   * rather than content (a wake-answer final, see `suppressOnFinalOnce`). A
-   * pass whose whole delta is such posts re-summarises its own output — a
-   * no-op that still costs an LLM run plus a parent wake
-   * (the 2026-10 summary loop, fix B).
-   */
-  bookkeepingSinceSummary?: number;
+  /** `humanMsgCount` at the last completed LLM summary run. */
+  lastSummaryAtHuman?: number;
+  /** `humanMsgCount` at which the last LLM run was requested. */
+  summaryRequestedAtHuman?: number;
   /**
    * Per-root event-id watermark: the eventId of the newest thread message
    * folded into the last LLM summary (threads-and-summaries.md gap 3). The
    * delta is by event, not by ledger `msgCount` (the ledger counts outgoing
-   * sends only; the room also carries the user's own phone messages).
+   * sends only; the room also carries the user's own phone messages, and the
+ * human meter counts only what the session consumed from it).
    */
   lastSummarizedEventId?: string;
   openDecisions: number;
@@ -163,9 +168,11 @@ export type SendKind = "milestone" | "final" | "user" | "decision" | "other";
  * (whichever is lower) — so a busy thread settles onto the
  * `threadSummaryEvery` cadence; `cap` of 1 degenerates to every-message
  * either way. Stateless — the points are a pure function of the message
- * count (persisted per root), so a resumed session recomputes the same
- * schedule. Each point triggers on the send that reaches it — the gate
- * runs on every in-thread send, so no point is skipped.
+ * count, so a resumed session recomputes the same schedule. PROP-001 P2
+ * (echo isolation): the count is the HUMAN meter (`humanMsgCount`),
+ * evaluated on the human tick in `recordHumanMessage()` — an outgoing send
+ * never runs this gate, so a summary's own output can no longer arm the
+ * next pass.
  */
 export function summaryDue(msgCount: number, cap: number, useFib: boolean): boolean {
   // cap < 1 would spin the fib walk forever: the step is min(a, cap) = 0,
@@ -452,28 +459,28 @@ export class ThreadManager {
 
     this.recordOnRoot(root, kind, text);
     // A wake-answer final (lifecycle set `suppressOnFinalOnce` before this
-    // broadcast) is booked as non-content and never re-arms: the answer
-    // ships, the summary pass does not. Classified before the cadence gate so
-    // a pass triggered on this same message sees it as bookkeeping (B). The
-    // flag is consumed by ANY final post, cadence or not, so it cannot leak
-    // into the next turn.
+    // broadcast) skips the report-out trigger once: the answer ships, the
+    // pass does not fire for it. PROP-001 P2 narrowed this to the trigger
+    // skip: with the cadence running on the human meter, own sends cannot
+    // arm anything, so the old `bookkeepingSinceSummary` subtraction went
+    // away with the bug class. The flag is consumed by ANY final post, so
+    // it cannot leak into the next turn.
     const wakeAnswer = kind === "final" && this.suppressOnFinalOnce;
     if (wakeAnswer) {
       this.suppressOnFinalOnce = false;
-      root.bookkeepingSinceSummary = (root.bookkeepingSinceSummary ?? 0) + 1;
-      this.save();
       this.logger.warn("[matrix] on-final summary trigger suppressed (wake-answer final)");
     }
-    const cadenceRan = await this.maybeSummarize(root);
     // Report-out trigger: a `"final"` post is the turn's report-out to the
-    // user — summarize right after it lands (gated; default on). Skipped
-    // when the cadence just ran on this same message (no double edit).
-    if (!wakeAnswer && kind === "final" && this.opts.threadSummaryOnFinal !== false && !cadenceRan) {
+    // user — run a summary pass right after it lands (gated; default on).
+    // The pass only fires when the HUMAN meter advanced since the last
+    // completed run (`runSummary` gate), so this send-side hook cannot spin
+    // (PROP-001 P2). Skipped for the one suppressed wake-answer final.
+    if (!wakeAnswer && kind === "final" && this.opts.threadSummaryOnFinal !== false) {
       // LLM mode: skip when a run is already queued — its room-sourced
       // delta read lands after this send, so it covers the report-out;
       // no duplicate request. Heuristic mode re-posts the ledger line so
       // the root reflects the just-finished turn.
-      const dedupe = this.opts.threadSummaryByLlm && root.summaryRequestedAtMsg !== undefined;
+      const dedupe = this.opts.threadSummaryByLlm && root.summaryRequestedAtHuman !== undefined;
       if (!dedupe) await this.runSummary(root);
     }
     this.logger.debug(
@@ -536,7 +543,8 @@ export class ThreadManager {
     const mem = this.root(this.activeRootId);
     if (!disk || !mem) return;
     mem.lastSummary = disk.lastSummary;
-    mem.lastSummaryAtMsg = disk.lastSummaryAtMsg;
+    mem.lastSummaryAtHuman = disk.lastSummaryAtHuman;
+    mem.humanMsgCount = disk.humanMsgCount;
     mem.lastSummarizedEventId = disk.lastSummarizedEventId;
   }
 
@@ -558,6 +566,22 @@ export class ThreadManager {
     }
     if (kind === "decision") root.openDecisions += 1;
     this.save();
+  }
+
+  /**
+   * Human-conversation tick (PROP-001 P2, echo isolation): the ONE site
+   * that advances the summary cadence. Lifecycle calls it for every human
+   * message the session consumes (terminal input and room relays — the
+   * structural check in `onMessageEnd`), so the extension's own sends,
+   * milestones, finals and echoes can never arm a pass.
+   */
+  async recordHumanMessage(): Promise<void> {
+    const root = this.activeRoot();
+    if (!root) return;
+    root.humanMsgCount = (root.humanMsgCount ?? 0) + 1;
+    root.lastActivity = Date.now();
+    this.save();
+    await this.maybeSummarize(root);
   }
 
   /** A decision was answered (or timed out) → close it in the ledger. */
@@ -608,7 +632,7 @@ export class ThreadManager {
   private async maybeSummarize(root: ThreadRootState): Promise<boolean> {
     const every = this.opts.threadSummaryEvery;
     if (!every || every <= 0) return false;
-    if (!summaryDue(root.msgCount, every, this.opts.threadSummaryFib !== false)) return false;
+    if (!summaryDue(root.humanMsgCount ?? 0, every, this.opts.threadSummaryFib !== false)) return false;
     await this.runSummary(root);
     return true;
   }
@@ -625,20 +649,17 @@ export class ThreadManager {
       // Single-flight: a run already dispatched is still reading/posting —
       // its room-sourced delta covers the newer sends, so this trigger is
       // redundant. Skipped before any bookkeeping bump (the in-flight run
-      // stays the only one owning summaryRequestedAtMsg semantics).
+      // stays the only one owning summaryRequestedAtHuman semantics).
       if (this.summaryInFlight) return;
       // Cross-instance sync: pick up a baseline/watermark a summarizer
       // subagent (its own ThreadManager instance) may have persisted.
       this.refreshFromDisk();
-      // LLM run: nothing new since the last completed run → skip.
-      if (root.msgCount <= (root.lastSummaryAtMsg ?? 0)) return;
-      // Content gate: the only new posts are wake-answer bookkeeping → the
-      // pass would summarise the previous pass's own output.
-      if (root.msgCount - (root.lastSummaryAtMsg ?? 0) <= (root.bookkeepingSinceSummary ?? 0)) {
-        this.logger.warn("[matrix] summary pass skipped: no new content since the last pass (bookkeeping only)");
-        return;
-      }
-      root.summaryRequestedAtMsg = root.msgCount;
+      // LLM run: no new HUMAN messages since the last completed run →
+      // skip. Own output cannot advance the meter (PROP-001 P2), so a
+      // leaked echo can never re-arm — the content-gate counter this
+      // replaces (bookkeepingSinceSummary) is deleted with that bug class.
+      if ((root.humanMsgCount ?? 0) <= (root.lastSummaryAtHuman ?? 0)) return;
+      root.summaryRequestedAtHuman = root.humanMsgCount ?? 0;
       this.save();
       this.fireLlmRun(root);
       return;
@@ -691,7 +712,7 @@ export class ThreadManager {
     if (!root) return false;
     if (this.opts.threadSummaryByLlm) {
       this.refreshFromDisk();
-      root.summaryRequestedAtMsg = root.msgCount;
+      root.summaryRequestedAtHuman = root.humanMsgCount ?? 0;
       this.save();
       // Manual = explicit user intent: fire when idle. When a run is
       // already in flight, that run IS the requested pass (its delta read
@@ -750,9 +771,8 @@ export class ThreadManager {
       const ok = await this.editSummary(root, text);
       if (ok) {
         root.lastSummary = customMd;
-        root.lastSummaryAtMsg = root.msgCount;
-        root.summaryRequestedAtMsg = undefined;
-        root.bookkeepingSinceSummary = 0;
+        root.lastSummaryAtHuman = root.humanMsgCount ?? 0;
+        root.summaryRequestedAtHuman = undefined;
         // Advance the per-root event watermark only when the caller says how
         // far the summary reached (the cadence subagent path). A manual run
         // without a delta leaves the watermark where it was.
