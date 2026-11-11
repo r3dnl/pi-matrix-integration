@@ -23,13 +23,13 @@ flowchart LR
   SECRETS["5 repo secrets<br/>agent + human + homeserver"] -.used by.-> B
 ```
 
-One rule shapes all of it: **trust only what the room can read back.** An
-integration bug in this extension looks like silence — the agent answered
-in the terminal, the room shows nothing. A test that asserts on internal
-variables passes while the user sees nothing; that has already happened
-here. So every claim about user-visible behaviour is asserted on the room
-itself, fetched over the client-server API, by a client that is *not* the
-one under test.
+**What makes a good test here: assert on the room, never on internal
+state.** The extension's real output is what appears in the Matrix room;
+its internal variables are not. A test that checks internal state can pass
+while the room shows nothing — a broken integration can still hold tidy
+internals. So in every ring, a claim about user-visible behaviour counts
+only when it is verified against the room itself: fetched over the
+client-server API, by a client that is not the one under test.
 
 ## 1. Strategy: three rings
 
