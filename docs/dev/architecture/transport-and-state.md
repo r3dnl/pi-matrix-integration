@@ -63,10 +63,24 @@ Reads are tolerant: `UnreadModel` returns an empty model for a missing or corrup
 Credentials are separate from state and separate from config: `~/.config/mtx/projects/<project>/accounts/<user>--<domain>/credentials.json`, path built by `getProjectCredentialsPath`, file mode `0600`. Never log their contents, and never echo them in a tool result.
 
 ## Invariants to keep
-**REVIEW COMMENT: THIS SECTION IS TOO MUCH WORD SOUP, PLAIN AND SIMPLE TERMS AND USE SCQ CONSTRUCT IF THE SCENE NEEDS TO BE SET**
 
-1. One identity, one writer, one Outbox.
-2. Transport failure degrades the UI; it never throws into Pi's event loop.
-3. State reads tolerate absence and corruption; state writes are atomic.
-4. Secrets are read from the credential file or the environment, never from a shipped manifest.
-5. Vendored crypto code is not edited — it is deleted when upstream ships the feature.
+These rules must hold after every change. Each one is stated with what
+breaks without it.
+
+1. One account, one writer. Every send leaves through `src/outbox.ts`;
+   every room event arrives through `src/inbound.ts`. With two writers,
+   dedupe and thread bookkeeping double-count, and the trust boundary
+   has a door nobody audits.
+2. A Matrix failure never reaches Pi. If the homeserver is down, the
+   footer shows it and the log records it. Nothing thrown into Pi's
+   event loop may come from a broken transport — coding must survive a
+   dead network.
+3. A state file may be missing or corrupt, but it may never stop a
+   session. Reads return an empty model instead of throwing; writes are
+   all-or-nothing: write a temporary file, then rename it onto the
+   real name. Use that pattern for any state file you add.
+4. Secrets come from the credential file or an environment variable,
+   never from a shipped manifest, a log line, or a tool result.
+5. `src/qr2025/` is never edited. It is a verbatim copy of the upstream
+   prototype; keeping it current means deleting it once upstream ships
+   the real feature, not patching the copy.
