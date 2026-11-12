@@ -94,17 +94,28 @@ The short version of the module map: `src/integration.ts` is the composition roo
 
 Breaking changes to config keys or command names require a major bump. Both are user-facing surface.
 
-### Credentials never ship — and one accepted risk
+### Credentials never ship
 
-The repository and the published tarball contain no credential of any kind.
-`tools/scan-secrets.mjs` enforces that in CI on the checkout and on the
-unpacked tarball; the live test tier reads its password from the
-environment, never from a file. The development history that predates this
-repository's first commit still contains passwords for **test-only
-accounts on a private test server the owner controls**. They were verified
-unreachable from the public internet and deliberately not rotated; the
-private history is not part of any published artifact. If that test server
-is ever exposed beyond the owner's own devices, rotate those accounts first.
+The repository and the published tarball contain no credential of any kind, and
+nothing in them identifies a real deployment. `tools/scan-secrets.mjs` enforces
+both: credential-shaped literals and anything listed in the private-identifier
+registry (see below). It runs in CI on the checkout and on the unpacked tarball,
+and the nightly workflow re-runs it over the whole git object database and with
+`gitleaks` as a second opinion. The live test tier reads its password from the
+environment, never from a file.
+
+### The private-identifier registry
+
+Credentials are not the only leak. A hostname, a room id or a local path that
+points at one real homeserver tells an attacker where to look, and it survives
+even after the password is gone. `--registry <path>` reads one identifier per
+line (`#` starts a comment) from a file that is never committed — by default
+`.secrets/private-identifiers.txt`, gitignored — and fails the scan if any of
+them appears, in the tree, the packed tarball, or history with `--history`.
+`--self-check` plants a registry entry and proves the check bites. Keep the
+registry (and any working note that names those identifiers) under `.secrets/`:
+`npm run test:docs` scans every markdown file in the working tree, gitignored or
+not, so a private note under `docs/` fails the docs gate by existing.
 
 ## How to ask for a change
 

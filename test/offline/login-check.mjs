@@ -666,11 +666,11 @@ check("homeserverDomain: bare host passes through", homeserverDomain("test.examp
 // --- proposeRoomAlias ------------------------------------------------------
 console.log("\n--- proposeRoomAlias (design §8 step 1) ---");
 check("propose: default = #<cwd-basename>:<domain>",
-  proposeRoomAlias(undefined, "/home/vincent/pi-proj", "https://hs.example") === "#pi-proj:hs.example");
+  proposeRoomAlias(undefined, "/home/devuser/pi-proj", "https://hs.example") === "#pi-proj:hs.example");
 check("propose: a configured alias wins over the default",
-  proposeRoomAlias("#mine:hs.example", "/home/vincent/pi-proj", "https://hs.example") === "#mine:hs.example");
+  proposeRoomAlias("#mine:hs.example", "/home/devuser/pi-proj", "https://hs.example") === "#mine:hs.example");
 check("propose: a configured !room_id is not an alias -> default",
-  proposeRoomAlias("!abc:hs.example", "/home/vincent/pi-proj", "https://hs.example") === "#pi-proj:hs.example");
+  proposeRoomAlias("!abc:hs.example", "/home/devuser/pi-proj", "https://hs.example") === "#pi-proj:hs.example");
 
 // --- normalizeRoomAlias ----------------------------------------------------
 console.log("\n--- normalizeRoomAlias (design §8 step 2) ---");
@@ -691,7 +691,7 @@ const makeRoomDeps = (client, ui, extra = {}) => ({
   ui: ui ?? makeUi(),
   client,
   homeserver: ROOM_HS,
-  cwd: "/home/vincent/pi-proj",
+  cwd: "/home/devuser/pi-proj",
   ...extra,
 });
 
