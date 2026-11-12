@@ -1,4 +1,30 @@
-# QA: strategy, setup, and how to run the tests
+# Testing
+
+## Quickstart
+
+```bash
+# 1 — offline gate: no accounts, no network needed
+npm ci
+npm run typecheck && npm run lint
+npm test && npm run test:docs && npm run test:logic
+
+# 2 — environment for the live rings
+cp docker/.env.example docker/.env     # fill in homeserver + accounts
+source docker/.env
+
+# 3 — provision the three test identities on the TEST homeserver
+#     (manifest shape: test/live/accounts-manifest.example.json;
+#      the reader may reuse the agent account's login — one extra device)
+
+# 4 — live tier
+npm run test:live                      # expect 14/14
+
+# 5 — on any failure, read the witness
+less artifacts/live-<run-id>/summary.json
+less artifacts/live-<run-id>/pi-matrix-http-sdk.log
+```
+
+## strategy, setup, and how to run the tests
 
 This document is the QA overview for the extension. It covers four things:
 the test strategy — three rings and what each proves (§1); how each ring
@@ -216,31 +242,7 @@ Pi package, because a runner has no `pi` on `PATH`.
 Provision the accounts with the manifest shape in
 [test/live/accounts-manifest.example.json](../../test/live/accounts-manifest.example.json).
 
-## 5. Test Setup and Run
-
-```bash
-# 1 — offline gate: no accounts, no network needed
-npm ci
-npm run typecheck && npm run lint
-npm test && npm run test:docs && npm run test:logic
-
-# 2 — environment for the live rings
-cp docker/.env.example docker/.env     # fill in homeserver + accounts
-source docker/.env
-
-# 3 — provision the three test identities on the TEST homeserver
-#     (manifest shape: test/live/accounts-manifest.example.json;
-#      the reader may reuse the agent account's login — one extra device)
-
-# 4 — live tier
-npm run test:live                      # expect 14/14
-
-# 5 — on any failure, read the witness
-less artifacts/live-<run-id>/summary.json
-less artifacts/live-<run-id>/pi-matrix-http-sdk.log
-```
-
-## 6. Triage signatures
+## 5. Triage signatures
 
 - **`This room is configured to use encryption, but your client does not
   support encryption`** in the SDK log, followed by a cascade of timeouts
