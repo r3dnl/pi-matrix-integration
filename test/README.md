@@ -65,8 +65,9 @@ client-server API, by a client that is not the one under test.
 | **Live scenarios** | `npm run test:live` | Does what the extension claims actually land in a real Matrix room, and can a stranger read it back? | nightly CI + on demand | yes / yes |
 | **Packaging** | `make e2e`, `make e2e-npm`, `make e2e-offline` | Does a clean machine that installed the way a user does end up working? | at release | yes / no¹ |
 
-¹ the offline container target has *no* network at all, on purpose.
-**REVIEW COMMENT: this footnote does not make sense. It refers to the packaging network/model column, where it states `yes / no¹`. The footnote refers to the model (which says "no"), and then the value before for network says "yes" - which contradicts what the footnote is saying. So what was the point being made here?**
+¹ packaging uses the network, except for `make e2e-offline`: that target
+runs its container with no network at all, to prove the installed
+extension also works offline.
 
 Ad hoc, never gates: `npm run test:repro` (one bug, one script),
 `npm run test:live:judge` (an LLM grades summary quality once per release),
@@ -186,17 +187,15 @@ registry, on a machine with no repo checkout, no devDependencies, and no
 
 ## 4. GitHub Actions setup
 
-**REVIEW COMMENT: I MISS HERE HOW THE 4 WORKFLOWS (CI, Dependencies, Live nightly and Release) MATCH WHICH RING.**
-
 We run 4 workflows in our CI process — each belongs to a ring of §1, or
 protects the ground the rings run on:
 
-| Workflow | Ring | What it covers |
+| Workflow (name in the GitHub UI) | Ring of §1 | What it covers |
 |---|---|---|
-| `ci.yml` | **Ring 1** (offline gate) + packaging ground | `gate` runs exactly Ring 1's commands; `manifest` proves the *artifact's* ground is sound — clean install, dependency contract, secret scan on the packed tarball — without a network or a container |
-| `deps.yml` | supply chain (supports Ring 3) | never runs code of ours: audits what the rings would install |
-| `live-nightly.yml` | **Ring 2** (live scenarios) | the nightly run of `test:live` on the real homeserver; the only workflow holding secrets |
-| `release.yml` | Ring 3's gate, not Ring 3 itself | the `prepack` guard and publish; the `make e2e*` container proofs stay a maintainer act, run by hand at release time |
+| **CI** (`ci.yml`) | **Offline gate**, plus packaging ground | `gate` runs exactly the Offline gate's commands; `manifest` proves the *artifact's* ground is sound — clean install, dependency contract, secret scan on the packed tarball — without a network or a container |
+| **Dependencies** (`deps.yml`) | supports **Packaging** | never runs code of ours: audits what the rings would install |
+| **Live nightly** (`live-nightly.yml`) | **Live scenarios** | the nightly run of `test:live` on the real homeserver; the only workflow holding secrets |
+| **Release** (`release.yml`) | **Packaging**'s gate, not the ring itself | the `prepack` guard and publish; the `make e2e*` container proofs stay a maintainer act, run by hand at release time |
 
 | Workflow | Trigger | Jobs |
 |---|---|---|
