@@ -10,7 +10,7 @@ npm test && npm run test:docs && npm run test:logic
 
 # 2 — environment for the live rings
 cp docker/.env.example docker/.env     # fill in homeserver + accounts
-source docker/.env
+source docker/.env                     # docker/README.md explains the harness
 
 # 3 — provision the three test identities on the TEST homeserver
 #     (manifest shape: test/live/accounts-manifest.example.json;
@@ -23,6 +23,9 @@ npm run test:live                      # expect 14/14
 less artifacts/live-<run-id>/summary.json
 less artifacts/live-<run-id>/pi-matrix-http-sdk.log
 ```
+
+Step 2's `docker/.env` and the cold-install e2e containers behind
+`make e2e*` are documented in [docker/README.md](../docker/README.md).
 
 ## strategy, setup, and how to run the tests
 
