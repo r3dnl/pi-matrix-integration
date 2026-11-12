@@ -51,8 +51,8 @@ CI, run them when you touched `src/sdk-client.ts` or the crypto stack):
 `sdk-send.mjs` (one room send + read-back through the production
 `SdkOutbox` — the encrypted send/receive gate), `sdk-smoke.mjs` (connect
 path: rust-crypto init, `/sync`, alias resolution, delivery start),
-`sdk-passphrase.mjs` (at-rest store passphrase: same-passphrase resume
-must succeed, wrong passphrase must be reported).
+`sdk-passphrase.mjs` (at-rest store passphrase check: a resume with the
+same passphrase must succeed, a wrong one must be reported).
 Same credentials as the suite, same throwaway accounts.
 
 ## Record
