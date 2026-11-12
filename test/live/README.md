@@ -9,16 +9,21 @@ and record what you saw for the demo file.
 ## Before you start
 
 1. Export the live credentials (see `docs/dev/developing.md`, "Running the
-   live tier"): `PI_MATRIX_HOMESERVER`, `PI_MATRIX_USERNAME`,
-   `PI_MATRIX_PASSWORD` for the agent account, plus the second actor
-   (`PI_MATRIX_SECOND_TOKEN`, or `PI_MATRIX_SECOND_USER` +
-   `PI_MATRIX_SECOND_PASSWORD`). Either actor may instead come from a
-   `credentials.json` path (`PI_MATRIX_PRIMARY_CREDENTIALS` /
-   `PI_MATRIX_SECOND_CREDENTIALS`) — the same file shape the extension's
-   login commands write. The two throwaway accounts are provisioned via an
-   mtx manifest; template: `test/live/accounts-manifest.example.json`.
-   On an E2EE-by-default homeserver the suite also reads through a real
-   encrypting client (`PI_MATRIX_READER_CREDENTIALS`, see developing.md).
+   live tier"). The suite drives three actors:
+   - **agent** — `PI_MATRIX_HOMESERVER`, plus `PI_MATRIX_USERNAME` and
+     `PI_MATRIX_PASSWORD`.
+   - **second actor** (the human seat) — `PI_MATRIX_SECOND_TOKEN`, or
+     `PI_MATRIX_SECOND_USER` + `PI_MATRIX_SECOND_PASSWORD`.
+   - **reader** (crypto) — on an E2EE-by-default homeserver the suite
+     also reads through a real encrypting client:
+     `PI_MATRIX_READER_CREDENTIALS` (see developing.md).
+
+   Any of these may instead come from a `credentials.json` path —
+   `PI_MATRIX_PRIMARY_CREDENTIALS` / `PI_MATRIX_SECOND_CREDENTIALS` —
+   the same file shape the extension's login commands write.
+
+   The two throwaway accounts are provisioned via an mtx manifest;
+   template: `test/live/accounts-manifest.example.json`.
 2. Run `npm run test:live` and keep the run's room name from the first log
    line (`live-e2e-<id>`).
 3. Open that room in Element **with the second actor's login** — the phone
