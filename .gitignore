@@ -12,7 +12,8 @@ manifests/
 
 # logs and run artifacts
 *.log
-artifacts/
+artifacts
+my-demo-project
 .tdd/
 
 # build / packaging leftovers

@@ -19,11 +19,13 @@ services:
       # ~/work, and the live tier writes artifacts/live-<run-id>/ there.
       # This mount brings the evidence out of the ephemeral container for
       # `make e2e` and the nightly upload step.
-      - ../artifacts:/home/node/work/artifacts
+      - ./artifacts:/home/node/work/artifacts
       # A Pi model endpoint for the manual walkthrough (`make shell`).
       # /model reloads it. The offline service deliberately has no provider
       # — it must stay unable to reach a model.
       - ./models.json:/home/node/.pi/agent/models.json:ro
+      # Demo project
+      - ./my-demo-project:/home/node/work/my-demo-project
     environment:
       SOURCE: ${SOURCE:-tarball}
       PI_MATRIX_HOMESERVER: ${PI_MATRIX_HOMESERVER:-}
