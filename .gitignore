@@ -30,3 +30,6 @@ pi-matrix-integration-*.tgz
 
 # proposal docs (the architecture/ tree is shipped and tracked)
 docs/dev/proposals/
+
+# private-identifier registry for tools/scan-secrets.mjs — never committed
+.secrets/

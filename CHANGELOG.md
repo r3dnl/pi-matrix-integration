@@ -35,6 +35,21 @@ come with a major version bump.
 
 ### Changed
 
+- `tools/scan-secrets.mjs` sees the repository instead of a file extension.
+  It used to walk only `ts|js|mjs|cjs|json|jsonc|md|yml|yaml`, so the one file
+  type that actually carries credentials in most projects — `.env.example` —
+  was never opened (27 of 168 tracked files, including `docker/.env.example`
+  itself). It now opens every file git tracks and classifies by content: any
+  NUL byte skips it, so a screen recording costs nothing. Three additions:
+  a TypeScript optional-member declaration in a source file no longer counts
+  as an assignment; `--history` walks every git object — a credential that was
+  committed and later deleted is still cloneable (824 blobs, ~1.5 s, so it runs
+  in the nightly workflow, not the push gate); and `--registry <file>` reports
+  private identifiers (hostnames, room ids, local paths) without ever echoing
+  the matched value. `--self-check` proves all four behaviours bite. Values
+  written as `<REPLACE-ME>` count as placeholders, so the docker example keeps
+  its convention.
+
 - The RPIV decision questionnaire the ask-user mirror posts to the room
   ships its option lists as fenced monospace blocks (`1. label`, description
   indented below) instead of GFM pipe tables — the same Element X iOS
@@ -114,6 +129,15 @@ come with a major version bump.
   count and order of tour messages fresh every run.
 
 ### Fixed
+
+- `docker/.env.example` states what to substitute instead of presenting an
+  opaque string: `PI_MATRIX_READER_PASSWORD` and `PI_MATRIX_JUDGE_API_KEY`
+  carried 18- and 31-character literals that looked exactly like live values
+  (and were not — the live pair lives in the gitignored `docker/.env`, and
+  neither matches it). Both are now `<READER-PASSWORD>` and `<JUDGE-API-KEY>`,
+  the same convention the file already uses elsewhere. Anyone who copied the
+  old example literals into a deployment should treat them as public text and
+  replace them.
 
 - A question queued while the previous run settled is no longer swallowed
   when a thread-summary directive opens the next run. The run-scoped

@@ -19,6 +19,38 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Secret hygiene over everything a push gate cannot see: the whole object
+  # database (a credential that was committed and later deleted is still
+  # cloneable) and gitleaks as an independent second opinion. Deliberately
+  # separate from the live job — no homeserver secrets, so a homeserver
+  # outage never hides a hygiene finding. Full history needs fetch-depth: 0.
+  hygiene:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      # ~1.5 s over 800+ blobs, so it stays out of the push gate for clone
+      # cost, not scan cost. The private-identifier registry is maintainer-
+      # local and gitignored, so a runner scans without it unless one is
+      # supplied as a secret.
+      - name: Credential and identifier scan over all git objects
+        # Drop continue-on-error once the history scrub (git filter-repo,
+        # replace-text spec) lands; until then the estate identifiers in old
+        # commits are known and reported here, not hidden.
+        continue-on-error: true
+        run: node tools/scan-secrets.mjs --history
+      - name: gitleaks (independent cross-check, never gates a push)
+        continue-on-error: true
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   live:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
