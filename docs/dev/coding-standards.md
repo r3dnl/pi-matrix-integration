@@ -69,7 +69,7 @@ The tree carries roughly 1 900 line comments and 770 doc blocks. That is a delib
 | A `/matrix-*` command's name says what it switches; two commands must not read the same in the palette | README command table + `/matrix-help` equality test |
 | Config keys are dotted, lowercase and stable: a rename is a breaking change after 1.0.0 | review, semver gate at release |
 
-Commands and configuration follow three rules, recorded in [architecture: configuration and room behaviour](architecture/configuration-and-room-behaviour.md#rules-that-govern-the-command-surface): the config file is the declarative surface, commands invoke functionality, and anything needed away from the terminal must be a command.
+Commands and configuration follow three rules, recorded in [architecture: room behaviour](architecture/room-behaviour.md#rules-that-govern-the-command-surface): the config file is the declarative surface, commands invoke functionality, and anything needed away from the terminal must be a command.
 
 ## Commits and review
 
