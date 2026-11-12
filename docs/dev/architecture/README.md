@@ -66,7 +66,7 @@ Two rules hold that picture together, and most of the design follows from them:
 | Document | Covers |
 |----------|--------|
 | [Transport, identity and state](transport-and-state.md) | the single-writer rule, the Outbox seam, crypto and the vendored MSC4388 code, where state lives on disk |
-| [Threads and summaries](threads-and-summaries.md) | session-to-thread mapping, lazy thread creation, summary cadence, and the two loop guards that came out of a runaway-summary incident |
+| [Threads and summaries](threads-and-summaries.md) | session-to-thread mapping, lazy thread creation, summary cadence, and the two loop guards that keep summary output from re-triggering itself |
 | [Configuration](configuration.md) | config resolution order, profiles and where credentials live |
 | [Room behaviour](room-behaviour.md) | how the room drives the agent, the questionnaire mirror, sub-agent provider dialects, security posture, command-surface rules |
 | [Design principles](DESIGN-PRINCIPLES.md) | the cross-cutting rules: one writer, soft failure, the room as boundary, echo isolation, declare-don't-detect, turn-scope decisions, background channels, never go silent |
