@@ -1,4 +1,8 @@
-# Cold-install end-to-end harness
+# Docker Container for testing Pi-Matrix-Integration
+
+See [Testing README](../test/README.md) for context.
+
+## Cold-install end-to-end harness
 
 A container that starts from a clean machine image, installs Pi and this
 extension exactly the way a user does, and proves it against a real
