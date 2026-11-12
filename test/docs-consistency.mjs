@@ -237,9 +237,11 @@ for (const file of OUR_SOURCE) {
   // the live-tier guard names its required variables in a literal list and
   // reads them dynamically — those literals are reads
   for (const m of fs.readFileSync(path.join(ROOT, 'test/harness/_harness.mjs'), 'utf8').matchAll(/"(PI_MATRIX_[A-Z0-9_]+)"/g)) envMap.add(m[1])
-  // test seams and developer-facing keys are documented under docs/dev, not
-  // in the user configuration reference
-  const devDocs = walk('docs/dev').filter(f => f.endsWith('.md'))
+  // test seams and developer-facing keys are documented under docs/dev (and,
+  // since the runbook moved, test/README.md), not in the user configuration
+  // reference
+  const devDocs = ['test/README.md']
+    .concat(walk('docs/dev').filter(f => f.endsWith('.md')))
     .map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n')
 
   const ref = fs.readFileSync(path.join(ROOT, 'docs/user/configuration.md'), 'utf8')
