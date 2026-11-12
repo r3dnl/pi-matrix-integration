@@ -20,6 +20,28 @@ section.
 - **Password login refused.** The extension logs in with
   `m.login.password`. Homeservers that disabled password login (SSO-only)
   need a password flow enabled for the agent's account.
+- **`already in use by another live pi session (pid N)`.** The account lock,
+  working as designed. The directory that holds `credentials.json`
+  (`~/.config/mtx/projects/<project>/accounts/<user>--<domain>/`) carries a
+  `pi-matrix.lock` naming the holder's pid, and a second session on the same
+  account refuses to connect instead of degrading: two Olm accounts on one
+  device fork the double ratchet, and the room fills with "Unable to decrypt
+  message". Fix the collision, not the lock file.
+  - Stop the holder: `ps -p <N>` names the process, then quit that Pi or run
+    `/matrix-disconnect` in it. The lock goes away on `/matrix-disconnect` and
+    on process exit, so one account used by two projects *one after the other*
+    is fine — retry this session with `/matrix-connect`.
+  - A crashed holder leaves nothing to clean up. The holder pid is dead, so the
+    next connect deletes the stale lock by itself. Deleting `pi-matrix.lock` by
+    hand is correct only after you confirmed that pid is gone: with two live
+    sessions you have not freed the account, you have let a second Olm account
+    start and corrupt the room's keys.
+  - Two sessions at the same time is a legitimate need. Give each project its
+    own Matrix account or device — see
+    [per-project setup](per-project-setup.md).
+  - `STILL held by THIS process (pid …) after 30 s` is a different case: a
+    client orphaned inside one Pi process, usually a `/reload` or account switch
+    whose predecessor did not release. Restart that Pi session.
 
 ## Connected, but nothing arrives in the terminal
 

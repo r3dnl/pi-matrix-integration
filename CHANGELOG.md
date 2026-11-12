@@ -35,6 +35,15 @@ come with a major version bump.
 
 ### Changed
 
+- Troubleshooting documents the account lock. `already in use by another live
+  pi session (pid N)` used to be a dead end: the entry now says what holds it
+  (`pi-matrix.lock` beside `credentials.json`), why the second session refuses
+  rather than connecting (a second Olm account on one device forks the ratchet
+  and the whole room turns into "Unable to decrypt message"), and the three
+  resolutions — stop the pid, leave a crashed holder's stale lock to the reclaim
+  path that already handles it, or give each project its own account. It also
+  separates the in-process variant, `STILL held by THIS process … after 30 s`.
+
 - README's "What you get" is a clickable feature list: every item links to
   the Examples section that shows it happening, and the upload example follows
   the `@@` mention path from room message to attached artifact. Eight
