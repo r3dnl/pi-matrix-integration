@@ -127,5 +127,5 @@ answerable from the log alone, not by reading source.
 
 *Provenance: principles 1–3 predate this file (architecture README,
 coding standards, `SECURITY.md`). Principles 4–8 were extracted from the
-2026-10 wake-loop and 2026-11 summary-mute incidents during
-[PROP-001](../proposals/PROP-001-thread-summary-echo-isolation.md).*
+2026-10 wake-loop and 2026-11 summary-mute incidents during PROP-001
+(proposals are kept out of git; the file lives in `docs/dev/proposals/`).*
