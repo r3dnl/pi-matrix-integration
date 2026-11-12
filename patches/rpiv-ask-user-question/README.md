@@ -17,7 +17,11 @@ keystrokes do not reach the room.
 
 ## Apply
 
-`apply.sh` patches the installed package in `~/.pi/agent/npm/node_modules/`:
+**pre-requisite: patch binary**
+
+`apply.sh` patches the installed package in `~/.pi/agent/npm/node_modules/`.
+The package is not a dependency of this extension — install it first with
+`pi install npm:@juicesharp/rpiv-ask-user-question`:
 
 ```sh
 sh ~/.pi/agent/npm/node_modules/pi-matrix-integration/patches/rpiv-ask-user-question/apply.sh

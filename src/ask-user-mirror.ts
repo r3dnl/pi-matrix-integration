@@ -268,6 +268,13 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
    *  for the room acks (📝 N/M / ✅). Nothing reaches the package until
    *  confirm ships the complete set (the channel refuses partial sets). */
   let buffer = new Map<number, MirrorAnswerEntry>();
+  /** True once THIS questionnaire's receiver has accepted a `partial` set: the
+   *  proof that it knows the flag (the pairing patch is applied). Gates the
+   *  complete-snapshot emission in `emitPartial` — see the note there. */
+  let displaySyncProven = false;
+  /** One display-sync refusal warning per questionnaire (the refusal repeats
+   *  per room reply; the room flow does not change, so the log says it once). */
+  let displaySyncWarned = false;
   /** All N answers buffered via the room; the review step is armed when
    *  the completing reply lands — the room owns the review from there:
    *  "confirm" emits the complete set, "👎" emits cancel. */
@@ -300,6 +307,8 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
     questions = [];
     toolCallId = "";
     awaitingVerdict = false;
+    displaySyncProven = false;
+    displaySyncWarned = false;
     buffer = new Map();
     reviewPending = false;
     liveMsgId = null;
@@ -332,6 +341,16 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
     questionByPoll = new Map();
     answersByPoll = new Map();
     open = true;
+    // Pairing probe. An EMPTY partial set is a no-op for a patched receiver
+    // (nothing registers, nothing clears) and a refusal for a stock one, so its
+    // verdict tells us — before any answer can land — whether `partial` means
+    // anything to this install. The probe is what makes a questionnaire
+    // answered in ONE combined message safe: its completing snapshot has no
+    // earlier verdict to learn from, and that snapshot is exactly what a stock
+    // package mistakes for the answer.
+    if (toolCallId.length > 0) {
+      deps.emitAnswer({ toolCallId, requestId: `matrix-partial-${toolCallId}`, partial: true, answers: [] });
+    }
     // configuration-and-room-behaviour.md: the questionnaire ships as
     // markdown with fenced option blocks (Element X iOS safe, see
     // formatQuestionnaireMd) — the mirror does not pre-compute HTML for it
@@ -402,9 +421,25 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
   }
 
   function onAnswerResult(verdict: MirrorAnswerVerdict): void {
-    // Display-sync verdicts (partial-answer patch) carry no consequence: a
-    // refused partial is a cosmetic desync, the complete set is the gate.
-    if (typeof verdict.requestId === "string" && verdict.requestId.startsWith("matrix-partial-")) return;
+    // Display-sync verdicts (partial-answer patch) carry no consequence for the
+    // room flow: a refused partial is a cosmetic desync, the complete set is
+    // the gate. They DO carry the install's pairing state, and that must not
+    // stay invisible: `ok` proves the receiver understands `partial` (which is
+    // what unlocks the complete-snapshot emission in `emitPartial`), and a
+    // refusal means it evaluated the set as a real answer and rejected it as
+    // incomplete — the signature of an un-patched package.
+    if (typeof verdict.requestId === "string" && verdict.requestId.startsWith("matrix-partial-")) {
+      if (verdict.ok) displaySyncProven = true;
+      else if (!displaySyncWarned) {
+        displaySyncWarned = true;
+        deps.warn?.(
+          `[matrix] ask-user display sync refused (${verdict.code || "unknown"}): the installed ` +
+            `@juicesharp/rpiv-ask-user-question does not know the \`partial\` flag — the terminal tab ` +
+            `will not follow the room. Check: sh patches/rpiv-ask-user-question/apply.sh --check`,
+        );
+      }
+      return;
+    }
     // After the wait ends the mirror closes via blocked(false); verdicts for
     // a closed mirror (and ok verdicts) need nothing.
     if (!open || verdict.ok) return;
@@ -528,6 +563,19 @@ export function createAskUserMirror(deps: AskUserMirrorDeps): AskUserMirror {
       if (!answers.some((a) => a.questionIndex === i)) answers.push({ questionIndex: i });
     }
     if (answers.length === 0) return;
+    // A snapshot that covers EVERY question is, to a receiver that does not
+    // know the `partial` flag, a perfectly valid complete answer set: the
+    // answer channel's documented policy is to ignore unknown fields, so an
+    // un-patched @juicesharp/rpiv-ask-user-question (the demo container ran
+    // 2.15.0 while these patches were cut against 2.13.9, so `apply.sh` could
+    // not apply) validates it as an ordinary answer and settles the wait the
+    // moment the last room reply lands. The room is still showing "confirm"
+    // when the session has already moved on. Ship a complete set only after
+    // an earlier partial of THIS questionnaire came back ok. Cost: a
+    // questionnaire answered in one combined message syncs nothing to the
+    // terminal (no earlier verdict exists to prove the flag) — cosmetic, the
+    // confirm step is unchanged.
+    if (answers.length === questions.length && !displaySyncProven) return;
     deps.emitAnswer({ toolCallId, requestId: `matrix-partial-${toolCallId}`, partial: true, answers });
   }
 

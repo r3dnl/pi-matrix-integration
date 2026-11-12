@@ -23,8 +23,9 @@ The room flow works on a stock install: each room reply is buffered, and
 - answers typed in the terminal are not mirrored back into the room.
 
 Full dual-surface behaviour needs two small patches to
-`@juicesharp/rpiv-ask-user-question`. This package ships them, applied by one
-script:
+`@juicesharp/rpiv-ask-user-question`. If you do not have that extension yet,
+install it first (`pi install npm:@juicesharp/rpiv-ask-user-question`). This
+package ships the patches, applied by one script:
 
 ```bash
 sh ~/.pi/agent/npm/node_modules/pi-matrix-integration/patches/rpiv-ask-user-question/apply.sh
@@ -38,6 +39,15 @@ sh ~/.pi/agent/npm/node_modules/pi-matrix-integration/patches/rpiv-ask-user-ques
 
 Facts to know:
 
+- `apply.sh` needs the `patch` command (debian/ubuntu: `apt-get install patch`
+  · alpine: `apk add patch`). Without it nothing can be patched, and the script
+  now says exactly that instead of blaming upstream.
+- The mirror checks at questionnaire-open time whether the installed package
+  understands the pairing. When it does not — `patch` missing, or upstream
+  moved past 2.13.9, the version these hunks were cut against — the terminal
+  tab stays put and the room keeps the confirm gate: nothing answers the
+  questionnaire on your behalf. The Pi log names it once per questionnaire:
+  `ask-user display sync refused … run apply.sh --check`.
 - The script is idempotent. Run it again any time; if the patches are in
   place it says so and does nothing.
 - Run it after **every** install or update of
