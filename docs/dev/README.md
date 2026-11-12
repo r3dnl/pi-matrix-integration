@@ -9,6 +9,7 @@ Index of everything a developer or coding agent reads in this repo.
 | [Developing](developing.md) | the dev loop: setup, what to run when, how CI is laid out, architecture pointers |
 | [Coding standards](coding-standards.md) | every rule with its enforcement gate, plus branching, releases and semver practice |
 | [AGENTS.md](../../AGENTS.md) | the working contract for coding agents: the loop, the never-rules, scope discipline |
+| [Roadmap](roadmap.md) | what the maintainers intend to build — intent, not status |
 
 ## Architecture
 
