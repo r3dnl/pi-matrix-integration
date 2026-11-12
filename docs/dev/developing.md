@@ -52,7 +52,7 @@ environment; nothing secret is committed, and a hard-coded hostname or
 account name in a test file is a defect, not a convention. The full setup —
 the three test identities (agent, human seat, crypto reader), the
 `docker/.env` environment file and its tracked sample, the evidence layout
-and the failure triage — is the runbook: [testing.md](testing.md).
+and the failure triage — is the runbook: [test/README.md](../../test/README.md).
 
 ## What CI runs
 
@@ -61,7 +61,7 @@ chain gate (`deps.yml`), the live nightly (`live-nightly.yml` — the only
 workflow that touches the network with credentials, `main` only), and the
 release publish guard (`release.yml`). What each job runs, the five required
 repository secrets and how the nightly derives the crypto reader without a
-sixth one are in [testing.md — GitHub Actions setup](testing.md#4-github-actions-setup).
+sixth one are in [test/README.md — GitHub Actions setup](../../test/README.md#4-github-actions-setup).
 
 ## Architecture
 
