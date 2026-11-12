@@ -23,9 +23,13 @@ From a checkout: `pi install /path/to/pi-matrix-integration`.)
 
 ### 1b. Voice messages (optional)
 
-Voice-message transcription needs `ffmpeg` on the machine running Pi
-(`sudo apt install ffmpeg` on Debian/Ubuntu). It is the only thing that
-uses it; without it, voice notes are not transcribed and the room gets a
+Voice notes need a transcription engine, and you have two choices. The
+bundled local Whisper decodes the clip with `ffmpeg` on the machine running Pi
+(`sudo apt install ffmpeg` on Debian/Ubuntu) — it is the only thing that uses
+it. Or point Pi at a remote STT endpoint (`PI_MATRIX_STT_BASE_URL`, e.g. an
+mlx-audio server on your LAN): the clip is POSTed to it exactly as it arrived,
+decoded by that server, so the machine running Pi needs no `ffmpeg` at all.
+With neither engine, voice notes are not transcribed and the room gets a
 warning instead.
 
 ### 1c. Subagents (optional but recommended)

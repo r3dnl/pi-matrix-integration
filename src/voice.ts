@@ -1,10 +1,12 @@
 /**
  * Pi Matrix Integration — voice-message transcription.
  *
- * An `m.audio`/`m.voice` room message is downloaded, decoded to 16 kHz
- * mono PCM (ffmpeg), transcribed by the local Whisper engine (the
- * rpiv-voice leaf modules — the same chain dictate-local runs) and
- * handed back as text for the inbound funnel to inject as the sender's
+ * An `m.audio`/`m.voice` room message is downloaded and transcribed. With a
+ * remote STT endpoint configured the clip is POSTed as it arrived — no local
+ * decode, so that path needs no ffmpeg on this host. Otherwise the clip is
+ * decoded to 16 kHz mono PCM (ffmpeg) and transcribed by the local Whisper
+ * engine (the rpiv-voice leaf modules — the same chain dictate-local runs).
+ * The text is handed back for the inbound funnel to inject as the sender's
  * message.
  *
  * Engine lifecycle mirrors dictate-local: the recognizer is created
