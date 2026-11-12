@@ -19,6 +19,17 @@ const { createAskUserMirror, parseMirrorReply } = await jiti.import(path.join(EX
  *  microtask queue before asserting on review posts/edits. */
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
+/** A patched answer channel replies to every emission on `answer-result`; an
+ *  `ok` verdict on a display-sync set is the PROOF that the receiver knows the
+ *  `partial` flag — which is what lets the completing snapshot ship at all.
+ *  Without it the mirror withholds a full snapshot, because a stock package
+ *  (no pairing patch) reads that snapshot as the answer itself and settles the
+ *  wait. Wire it so these suites model the patched receiver. */
+function wireVerdicts(deps, mirror) {
+  deps.deliverVerdict = (p) => mirror.onAnswerResult({ ok: true, requestId: p.requestId });
+  return mirror;
+}
+
 const { check, finish } = makeCheck("polls");
 
 /** Fake deps: capture posts/polls, record emissions. `answers` holds the
@@ -58,8 +69,12 @@ function makeDeps({
     },
     isEnabled: () => true,
     emitAnswer: (payload) => {
-      if (payload.partial) state.partials.push(payload);
-      else state.answers.push(payload);
+      // The open-of-questionnaire pairing probe carries no answers; the
+      // assertions below are about answer traffic, so it stays out of the log.
+      if (payload.partial) {
+        if ((payload.answers ?? []).length > 0) state.partials.push(payload);
+      } else state.answers.push(payload);
+      deps.deliverVerdict?.(payload);
     },
     postPoll: async (question, answers, maxSelections) => {
       if (pollPostFail) return { success: false, error: "boom" };
@@ -99,7 +114,7 @@ const QS_TWO = [
 // --- posting: one poll per eligible question (single- AND multi-select) ---
 {
   const { state, deps } = makeDeps();
-  const mirror = createAskUserMirror(deps);
+  const mirror = wireVerdicts(deps, createAskUserMirror(deps));
   await mirror.onPrompt(QS_TWO, "$tc-1");
   // The poll loop is fire-and-forget — wait for BOTH polls (Q1 single,
   // Q2 multi).
@@ -192,7 +207,7 @@ const QS_TWO = [
 // drops the earlier taps and the question ends up single-answered.
 {
   const { state, deps } = makeDeps();
-  const mirror = createAskUserMirror(deps);
+  const mirror = wireVerdicts(deps, createAskUserMirror(deps));
   await mirror.onPrompt(QS_TWO, "$tc-merge");
   await waitUntil(() => state.polls.length === 2, { label: "poll posts" });
   const multiPollId = state.polls[1].eventId;
@@ -232,7 +247,7 @@ const QS_TWO = [
 // buffer is the source of truth until confirm emits.)
 {
   const { state, deps } = makeDeps();
-  const mirror = createAskUserMirror(deps);
+  const mirror = wireVerdicts(deps, createAskUserMirror(deps));
   await mirror.onPrompt(QS_TWO, "$tc-toggle");
   await waitUntil(() => state.polls.length === 2, { label: "toggle polls" });
   const multiPollId = state.polls[1].eventId;
@@ -291,7 +306,7 @@ const QS_TWO = [
 // answered).
 {
   const { state, deps } = makeDeps();
-  const mirror = createAskUserMirror(deps);
+  const mirror = wireVerdicts(deps, createAskUserMirror(deps));
   await mirror.onPrompt(QS_TWO, "$tc-clear1");
   await waitUntil(() => state.polls.length === 2, { label: "clear polls" });
   const multiPollId = state.polls[1].eventId;
@@ -319,7 +334,7 @@ const QS_TWO = [
 // re-votes replace, a custom answer retracts with an empty ballot).
 {
   const { state, deps } = makeDeps();
-  const mirror = createAskUserMirror(deps);
+  const mirror = wireVerdicts(deps, createAskUserMirror(deps));
   await mirror.onPrompt(QS_TWO, "$tc-vote");
   await waitUntil(() => state.polls.length === 2, { label: "vote polls" });
   mirror.tryConsumeReply("2"); // Q1 = ramda (id "2") by ROOM TEXT (no tap exists)
@@ -363,7 +378,7 @@ const QS_TWO = [
 // --- polls disabled: no poll posted, text grammar alone --------------------
 {
   const { state, deps } = makeDeps({ pollsEnabled: false });
-  const mirror = createAskUserMirror(deps);
+  const mirror = wireVerdicts(deps, createAskUserMirror(deps));
   await mirror.onPrompt(QS_TWO, "$tc-off");
   await new Promise((r) => setTimeout(r, 20));
   check("polls off → no poll posted", state.polls.length === 0);
@@ -373,7 +388,7 @@ const QS_TWO = [
 // --- poll post failure: warn, text fallback covers the question ------------
 {
   const { state, deps } = makeDeps({ pollPostFail: true });
-  const mirror = createAskUserMirror(deps);
+  const mirror = wireVerdicts(deps, createAskUserMirror(deps));
   await mirror.onPrompt(QS_TWO, "$tc-fail");
   await new Promise((r) => setTimeout(r, 20));
   check(
@@ -390,7 +405,7 @@ const QS_TWO = [
 // --- legacy MSC1767 voters: refs are labels, fall back to label match ----
 {
   const { state, deps } = makeDeps();
-  const mirror = createAskUserMirror(deps);
+  const mirror = wireVerdicts(deps, createAskUserMirror(deps));
   await mirror.onPrompt(QS_TWO, "$tc-legacy");
   // QS_TWO now posts TWO polls (Q1 single, Q2 multi) — the first posted
   // is Q1 (sequential loop); wait for at least the first.
@@ -407,7 +422,7 @@ const QS_TWO = [
 // --- single question: a tap alone completes + submits (no review step) ------
 {
   const { state, deps } = makeDeps();
-  const mirror = createAskUserMirror(deps);
+  const mirror = wireVerdicts(deps, createAskUserMirror(deps));
   await mirror.onPrompt([{
     question: "Proceed?",
     options: [{ label: "Yes" }, { label: "No" }],
@@ -433,7 +448,7 @@ const QS_TWO = [
 // styled HTML (green instructions, bold truncated question title).
 {
   const { state, deps } = makeDeps();
-  const mirror = createAskUserMirror(deps);
+  const mirror = wireVerdicts(deps, createAskUserMirror(deps));
   await mirror.onPrompt([
     { question: "Which scopes?", header: "Scopes", multiSelect: true, options: [{ label: "read" }, { label: "write" }] },
   ], "$tc-n1m");
@@ -501,7 +516,7 @@ const QS_TWO = [
 // the bold review header (the review shows WHICH question, readably).
 {
   const { state, deps } = makeDeps();
-  const mirror = createAskUserMirror(deps);
+  const mirror = wireVerdicts(deps, createAskUserMirror(deps));
   const longQuestion =
     "Toggle-off retest: tap Alpha, then tap Beta, then RE-TAP Beta to verify it unchecks in the room review AND the terminal TUI";
   await mirror.onPrompt([
@@ -523,7 +538,7 @@ const QS_TWO = [
 // selection — the living review shows the custom text; confirm finalizes it.
 {
   const { state, deps } = makeDeps();
-  const mirror = createAskUserMirror(deps);
+  const mirror = wireVerdicts(deps, createAskUserMirror(deps));
   await mirror.onPrompt([
     { question: "Which scopes?", header: "Scopes", multiSelect: true, options: [{ label: "read" }, { label: "write" }] },
   ], "$tc-custom");
@@ -554,7 +569,7 @@ const QS_TWO = [
 // --- eligibility: <2 or >10 options skip the poll (MSC3381 caps) ------------
 {
   const { state, deps } = makeDeps();
-  const mirror = createAskUserMirror(deps);
+  const mirror = wireVerdicts(deps, createAskUserMirror(deps));
   const eleven = Array.from({ length: 11 }, (_, i) => ({ label: `opt${i}` }));
   await mirror.onPrompt([
     { question: "one opt", options: [{ label: "only" }] },
@@ -573,7 +588,7 @@ const QS_TWO = [
 // --- a re-prompt resets + re-ends nothing stale -----------------------------
 {
   const { state, deps } = makeDeps();
-  const mirror = createAskUserMirror(deps);
+  const mirror = wireVerdicts(deps, createAskUserMirror(deps));
   await mirror.onPrompt(QS_TWO, "$tc-re1");
   await waitUntil(() => state.polls.length === 2, { label: "first poll pair" });
   const firstPollId = state.polls[0].eventId;

@@ -8,6 +8,26 @@ import { fileURLToPath } from "node:url";
 import { createPiJiti, EXT_DIR, makeCheck, waitUntil } from "../harness/_harness.mjs";
 import { createTestOutbox } from "../harness/fake-outbox.mjs";
 
+/** The open-of-questionnaire pairing probe (an empty `partial` set): it carries
+ *  no answers, so the captures below skip it. */
+const isPairingProbe = (p) => p.partial === true && (p.answers ?? []).length === 0;
+
+/** Answer-channel capture for these suites: record the emission (skipping the
+ *  probe) and reply `ok` on `answer-result` the way a PATCHED channel does.
+ *  That verdict is the proof that the receiver knows `partial`, which is what
+ *  lets a completing display-sync snapshot ship at all — an unproven receiver
+ *  never sees one, because a stock package reads that snapshot as the answer
+ *  itself (see test/offline/ask-user-display-sync.mjs for the stock side).
+ *  `getMirror` is called lazily: the mirror is still under construction here. */
+function channelOf(sink, getMirror) {
+  return (p) => {
+    const mirror = getMirror();
+    if (!isPairingProbe(p) && sink) sink.push(p);
+    mirror?.onAnswerResult({ ok: true, requestId: p.requestId });
+  };
+}
+
+
 const jiti = await createPiJiti(import.meta.url);
 const { check, finish } = makeCheck();
 const { tmp, stateDir, TS, config, fakeOutbox, connOk, fakePi, handler, integrator, evt } = await import("./_setup.mjs");
@@ -1309,6 +1329,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
   const emitted2 = [];
   const submitted2 = [];
   const reviewEventId2 = { id: "" };
+
   const mirror3 = createAskUserMirror({
     post: async (text, html) => { posts2.push(text); return { success: true, eventId: "$y" }; },
     postResult: async (text) => {
@@ -1321,7 +1342,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
       return { success: true };
     },
     isEnabled: () => true,
-    emitAnswer: (p) => { emitted2.push(p); },
+    emitAnswer: channelOf(emitted2, () => mirror3),
   });
   await mirror3.onPrompt(qs2, "$tc3");
   check(
@@ -1367,7 +1388,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
   const mirrorR = createAskUserMirror({
     post: async (text) => { postsR.push(text); return { success: true, eventId: "$r" }; },
     isEnabled: () => true,
-    emitAnswer: (p) => { emittedR.push(p); },
+    emitAnswer: channelOf(emittedR, () => mirrorR),
   });
   await mirrorR.onPrompt(qs2, "$tcR");
   mirrorR.tryConsumeReply("2 3"); // complete the buffer → review pending
@@ -1381,7 +1402,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
   const mirrorR2 = createAskUserMirror({
     post: async (text) => { postsR.push(text); return { success: true, eventId: "$r2" }; },
     isEnabled: () => true,
-    emitAnswer: (p) => { emittedR.push(p); },
+    emitAnswer: channelOf(emittedR, () => mirrorR2),
   });
   await mirrorR2.onPrompt(qs2, "$tcR2");
   mirrorR2.tryConsumeReply("2 3");
@@ -1403,7 +1424,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
     const mirror1 = createAskUserMirror({
       post: async (t) => { posts1.push(t); return { success: true, eventId: "$1" }; },
       isEnabled: () => true,
-      emitAnswer: (p) => { emitted1.push(p); },
+      emitAnswer: channelOf(emitted1, () => mirror1),
     });
     await mirror1.onPrompt(qs1, "$tc1");
     check(
@@ -1421,7 +1442,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
     const mirrorC = createAskUserMirror({
       post: async (t) => { postsC.push(t); return { success: true, eventId: "$c" }; },
       isEnabled: () => true,
-      emitAnswer: (p) => { emittedC.push(p); },
+      emitAnswer: channelOf(emittedC, () => mirrorC),
     });
     await mirrorC.onPrompt(qs1, "$tcC");
     check(
@@ -1441,7 +1462,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
     const mirrorV = createAskUserMirror({
       post: async () => ({ success: true, eventId: "$v" }),
       isEnabled: () => true,
-      emitAnswer: (p) => { emittedV.push(p); },
+      emitAnswer: channelOf(emittedV, () => mirrorV),
     });
     await mirrorV.onPrompt(qs2, "$tcV");
     mirrorV.tryConsumeReply("2 3"); // complete the buffer → review pending
@@ -1457,7 +1478,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
     const mirrorV = createAskUserMirror({
       post: async (t) => { postsV.push(t); return { success: true, eventId: "$v" }; },
       isEnabled: () => true,
-      emitAnswer: (p) => { emittedV.push(p); },
+      emitAnswer: channelOf(emittedV, () => mirrorV),
     });
     await mirrorV.onPrompt(qs2, "$tcV");
     mirrorV.tryConsumeReply("2 3");
@@ -1476,7 +1497,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
     const mirrorV = createAskUserMirror({
       post: async () => ({ success: true, eventId: "$v" }),
       isEnabled: () => true,
-      emitAnswer: (p) => { emittedV.push(p); },
+      emitAnswer: channelOf(emittedV, () => mirrorV),
     });
     await mirrorV.onPrompt(qs2, "$tcV");
     mirrorV.tryConsumeReply("2 3"); // complete the buffer → review pending
@@ -1493,7 +1514,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
     const mirrorQ = createAskUserMirror({
       post: async () => ({ success: true, eventId: "$q" }),
       isEnabled: () => true,
-      emitAnswer: (p) => { emittedQ.push(p); },
+      emitAnswer: channelOf(emittedQ, () => mirrorQ),
     });
     await mirrorQ.onPrompt([{ question: "q", options: [{ label: "Yes" }, { label: "No" }] }], "$tcQ");
     check(
@@ -1510,7 +1531,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
   const mirrorE = createAskUserMirror({
     post: async (text) => { postsE.push(text); return { success: true, eventId: "$e" }; },
     isEnabled: () => true,
-    emitAnswer: () => undefined,
+    emitAnswer: channelOf(null, () => mirrorE),
   });
   await mirrorE.onPrompt(qs2, "$tcE");
   check(
@@ -1529,7 +1550,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
       post: async (t) => { postsS.push(t); return { success: true, eventId: "$s" }; },
       postResult: async (t) => { postsS.push(t); return { success: true, eventId: "$rs" }; },
       isEnabled: () => true,
-      emitAnswer: (p) => { emittedS.push(p); },
+      emitAnswer: channelOf(emittedS, () => m),
     });
     await m.onPrompt(qs, "$tcS");
     m.tryConsumeReply("2"); // Q1 by the room (ack posted, partial emitted)
@@ -1568,7 +1589,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
     const m2 = createAskUserMirror({
       post: async (t) => { postsT.push(t); return { success: true }; },
       isEnabled: () => true,
-      emitAnswer: () => undefined,
+      emitAnswer: channelOf(null, () => m2),
     });
     await m2.onPrompt(qs3, "$tcT");
     m2.tryConsumeReply("1"); // A = a1 by the room
@@ -1592,7 +1613,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
     const m3 = createAskUserMirror({
       post: async (t) => { postsU.push(t); return { success: true }; },
       isEnabled: () => true,
-      emitAnswer: () => undefined,
+      emitAnswer: channelOf(null, () => m3),
     });
     await m3.onPrompt(qs3, "$tcU");
     m3.tryConsumeReply("Q3: 2 1"); // multi C = c2, c1 in TAP order
@@ -1613,7 +1634,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
       postResult: async (t) => { fresh.push(t); return { success: true, eventId: "$live" }; },
       edit: async (id, t) => { edits.push([id, t]); return { success: true }; },
       isEnabled: () => true,
-      emitAnswer: () => undefined,
+      emitAnswer: channelOf(null, () => m),
     });
     await m.onPrompt(qs, "$tcL");
     check("questionnaire itself is a plain post", fresh.length === 1 && fresh[0].includes("Which library?"));
@@ -1656,7 +1677,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
       return { success: true };
     },
     isEnabled: () => true,
-    emitAnswer: (p) => { emitted.push(p); },
+    emitAnswer: channelOf(emitted, () => mirror),
   });
   check("mirror closed before prompt", mirror.isOpen() === false, "");
   await mirror.onPrompt(qs, "$tcMain");
@@ -1721,7 +1742,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
       const m = createAskUserMirror({
         post: async (t) => { postsW.push(t); return { success: true, eventId: "$w" }; },
         isEnabled: () => true,
-        emitAnswer: (p) => { emittedW.push(p); },
+        emitAnswer: channelOf(emittedW, () => m),
       });
       void m.onPrompt(qs, "$tcW");
       m.tryConsumeReply("2"); // Q1 = ramda
@@ -1739,7 +1760,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
       const m = createAskUserMirror({
         post: async (t) => { postsP.push(t); return { success: true, eventId: "$p" }; },
         isEnabled: () => true,
-        emitAnswer: () => undefined,
+        emitAnswer: channelOf(null, () => m),
       });
       void m.onPrompt(qs, "$tcP");
       m.tryConsumeReply("2");
@@ -1755,7 +1776,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
       const m = createAskUserMirror({
         post: async (t) => { postsN.push(t); return { success: true, eventId: "$n" }; },
         isEnabled: () => true,
-        emitAnswer: () => undefined,
+        emitAnswer: channelOf(null, () => m),
       });
       void m.onPrompt(qs, "$tcN");
       m.onAnswerResult({ ok: false, code: "not_found", reason: "already answered" });
@@ -1768,7 +1789,7 @@ console.log("== ask-user mirror: format + parse + emit side ==");
   const mirror2 = createAskUserMirror({
     post: async () => { throw new Error("should not post"); },
     isEnabled: () => false,
-    emitAnswer: () => undefined,
+    emitAnswer: channelOf(null, () => mirror2),
   });
   await mirror2.onPrompt(qs, "$tc2");
   check("disabled connection → mirror stays closed", mirror2.isOpen() === false, "");

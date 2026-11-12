@@ -25,17 +25,28 @@
 # Idempotent. Run it after every install or update of
 # @juicesharp/rpiv-ask-user-question — an update replaces the package on
 # disk and drops the patches. Dry-run first: never half-patches — if upstream
-# moved a hunk, the script stops and says so.
+# moved a hunk, the script stops and says so. A refusal therefore left nothing
+# half-applied: fix the cause it names (a missing `patch` binary is the common
+# one) and re-run.
 
 set -eu
 
 PATCH_HOME="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 PKG="${PI_MATRIX_AUQ_PKG:-$HOME/.pi/agent/npm/node_modules/@juicesharp/rpiv-ask-user-question}"
-GENERATED_AGAINST="0001: 2.13.9 · 0002: 2.13.9 + 0001"
+GENERATED_AGAINST="0001: 2.13.9 · 0002: 2.13.9 + 0001 (both verified to apply on 2.15.0)"
 
 [ -d "$PKG" ] || {
   echo "package not found at $PKG"
   echo "install it first:  pi install npm:@juicesharp/rpiv-ask-user-question"
+  exit 1
+}
+
+# Without `patch` every dry-run below "fails" with the misleading diagnosis
+# that upstream changed the context — the real reason (`patch: not found`) is
+# swallowed by the dry-run's own redirect. Say what is missing instead.
+command -v patch > /dev/null 2>&1 || {
+  echo "'patch' is not installed — this script cannot patch anything."
+  echo "install it (debian/ubuntu: apt-get install patch · alpine: apk add patch), then re-run."
   exit 1
 }
 

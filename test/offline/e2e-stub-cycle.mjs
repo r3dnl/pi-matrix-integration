@@ -144,7 +144,12 @@ check(
 const emitted = [];
 const mirror = createAskUserMirror({
   isEnabled: () => true,
-  emitAnswer: (payload) => emitted.push(payload),
+  // The open-of-questionnaire pairing probe (an empty `partial` set, no
+  // answers) is channel bookkeeping — this capture is about answer traffic.
+  emitAnswer: (payload) => {
+    if (payload.partial && (payload.answers ?? []).length === 0) return;
+    emitted.push(payload);
+  },
   postPoll: async () => ({ success: false, error: "no polls in this stub" }), // text path
   post: async (text) => {
     const r = await fakeOutbox.postMessage(text);

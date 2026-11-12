@@ -49,6 +49,10 @@ come with a major version bump.
   the matched value. `--self-check` proves all four behaviours bite. Values
   written as `<REPLACE-ME>` count as placeholders, so the docker example keeps
   its convention.
+- QUICKSTART now states when the login dialogue asks "Invite user to room":
+  only when the room prompt's alias does not exist yet and the login creates
+  the room. Joining an existing room skips the question — the trap that left
+  users waiting for a prompt that never comes.
 
 - The RPIV decision questionnaire the ask-user mirror posts to the room
   ships its option lists as fenced monospace blocks (`1. label`, description
@@ -130,6 +134,31 @@ come with a major version bump.
 
 ### Fixed
 
+- An ask-user questionnaire no longer answers itself when the pairing patches
+  are missing. The room mirror pushed a snapshot of every buffered answer onto
+  the answer channel flagged `partial: true` so the terminal tab followed the
+  room — but a stock `@juicesharp/rpiv-ask-user-question` ignores unknown
+  fields, so the moment the last room reply landed it read that snapshot as a
+  complete answer and resolved the tool call: the room was still showing
+  "confirm" while the session had moved on, and the refused partial replies
+  were dropped in silence (`ask-user-mirror.ts`). The mirror now probes the
+  pairing when a questionnaire opens (an empty partial set: a no-op for a
+  patched receiver, a refusal for a stock one), ships a complete snapshot only
+  once the receiver has proved it understands `partial`, and logs one warning
+  naming `apply.sh --check` when it does not. `patches/rpiv-ask-user-question/apply.sh`
+  also stopped blaming upstream when the `patch` binary is simply not
+  installed, and `docker/Dockerfile` now installs it — the cold-install demo
+  container ran 2.15.0 unpatched because `patch: not found` surfaced as
+  "DRY-RUN FAILED … upstream likely changed the context".
+
+- The docs now name the extension the decision questionnaires come from.
+  `@juicesharp/rpiv-ask-user-question` is not a dependency of this package, and
+  no document said to install it — so a fresh install following QUICKSTART hit
+  `package not found` from `patches/rpiv-ask-user-question/apply.sh`, and only
+  that script's own error message named the command. QUICKSTART, the ask-user
+  pairing guide and the patch README now carry
+  `pi install npm:@juicesharp/rpiv-ask-user-question`.
+
 - `docker/.env.example` states what to substitute instead of presenting an
   opaque string: `PI_MATRIX_READER_PASSWORD` and `PI_MATRIX_JUDGE_API_KEY`
   carried 18- and 31-character literals that looked exactly like live values
@@ -138,6 +167,30 @@ come with a major version bump.
   the same convention the file already uses elsewhere. Anyone who copied the
   old example literals into a deployment should treat them as public text and
   replace them.
+- An ask-user questionnaire no longer answers itself when the pairing patches
+  are missing. The room mirror pushed a snapshot of every buffered answer onto
+  the answer channel flagged `partial: true` so the terminal tab followed the
+  room — but a stock `@juicesharp/rpiv-ask-user-question` ignores unknown
+  fields, so the moment the last room reply landed it read that snapshot as a
+  complete answer and resolved the tool call: the room was still showing
+  "confirm" while the session had moved on, and the refused partial replies
+  were dropped in silence (`ask-user-mirror.ts`). The mirror now probes the
+  pairing when a questionnaire opens (an empty partial set: a no-op for a
+  patched receiver, a refusal for a stock one), ships a complete snapshot only
+  once the receiver has proved it understands `partial`, and logs one warning
+  naming `apply.sh --check` when it does not. `patches/rpiv-ask-user-question/apply.sh`
+  also stopped blaming upstream when the `patch` binary is simply not
+  installed, and `docker/Dockerfile` now installs it — the cold-install demo
+  container ran 2.15.0 unpatched because `patch: not found` surfaced as
+  "DRY-RUN FAILED … upstream likely changed the context".
+
+- The docs now name the extension the decision questionnaires come from.
+  `@juicesharp/rpiv-ask-user-question` is not a dependency of this package, and
+  no document said to install it — so a fresh install following QUICKSTART hit
+  `package not found` from `patches/rpiv-ask-user-question/apply.sh`, and only
+  that script's own error message named the command. QUICKSTART, the ask-user
+  pairing guide and the patch README now carry
+  `pi install npm:@juicesharp/rpiv-ask-user-question`.
 
 - A question queued while the previous run settled is no longer swallowed
   when a thread-summary directive opens the next run. The run-scoped

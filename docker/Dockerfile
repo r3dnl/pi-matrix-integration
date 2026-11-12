@@ -5,9 +5,12 @@
 FROM node:24-bookworm-slim
 
 # git for Pi's package handling, ripgrep for Pi's search tools, curl for the
-# offline-mode network probe.
+# offline-mode network probe, patch for
+# patches/rpiv-ask-user-question/apply.sh (the ask-user pairing hunks —
+# without it the cold install runs a STOCK questionnaire package and the
+# terminal tab stops following the room).
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git ripgrep curl ca-certificates \
+ && apt-get install -y --no-install-recommends git ripgrep curl ca-certificates patch \
  && rm -rf /var/lib/apt/lists/*
 
 # Pin the Pi version: a Pi change must not break the release gate silently
