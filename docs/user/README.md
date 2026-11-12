@@ -24,11 +24,13 @@ left.
 | [Configuration reference](configuration.md) | every key the code reads, its default, and the `PI_MATRIX_*` environment override |
 | [matrix-config.example.jsonc](matrix-config.example.jsonc) | a commented example config file to copy |
 
-## When something is wrong, and what is next
+## When something is wrong
 
 | Document | Covers |
 |----------|--------|
 | [Troubleshooting](troubleshooting.md) | top-down triage: connection, then room membership, then the missing feature; where the log is |
-| [Roadmap](roadmap.md) | what the maintainers intend to build — intent, not status |
+
+What the maintainers intend to build next lives in the developer docs:
+[roadmap](../dev/roadmap.md).
 
 Developer-facing documentation lives under [docs/dev/](../dev/).

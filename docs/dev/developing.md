@@ -106,7 +106,7 @@ environment, never from a file. Nothing in this repository or its published hist
 Open an issue with the Pi version, the package version, your homeserver software, and a log excerpt with secrets stripped. `AGENTS.md` documents what an AI coding agent is and is not allowed to change here; read it before letting one edit this repository.
 
 The `/matrix-*` command surface has a standing redesign on the backlog
-(docs/user/roadmap.md). Three rules bind it: the config file is the leading
+(roadmap.md). Three rules bind it: the config file is the leading
 declarative description of behaviour; commands invoke functionality and
 are not where preferences get stored; anything a user needs away from the
 terminal must be reachable from the room, so it must be a command. Do not

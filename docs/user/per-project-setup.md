@@ -75,7 +75,7 @@ duplicate deliveries). It does not touch the Olm store or the account lock.
 
 To run two projects concurrently, give each its own agent account — see
 Recommendation above. Sharing one identity across live sessions is tracked as
-an open item in [roadmap.md](roadmap.md).
+an open item in [roadmap.md](../dev/roadmap.md).
 
 ## Keeping it safe
 

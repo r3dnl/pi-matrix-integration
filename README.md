@@ -160,7 +160,7 @@ Config lives at `<project>/.pi/matrix/matrix-config.json`(`.jsonc`) (for project
 - [Per-project setup](docs/user/per-project-setup.md) — one project : one room, the recommended layout, the `~/.pi` FAQ.
 - [Ask-user pairing](docs/user/ask-user-pairing.md) — the question mirror's terminal patch.
 - [Troubleshooting](docs/user/troubleshooting.md) — cannot connect, connected-but-silent, missing threads, decryption, stale summaries.
-- [Roadmap](docs/user/roadmap.md) — what's coming in 1.0.0 and beyond.
+- [Roadmap](docs/dev/roadmap.md) — what's coming in 1.0.0 and beyond.
 - [Security posture](SECURITY.md) — what the room can do, what it cannot, how to report a vulnerability.
 - [Developing](docs/dev/developing.md) · [Coding standards](docs/dev/coding-standards.md) · [Architecture](docs/dev/architecture/README.md) — for contributors and coding agents.
 
