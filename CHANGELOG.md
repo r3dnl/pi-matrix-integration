@@ -141,6 +141,15 @@ come with a major version bump.
 
 ### Fixed
 
+- The voice docs named `ffmpeg` as a hard requirement. It is not one: a
+  configured remote STT endpoint takes the clip before any local decode
+  (`src/voice.ts:347`), so a host with `PI_MATRIX_STT_BASE_URL` set transcribes
+  voice notes with no `ffmpeg` installed at all. QUICKSTART, the README feature
+  list, the configuration table and both code comments now name the two engines
+  instead of one. `ffmpeg` remains required for the local Whisper fallback — and
+  with an endpoint configured but the LAN down, the fallback is the failure the
+  room gets told about.
+
 - `docker/.env.example` states what to substitute instead of presenting an
   opaque string: `PI_MATRIX_READER_PASSWORD` and `PI_MATRIX_JUDGE_API_KEY`
   carried 18- and 31-character literals that looked exactly like live values

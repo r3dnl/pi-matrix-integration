@@ -297,9 +297,10 @@ export interface PartialMatrixConfig {
   threadPendingRoute?: "flat" | "latest";
   attachEncryption?: "on" | "off";
   /** Voice-message transcription: an `m.audio`/`m.voice`
-   *  room message is downloaded, decoded (ffmpeg), transcribed (remote
-   *  STT when configured, else local Whisper via the rpiv-voice engine —
-   *  the dictate-local chain) and injected as the sender's text message.
+   *  room message is downloaded and transcribed — remote STT first when
+   *  configured (the clip bytes go out as they arrived, no local decode),
+   *  else decoded with ffmpeg and run through the local Whisper engine
+   *  (the dictate-local chain) — and injected as the sender's text message.
    *  Default "on". */
   voiceTranscription?: boolean;
   /** Remote STT base URL tried before the local engine (empty = off). */
