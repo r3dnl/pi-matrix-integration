@@ -38,7 +38,7 @@ invariants.
 |----------|--------|
 | [README.md](../../README.md) | what the extension is, commands, user-facing surface |
 | [QUICKSTART.md](../../QUICKSTART.md) | install to connected room in one sitting |
-| [CONTRIBUTING.md](../../CONTRIBUTING.md) | the dev loop for outside contributors |
+| [CONTRIBUTING.md](../../CONTRIBUTING.md) | the outside contributor's entry point: clone, `npm ci`, and the pointer into this index |
 | [SECURITY.md](../../SECURITY.md) | the trust boundary, dependency inventory, disclosure contact |
 | [CHANGELOG.md](../../CHANGELOG.md) | release history in Keep a Changelog style |
 
