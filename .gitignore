@@ -28,6 +28,5 @@ pi-matrix-integration-*.tgz
 # script for demo
 .video-demo-script.md
 
-# proposal and design docs
-docs/dev/architecture/
+# proposal docs (the architecture/ tree is shipped and tracked)
 docs/dev/proposals/
