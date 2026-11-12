@@ -50,13 +50,17 @@ Start Pi in your project directory:
 cd <project> && pi
 ```
 
-In the Pi session:
+This will automatically start the login process (`/matrix-login`) and upon completion it will ask if you want to see the `/matrix-introduction-tour`.
 
 ```
-/matrix-login      # probe homeserver, agent username + password, token stored
-/matrix-connect    # connect to the room (first run asks which room)
+/matrix-help       # condensed overview of help functions
 /matrix-status     # prints server, room, user — connected
 ```
+
+### Element slash behavior
+_note that Element uses `/` also for local functions, so it will ask if you want to submit_
+![](docs/user/media/element-send-command.png)
+_you can also type `//` in Element which will send straight away and comes through as a single slash_
 
 ## 4. Verify both directions
 
@@ -87,10 +91,11 @@ a review step confirms before Pi proceeds.
 | Command | What it does |
 |---------|--------------|
 | `/matrix-status` | Show connection status |
-| `/matrix-send Hello!` | Send a message to the room |
-| `/matrix-messages 5` | Show the last 5 room messages |
-| `/matrix-toggle` | Toggle the integration on/off |
-| `/matrix-thread-toggle` | Toggle threading |
+| `/matrix-connect` | Connect to the room (first run asks which room) |
+| `/matrix-disconnect` | Disconnect from the room |
+| `/matrix-switch` | Choose a different config from a `{project-root}/.pi/matrix/matrix-config-{matrix-user}--{matrix-domain}` file |
+| `/matrix-toggle` | Toggle the extension on/off |
+| `/matrix-thread-toggle` | Toggle threading on/off |
 | `/matrix-help` | Post the end-user guide to the room |
 | `/matrix-introduction-tour` | Walk you and the room through every feature |
 
