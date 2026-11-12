@@ -37,7 +37,7 @@ invariants.
 |----------|--------|
 | [README.md](../../README.md) | what the extension is, commands, user-facing surface |
 | [QUICKSTART.md](../../QUICKSTART.md) | install to connected room in one sitting |
-| [CONTRIBUTING.md](../../CONTRIBUTING.md) | how contributions are expected to arrive |
+| [CONTRIBUTING.md](../../CONTRIBUTING.md) | the dev loop for outside contributors |
 | [SECURITY.md](../../SECURITY.md) | the trust boundary, dependency inventory, disclosure contact |
 | [CHANGELOG.md](../../CHANGELOG.md) | release history in Keep a Changelog style |
 
