@@ -1,8 +1,5 @@
 # Coding standards
 
-**REVIEW COMMENTS: ADD A WHAT AND HOW SECTION ON DOING TRUNC BASED DEVELOPMENT, THAT WE DO SEMANTIC VERSIONING.**
-
-
 Every rule below names its gate: the command, test or review step that enforces it. A rule with no gate is marked **(judgement)** — do not pretend otherwise, and do not add aspirational rules with no enforcement.
 
 ## Language
@@ -53,6 +50,8 @@ The tree carries roughly 1 900 line comments and 770 doc blocks. That is a delib
 
 ## Tests
 
+See [Testing README](../../test/README.md) as well.
+
 | Rule | Gate |
 |------|------|
 | Behaviour changes come with a test in the right tier: deterministic in the offline tier, anything touching a real room in the live tier | review |
@@ -80,6 +79,47 @@ Commands and configuration follow three rules, recorded in [architecture: room b
 | No drive-by refactors inside a functional change | review |
 | Before a release, `src/` walks the review checklist: dead, wrong, duplicate, wrong place, wrong type, vague name, speculative. One unit at a time, grep evidence per finding | the review document |
 | Anything the reviewer flagged and the maintainer declined is written down with the reason | `docs/decisions/DECISION-LOG.md` |
+
+## Branching and releases
+
+**What:** this repo does trunk-based development on `main` and ships
+releases by semantic versioning. `main` is the only long-lived branch:
+work lands in it as small, complete units, every push runs the CI gate,
+and there are no feature branches that live for days and no release
+branches that fixes are cherry-picked between. The consequence is the
+deal: `main` is always the next release candidate, so a red `main` is
+the highest-priority bug.
+
+**How:**
+
+| Rule | Gate |
+|------|------|
+| Finished units are committed and pushed to `main`; unpushed commits are unpublished work, not a branch strategy | the PR gate runs on every push (`ci.yml`) |
+| No long-lived feature branch: an experiment either lands on `main` quickly or dies; unfinished work ships behind a config default rather than on a branch | **(judgement)** |
+| A red gate is fixed before new work: fix forward with the next commit, or `git revert` the one that broke it — a revert undoes one decision, which is why one unit per commit matters | CI status on `main` |
+| Dependency updates never ride on top of manual work: Renovate opens its pull requests against `main`; lockfile-only updates automerge once the CI gate is green, version bumps wait for a human | `renovate.json`, `deps.yml` (supply-chain audit), the PR gate |
+| `main` stays release-shaped between releases: the nightly runs the live tier against a real homeserver, so room-visible regressions surface without waiting for a release | `live-nightly.yml` |
+
+**Releases are tags.** The version lives in `package.json`; a release is
+a `vX.Y.Z` tag pushed on `main`, and `release.yml` re-runs the whole PR
+gate, publishes to npm with provenance, and opens the GitHub release
+whose notes are the `## [X.Y.Z]` section of `CHANGELOG.md`. So the tag
+and `package.json` must carry the same number, and the changelog section
+must exist before you tag. Release move: move `[Unreleased]` to
+`## [X.Y.Z]`, bump `package.json`, commit, tag that commit, push the
+tag.
+
+**How the number is chosen (semver):**
+
+| Bump | When | Gate |
+|------|------|------|
+| patch `0.9.1` | behaviour fixed, no user-visible surface added or changed | review at release |
+| minor `0.10.0` | new user-visible behaviour, additive and backwards-compatible | review at release |
+| major `1.0.0` | the user-facing surface breaks: a config key, `/matrix-*` command or `PI_MATRIX_*` variable is removed or renamed | `AGENTS.md` rule 6 — always an approved change, never a drive-by |
+
+Until `1.0.0` (this repo is at `0.9.0`) majors stay cheap and the
+documented surface may still move; from `1.0.0` the surface in
+`docs/user/` and the README is frozen by the rules above.
 
 ## Definition of done, for any change
 
