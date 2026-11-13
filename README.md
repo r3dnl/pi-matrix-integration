@@ -10,9 +10,8 @@ This is [pi-matrix-integration](https://github.com/r3dnl/pi-matrix-integration),
 
 Pi normally runs in a terminal, which is nice. But not when you are away from that machine and don't have access. This extension fixes that.
 
-Pi posts what it is doing into the matrix messaging room — milestones, questions, final answers. And you can reply. Just like the terminal. But now from your phone, tablet or PC.
+Pi posts what it is doing into the matrix messaging room - milestones, questions, final answers - and you can reply. Just like the terminal. But now from your phone, tablet or PC.
 
-For matrix messaging you will need a matrix app, like [Element](https://element.io/). But because it's Matrix you can also bridge it with [Whatsapp, Discord, Slack, Telegram etc](https://matrix.org/ecosystem/bridges/). You decide.
 
 And you can seamlessly switch back and forth between the terminal and app.
 
@@ -21,21 +20,19 @@ And you can seamlessly switch back and forth between the terminal and app.
 ## Use Cases
 
 ### 1. Remote Control of your Pi agents
+Matrix provides messaging access from desktop, tablet and mobile devices to the Pi session in your terminal. For matrix messaging you will need a matrix app, like [Element](https://element.io/). But because it's Matrix you can also bridge it with [Whatsapp, Discord, Slack, Telegram etc](https://matrix.org/ecosystem/bridges/). You decide.
 
 ### 2. Desktop Companion App
-### 3. Team access to agent without SSH access
+Although not the original reason why I created this extension, I find that running Element on the desktop *next* to the Pi terminal session is really usefull as a high level overview of my Pi sessions (see example 2)
 
-
-
----
-
-## Examples
+### 3. Team access to Pi terminal agent without SSH access
+If you work with a team, but don't want the hassle of providing ssh access to each team member to the terminal, you can setup a matrix room with the team members, including your pi agent. This is a good idea anyway because it gives your team / organization autonomous messaging, and you can fully tailor it to your security and compliance needs.
 
 <img src="docs/user/media/screenshot_pi-matrix-integration_element_subagents_and_rich_formatting.png" alt="Sub-agents spawning and checking back in, milestones and rich formatting in an Element room" width="600px">
 
 _Desktop Element - Sub-agents spawning and checking back in, milestones and rich formatting in an Element room_
 
-<img src="docs/user/media/screenshot_pi-matrix-integration_desktop_companion.png" alt="Using Element as a desktop companion app next to the terminal to keep a higher level overview of your Pi agent: the threads provide easy condensed access to all Pi sessions, the active thread summary keeps a summary-at-glance for your terminal session, and the thread conversation is a condensed overview of the terminal session, with only milestone and end-of-turn messages (no thinking)" width="600px">
+<img src="docs/user/media/screenshot_pi-matrix-integration_desktop_companion.png" alt="Using Element as a desktop companion app next to the terminal to keep a higher level overview of your Pi agent: the threads provide easy condensed access to all Pi sessions, the active thread summary keeps a summary-at-glance for your terminal session, and the thread conversation is a condensed overview of the terminal session, with only milestone and end-of-turn messages (no thinking)" width="800px">
 
 _Using Element as a desktop companion app next to the terminal to keep a higher level overview of your Pi agent: the threads provide easy condensed access to all Pi sessions, the active thread summary keeps a summary-at-glance for your terminal session, and the thread conversation is a condensed overview of the terminal session, with only milestone and end-of-turn messages (no thinking)_
     
@@ -52,31 +49,33 @@ _Using Element as a desktop companion app next to the terminal to keep a higher 
 
 ### Install
 
-1. install
 ```sh
 pi install git:github.com/r3dnl/pi-matrix-integration
+echo 'Restart / reload your Pi session.'
 ```
 (Once the npm publish lands: `pi install npm:pi-matrix-integration`.)
-2. Restart / reload your Pi session.
 
-See [quickstart](QUICKSTART.md) for more.
+See [quickstart](QUICKSTART.md) for details and integration with other extensions (decision dialogue, subagents) and tools (voice msg transcription).
 
 ---
 
-## What you get
+## Features
 
-- **Full autonomy** — your own Pi harness, your own messaging server — fully integrated, no SaaS in between.
-- **Steer from your phone** — reply in the room and Pi picks it up. Terminal input echoes to the room as `🧑 User: …`, room input shows in the terminal as `[Matrix] …`, so you always know where an input came from. → [Example](#steer-from-your-phone)
-- **Milestones** — the room gets highlighted `🎯` milestones, TODO progress, session/compact/model events and each turn's final answer (`💬 Pi: …`), so you know what the agent is doing from anywhere. → [Example](#milestones)
-- **Drop a voice message** — record on your phone and press send: the transcript lands in the Pi terminal, plus an echo in the room naming the engine that produced it (remote STT model or local Whisper). Needs either `ffmpeg` on the Pi host (local engine) or a remote STT endpoint (`PI_MATRIX_STT_BASE_URL`); a message that cannot be transcribed gets a warning back in the room. → [Example](#drop-a-voice-message)
-- **Attach a file to the Pi session** — `@` picks a workspace file for the agent out of the room. → [Example](#attach-a-file-to-pi-session)
-- **Upload a file to the room** — type `@@<fragment>` in the room: the artifact picker uploads the file as a real attachment, captioned with the commit it was read at. Markdown ↔ HTML formatting is translated both ways. → [Example](#upload-a-file-to-the-matrix-room)
-- **Answer a decision from anywhere** — the [`ask_user_question`](https://github.com/juicesharp/rpiv-mono/tree/main/packages/rpiv-ask-user-question) questionnaire is mirrored into the room; answer on either side — first answer wins ([pairing](docs/user/ask-user-pairing.md)). → [Example](#answer-a-decision-from-the-couch)
-- **One session = one thread** — each session opens a `🧵 <topic>` thread, surviving `/compact` and restarts, readable by a phone-only user. → [Example](#organize-pi-sessions-as-matrix-threads)
-- **Watch the session get summarized** — that thread's root message is rewritten in place with topic, milestones and decisions as the session progresses. → [Example](#watch-your-session-get-summarized)
-- **See subagents spawn and check back in** — background spawns and their results post to the room and fold into their spawn lines. → [Example](#see-subagents-spawn-and-check-back-in)
-- **Commands from the room** — `/matrix-*`, other extensions' commands and `/skill:` calls run when typed in the room — the full surface, membership-gated. (Pi built-ins like `/new` stay terminal-only.) → [Commands](#commands)
-- **Security by default** — end-to-end encryption support, secure terminal login, agent-owned account, credentials in a `0600` file.
+| Feature | What you get |
+|---|---|
+| **Full autonomy** | Your own Pi harness, your own messaging server — fully integrated, no SaaS in between. |
+| **Steer from your phone** | Reply in the room and Pi picks it up. Terminal input echoes to the room as `🧑 User: …`, room input shows in the terminal as `[Matrix] …`, so you always know where an input came from. → [Example](#steer-from-your-phone) |
+| **Milestones** | The room gets highlighted `🎯` milestones, TODO progress, session/compact/model events and each turn's final answer (`💬 Pi: …`), so you know what the agent is doing from anywhere. → [Example](#milestones) |
+| **Drop a voice message** | Record on your phone and press send: the transcript lands in the Pi terminal, plus an echo in the room naming the engine that produced it (remote STT model or local Whisper). → [Example](#drop-a-voice-message) |
+| **Attach a file to the Pi session** | `@` picks a workspace file for the agent out of the room. → [Example](#attach-a-file-to-pi-terminal-session) |
+| **Upload a file to the room** | Type `@@<fragment>` in the room: the artifact picker uploads the file as a real attachment, captioned with the commit it was read at. Markdown ↔ HTML formatting is translated both ways. → [Example](#upload-a-file-to-the-matrix-room) |
+| **Answer a decision from anywhere** | The [`ask_user_question`](https://github.com/juicesharp/rpiv-mono/tree/main/packages/rpiv-ask-user-question) questionnaire is mirrored into the room; answer on either side — first answer wins ([pairing](docs/user/ask-user-pairing.md)). → [Example](#answer-a-decision-from-the-couch) |
+| **One session = one thread** | Each session opens a `🧵 <topic>` thread, surviving `/compact` and restarts, readable by a phone-only user. → [Example](#organize-pi-sessions-as-matrix-threads) |
+| **Watch the session get summarized** | That thread's root message is rewritten in place with topic, milestones and decisions as the session progresses. Fast and [configurable](docs/user/configuration.md#threading-and-summaries) (incl custom LLM) → [Example](#watch-your-session-get-summarized) |
+| **See subagents spawn and check back in** | Background spawns and their results post to the room and fold into their spawn lines. → [Example](#see-subagents-spawn-and-check-back-in) |
+| **Commands from the room** | `/matrix-*`, other extensions' commands and `/skill:` calls run when typed in the room — the full surface, membership-gated. (Pi built-ins like `/new` stay terminal-only.) → [Commands](#commands) |
+| **Security by default** | End-to-end encryption support, secure terminal login, agent-owned account, credentials in a `0600` file. |
+| **Compliance ready** | Pi and matrix allow for tailoring the setup to your compliance needs. |
 
 ---
 
@@ -105,19 +104,21 @@ Important milestone events get highlighted in the matrix room.
 
 ### **Drop a voice message**
 
-Just record on your phone, and press send. The transcription will appear in the room.
+Just record on your phone, and press send. The transcription will appear in the room. Run a transcription model next to Pi, or remote.  Needs either `ffmpeg` on the Pi host (local engine) or a remote STT endpoint (`PI_MATRIX_STT_BASE_URL`); a message that cannot be transcribed gets a warning back in the room.
 
 <img src="docs/user/media/screenshot_pi-matrix-integration_voice_message.png.png" alt="A voice message sent from a phone: press send in Element and the transcript arrives in the room" width="600px">
 
+---
 
-
-### **Attach a file to Pi session:**
+### **Attach a file to Pi terminal session:**
 
 Since we don't have direct access to the file picker in the TUI, the matrix room shows files to choose pick from.
 ```
 room  › what does @docs/spec.md say about retries?
 terminal  [Matrix] what does docs/spec.md say about retries? (content attached)
 ```
+
+---
 
 ### **Upload a file to the matrix room:**
 
@@ -136,6 +137,13 @@ The picker answers in the room only — the terminal stays quiet. A fragment tha
 
 ### **Answer a decision from the couch:**
 
+Mirrors RPIV's `ask_user_question` extension with:
+- context of the decision to be made
+- a poll for picking answer (incl multiple answers)
+- allows a `custom: ....` message for a different answer
+- final confirmation approval
+- fully synchronous between terminal and matrix client
+
 <img src="docs/user/media/screenshot_pi-matrix-integration_element_decision_dialogue.png" alt="A decision dialogue in Element: the questionnaire mirrored into the room, answered by reply" width="600px">
 
 ---
@@ -146,11 +154,15 @@ Keep things organized by running a Pi terminal session as a threaded conversatio
 
 <img src="docs/user/media/screenshot_pi-matrix-integration_threads_overview.png" alt="Pi sessions in Element: each Pi session runs as its own thread inside one Matrix room" width="600px">
 
+---
+
 ### **Watch your session get summarized**
 
 The root message of a Matrix threaded conversation gets updated with a summary as the Pi session progresses.
 
 <img src="docs/user/media/screenshot_pi-matrix-integration_thread_summary.png" alt="watch how the Matrix root message becomes the session summary, and gets updated as the Pi session progresses -> with key milestones, recent activity, latest & next, and Main Decisions" width="600px">
+
+---
 
 ### **See subagents spawn and check back in**
 

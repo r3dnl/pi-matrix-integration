@@ -35,6 +35,14 @@ come with a major version bump.
 
 ### Changed
 
+- README's feature list is a two-column table (`Feature` | `What you get`), and
+  the three use cases — remote control of a Pi agent, Element as a desktop
+  companion beside the terminal, team access without SSH — are written out
+  instead of sitting as empty headings. The desktop-companion screenshot ships
+  with it. Fixed in passing: the "Attach a file" example link pointed at a
+  heading that no longer exists and now resolves to
+  `#attach-a-file-to-pi-terminal-session`.
+
 - The README example gallery has no empty slots. Two screenshots carried
   `alt=""`, so a screen reader heard nothing at the point where the feature is
   demonstrated; both now describe what their section claims. The
