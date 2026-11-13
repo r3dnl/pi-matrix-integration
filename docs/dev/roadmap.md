@@ -79,7 +79,8 @@ the [README](../../README.md); this page is intent, not status.
 - [x] IMPROVEMENT - a better, standard welcome tour with a strict runbook that takes the user along in all features
 - [ ] IMPROVEMENT - store matrix credentials under `{project-root}/.pi/matrix/credentials/...` *BUT WARN IF NOT GITIGNORED!*
 - [ ] IMPROVEMENT - when resuming a session, mark the milestone in the thread with `🎯 Milestone: Pi resumed this session`
-- [ ] IMPROVEMENT - poll for `@file` selector menu
+- [ ] IMPROVEMENT - use the poll for `@file` and `@@file` selector menu
+- [ ] IMPROVEMENT - the introduction tour gets spawned all at once atm; better to do this step-by-step
 - [ ] FEATURE - concurrent sharing of one Matrix account across projects. Today the
   account directory holds the token, the Olm crypto store and `pi-matrix.lock`, so a
   second Pi session on the same `credentialsPath` fails soft by design (two Olm
@@ -89,16 +90,28 @@ the [README](../../README.md); this page is intent, not status.
   account dir. Scope question first: is one shared agent account a supported
   deployment, or should each project keep its own account (the current default)?
   FAQ: docs/user/per-project-setup.md.
+- [ ] FEATURE - resume sessions by continuiing in a thread; and vice versa a `/resume` brings the matrix thread back to the user
 - [ ] TECH-DEB - 1 central place for all icon constants, like 🧑 (and others as well)
 - [ ] IMPROVEMENT - Command-surface redesign — recorded, not started. Known items: the duplicate `/matrix-summarize-thread` alias, the `matrix-toggle` / `matrix-thread-toggle` naming collision, and several commands that toggle state the config file already owns. Bound by three rules: the config file is the leading declarative description of behaviour; commands invoke functionality and never store preferences; anything a user needs away from the terminal must be a room-reachable command. Also: consider if `matrix_send_milestone`, `matrix_get_messages`, `matrix_update_thread_summary` are still needed, or we should just strip them.
 - [ ] TBD - auto-upload of markdown/feature files as attachments for inspection.
 - [ ] TBD - Activity-based summarizer watchdog: abort runs that stream nothing, instead of waiting out the completion budget.
 - [ ] FEATURE - test and optimize for bridged clients (whatsapp, discord, ...)
+- [ ] TESTING - automated testing with Playwright browser tests on element-web client
+- [ ] TESTING - other matrix clients, or bridged clients (eg discord)
 
 ## (post) v1.0 ideas
 
-- [ ] FEATURE - Inter agent communication
-- [ ] IMPROVEMENT - see archify project: with code of conduct etc
+- [ ] FEATURE - Inter agent communication via matrix
 - [ ] FEATURE - QR code login (dependency upstream)
-- [ ] Support `/new`, `/reload`, … from the room
-- [ ] New Matrix client optimized for agentic coding (Pi) -> mobile agentic IDE
+- [ ] FEATURE - Status if agent is busy or not (idea is to do a slow spinning hour glass for the next agent msg that gets edited in-place)
+- [ ] FEATURE - Support `/new`, `/reload`, … from the matrix room (via RPC call / REST API? Requires security design)
+- [ ] FEATURE - In a thread / session, track any external sources the agent consulted (and list these in thread summary?)
+- [ ] FEATURE - Agent permissions dialogue (approval of shell commands)
+- [ ] FEATURE - Templates for matrix message formatting
+- [ ] FEATURE - Track Pi status in thread summary (eg the footer status `↑749k ↓211k R15M CH99.8% 87.2%/128k (auto)`, or TDD status `red|green`)
+- [ ] FEATURE - Element allows to customize notifications per room; by making agents to `@{person}` mention somebody _only_ when an action is needed, the notifications can be tuned to reduce noise and only ping when really needed
+- [ ] FEATURE - a `/matrix-stats` that gives a numeric overview
+- [ ] FEATURE - ascii tables for unformatted matrix messages, for clients that don't support rich html formatting
+- [ ] FEATURE - investigate [Element Integrations](https://element.io/en/integrations) and how to use them for Pi integration
+- [ ] FEATURE - (re)distribute room keys to room participants so late joiners can decrypt contents
+- [ ] NEW PROJECT - New Matrix client optimized for agentic coding (Pi) -> mobile agentic IDE
