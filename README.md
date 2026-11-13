@@ -32,6 +32,8 @@ If you work with a team, but don't want the hassle of providing ssh access to ea
 
 _Desktop Element - Sub-agents spawning and checking back in, milestones and rich formatting in an Element room_
 
+---
+
 <img src="docs/user/media/screenshot_pi-matrix-integration_desktop_companion.png" alt="Using Element as a desktop companion app next to the terminal to keep a higher level overview of your Pi agent: the threads provide easy condensed access to all Pi sessions, the active thread summary keeps a summary-at-glance for your terminal session, and the thread conversation is a condensed overview of the terminal session, with only milestone and end-of-turn messages (no thinking)" width="800px">
 
 _Using Element as a desktop companion app next to the terminal to keep a higher level overview of your Pi agent: the threads provide easy condensed access to all Pi sessions, the active thread summary keeps a summary-at-glance for your terminal session, and the thread conversation is a condensed overview of the terminal session, with only milestone and end-of-turn messages (no thinking)_
