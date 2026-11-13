@@ -35,6 +35,14 @@ come with a major version bump.
 
 ### Changed
 
+- The README example gallery has no empty slots. Two screenshots carried
+  `alt=""`, so a screen reader heard nothing at the point where the feature is
+  demonstrated; both now describe what their section claims. The
+  `screenshot_pi-marix-integration_subagents.png` filename typo is renamed and
+  its link follows. The empty `Remote terminal command invocation` heading is
+  gone: that surface is the Commands table, already linked from the feature
+  list, and filling the stub would have meant inventing transcript output.
+
 - Troubleshooting documents the account lock. `already in use by another live
   pi session (pid N)` used to be a dead end: the entry now says what holds it
   (`pi-matrix.lock` beside `credentials.json`), why the second session refuses

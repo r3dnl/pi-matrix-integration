@@ -4,10 +4,6 @@
 [![npm version](https://img.shields.io/npm/v/pi-matrix-integration.svg)](https://www.npmjs.com/package/pi-matrix-integration)
 [![CI](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/ci.yml/badge.svg)](https://github.com/r3dnl/pi-matrix-integration/actions/workflows/ci.yml)
 
-**Version 0.9.0**
-
-_Disclaimer - this is in beta: it has been developed and used on linux and mac, with quite a lot of personal use, but never on windows. Also only used with Element / Element X (not yet with matrix bridges). Use at your own risk._
-
 ## _Control your Pi terminal from anywhere, anytime_
 
 This is [pi-matrix-integration](https://github.com/r3dnl/pi-matrix-integration), an extension that connects a [Pi coding agent](https://pi.dev/) session to a [Matrix](https://matrix.org/) chat room. 
@@ -22,12 +18,27 @@ And you can seamlessly switch back and forth between the terminal and app.
 
 ---
 
-## Example
+## Use Cases
 
-<img src="docs/user/media/screenshot_pi-matrix-integration_element_subagents_and_rich_formatting.png" alt="Desktop Element - Sub-agents spawning and checking back in, milestones and rich formatting in an Element room" width="600px">
+### 1. Remote Control of your Pi agents
+
+### 2. Desktop Companion App
+### 3. Team access to agent without SSH access
+
+
+
+---
+
+## Examples
+
+<img src="docs/user/media/screenshot_pi-matrix-integration_element_subagents_and_rich_formatting.png" alt="Sub-agents spawning and checking back in, milestones and rich formatting in an Element room" width="600px">
 
 _Desktop Element - Sub-agents spawning and checking back in, milestones and rich formatting in an Element room_
 
+<img src="docs/user/media/screenshot_pi-matrix-integration_desktop_companion.png" alt="Using Element as a desktop companion app next to the terminal to keep a higher level overview of your Pi agent: the threads provide easy condensed access to all Pi sessions, the active thread summary keeps a summary-at-glance for your terminal session, and the thread conversation is a condensed overview of the terminal session, with only milestone and end-of-turn messages (no thinking)" width="600px">
+
+_Using Element as a desktop companion app next to the terminal to keep a higher level overview of your Pi agent: the threads provide easy condensed access to all Pi sessions, the active thread summary keeps a summary-at-glance for your terminal session, and the thread conversation is a condensed overview of the terminal session, with only milestone and end-of-turn messages (no thinking)_
+    
 ---
 
 ## Getting Started
@@ -96,7 +107,7 @@ Important milestone events get highlighted in the matrix room.
 
 Just record on your phone, and press send. The transcription will appear in the room.
 
-<img src="docs/user/media/screenshot_pi-matrix-integration_voice_message.png.png" alt="" width="600px">
+<img src="docs/user/media/screenshot_pi-matrix-integration_voice_message.png.png" alt="A voice message sent from a phone: press send in Element and the transcript arrives in the room" width="600px">
 
 
 
@@ -133,7 +144,7 @@ The picker answers in the room only — the terminal stays quiet. A fragment tha
 
 Keep things organized by running a Pi terminal session as a threaded conversation.
 
-<img src="docs/user/media/screenshot_pi-matrix-integration_threads_overview.png" alt="" width="600px">
+<img src="docs/user/media/screenshot_pi-matrix-integration_threads_overview.png" alt="Pi sessions in Element: each Pi session runs as its own thread inside one Matrix room" width="600px">
 
 ### **Watch your session get summarized**
 
@@ -143,10 +154,7 @@ The root message of a Matrix threaded conversation gets updated with a summary a
 
 ### **See subagents spawn and check back in**
 
-<img src="docs/user/media/screenshot_pi-marix-integration_subagents.png" alt="be notified when a subagent spawns, and when it checks back in with the result" width="600px">
-
-### **Remote terminal command invocation**
-
+<img src="docs/user/media/screenshot_pi-matrix-integration_subagents.png" alt="be notified when a subagent spawns, and when it checks back in with the result" width="600px">
 
 ---
 
