@@ -80,7 +80,8 @@ the extension count can never drift from what was actually installed.
 ## Giving the container a model
 
 Pi reads a model endpoint from `<agent-dir>/models.json` only — there is no
-environment variable for an arbitrary base URL. `docker/models.json` is
+environment variable for an arbitrary base URL. Copy `docker/models.json.example`
+to `docker/models.json` (gitignored — it names your host) and that file is
 bind-mounted read-only at `/home/node/.pi/agent/models.json` for the `e2e`
 service, so `make shell` starts with a usable model; pick it with `/model`
 (which reloads the file). Point `baseUrl` at your server and list its model

@@ -20,7 +20,9 @@ services:
       # This mount brings the evidence out of the ephemeral container for
       # `make e2e` and the nightly upload step.
       - ./artifacts:/home/node/work/artifacts
-      # A Pi model endpoint for the manual walkthrough (`make shell`).
+      # A Pi model endpoint for the manual walkthrough (`make shell`). Copy
+      # models.json.example to models.json first — it holds your own LLM
+      # host, so it is gitignored and never ships.
       # /model reloads it. The offline service deliberately has no provider
       # — it must stay unable to reach a model.
       - ./models.json:/home/node/.pi/agent/models.json:ro

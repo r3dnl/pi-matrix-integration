@@ -31,5 +31,8 @@ pi-matrix-integration-*.tgz
 # proposal docs (the architecture/ tree is shipped and tracked)
 docs/dev/proposals/
 
+# the LLM host and key of this machine, copied from models.json.example
+docker/models.json
+
 # private-identifier registry for tools/scan-secrets.mjs — never committed
 .secrets/
