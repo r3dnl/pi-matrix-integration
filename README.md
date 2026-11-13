@@ -218,4 +218,7 @@ Aliases: `/pi-help` (= `/matrix-help`), `/matrix-summarize-thread` (= `/matrix-t
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Attribution for Apache-2.0 dependencies: [NOTICE](NOTICE).
+MIT — see [LICENSE](LICENSE). That grant covers this package's own code; the
+[vendored QR sign-in files](NOTICE) stay Apache-2.0 (licence text shipped at
+[LICENSES/Apache-2.0.txt](LICENSES/Apache-2.0.txt)), as do the npm dependencies
+named there.

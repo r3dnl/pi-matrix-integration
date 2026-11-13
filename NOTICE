@@ -6,11 +6,17 @@ Copyright (c) 2026 Vincent Jansen
 This product includes software developed at
 The Matrix.org Foundation C.I.C. (https://matrix.org):
 
-  src/qr2025/ — vendored files implementing QR sign-in (MSC4108 /
+  src/qr2025/ — three vendored files implementing QR sign-in (MSC4108 /
   MSC4388) from the matrix-js-sdk prototype (PR matrix-org/matrix-js-sdk
-  #5219, tip commit 6c78790f, 2026-09-24).
-  Licensed under the Apache License, Version 2.0.
-  The original copyright and license headers are intact in those files.
+  #5219, tip commit 6c78790f, 2026-09-24):
+  MSC4108v2025SignInWithQR.ts, MSC4388RendezvousSession.ts,
+  MSC4388SecureChannel.ts.
+  Licensed under the Apache License, Version 2.0; the original copyright and
+  licence headers are intact in those files, and a copy of the licence text
+  ships with this product at LICENSES/Apache-2.0.txt.
+  The directory's other two files, index.ts (the probe that self-disables the
+  QR branch while the HPKE bindings are missing) and types.ts (shared plumbing),
+  are authored in this project and are MIT.
 
 This product depends on the following Apache-2.0-licensed components:
 
@@ -25,4 +31,6 @@ This product depends on the following Apache-2.0-licensed components:
   Matrix.org Foundation C.I.C.
 
 No source code from these dependencies is copied into this package; they are
-used as npm dependencies.
+used as npm dependencies and arrive with their own licence text. The Apache 2.0
+text applying to the vendored files above is reproduced at
+LICENSES/Apache-2.0.txt.

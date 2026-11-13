@@ -19,3 +19,20 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+This MIT grant covers the code this package authors. It does not cover the
+third-party components listed in NOTICE, which keep their own licences:
+
+  - src/qr2025/MSC4108v2025SignInWithQR.ts, MSC4388RendezvousSession.ts and
+    MSC4388SecureChannel.ts are vendored from a matrix-js-sdk pull request and
+    are Apache License 2.0; their upstream copyright and licence headers are
+    intact, and a copy of that licence ships in this package at
+    LICENSES/Apache-2.0.txt.
+  - The npm dependencies named in NOTICE (matrix-js-sdk,
+    @matrix-org/matrix-sdk-crypto-wasm, jsqr, matrix-encrypt-attachment) are
+    Apache 2.0 and arrive with their own licence text; they are not copied into
+    this package.
+  - src/qr2025/index.ts and src/qr2025/types.ts are this project's own files
+    and are MIT like the rest of the source.

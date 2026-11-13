@@ -78,12 +78,18 @@ The short version of the module map: `src/integration.ts` is the composition roo
 
 ## Vendored code
 
-`src/qr2025/` is vendored from a `matrix-js-sdk` pull request, Apache-2.0, headers intact, provenance in `NOTICE`. Do not edit those files. `tools/check-vendored.mjs` fails when the installed SDK starts exporting what the secure channel needs — at that point delete `src/qr2025/` and keep the attribution.
+The three `MSC*` files in `src/qr2025/` are vendored from a `matrix-js-sdk`
+pull request, Apache-2.0, headers intact, provenance in `NOTICE` and licence
+text shipped at `LICENSES/Apache-2.0.txt`. Do not edit those files.
+`src/qr2025/index.ts` and `types.ts` are this project's own (MIT): the probe and
+the shared plumbing. `tools/check-vendored.mjs` fails when the installed SDK
+starts exporting what the secure channel needs — at that point delete
+`src/qr2025/` and keep the attribution.
 
 ## Releasing
 
 1. Update `CHANGELOG.md` (Keep a Changelog) and bump `version` in `package.json`.
-2. Confirm `npm pack --dry-run` ships what you expect: sources, `agents/`, the docs and `NOTICE` — nothing from `state/`, `config/` or `manifests/`.
+2. Confirm `npm pack --dry-run` ships what you expect: sources, `agents/`, the docs, `LICENSE`, `LICENSES/Apache-2.0.txt` and `NOTICE` — nothing from `state/`, `config/` or `manifests/`.
 3. Run `npm test` and `npm run test:live` once, fully.
 4. Cold-install smoke, by hand (five minutes): `npm pack`, `pi install`
    the tarball against a clean Pi install (fresh $HOME or a fresh user

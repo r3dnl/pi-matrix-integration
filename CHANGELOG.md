@@ -150,6 +150,15 @@ come with a major version bump.
 
 ### Fixed
 
+- The Apache 2.0 text now travels with the package. Three files under
+  `src/qr2025/` are vendored from a `matrix-js-sdk` pull request and carry
+  Apache headers, but a recipient got a URL and no text. `LICENSES/Apache-2.0.txt`
+  is shipped and added to `package.json` `files`, so it is in the tarball;
+  `LICENSE` states plainly that its MIT grant covers this package's own code and
+  not those three files or the four Apache dependencies; and `NOTICE` names the
+  three vendored files. The directory's `index.ts` and `types.ts` are ours and
+  MIT — the previous blanket wording made them look upstream.
+
 - The voice docs named `ffmpeg` as a hard requirement. It is not one: a
   configured remote STT endpoint takes the clip before any local decode
   (`src/voice.ts:347`), so a host with `PI_MATRIX_STT_BASE_URL` set transcribes

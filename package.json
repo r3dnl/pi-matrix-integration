@@ -37,6 +37,7 @@
     "QUICKSTART.md",
     "CHANGELOG.md",
     "LICENSE",
+    "LICENSES/Apache-2.0.txt",
     "NOTICE"
   ],
   "peerDependencies": {
