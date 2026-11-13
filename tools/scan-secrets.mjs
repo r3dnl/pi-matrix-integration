@@ -35,6 +35,10 @@ const PATTERN =
 // Values that are placeholders by their own spelling (`your_…`, `${…}`,
 // `<REPLACE-ME>` — the angle-bracket convention the docker example files use).
 const PLACEHOLDER = /^(your|xxx|example|null|undefined|true|false|process|config|this|\$\{|\[|\{|\(|<)/i;
+// An UPPER_SNAKE name used as the value (`PI_MATRIX_PASSWORD`) is documentation
+// pointing at an environment variable, not a credential. Real tokens mix case
+// or are base64/hex; nothing a homeserver issues looks like a shell variable.
+const ENV_NAME = /^[A-Z][A-Z0-9_]{5,}$/;
 // Known-fake fixture values, pinned by the release plan (story 4). These
 // are the only credential-shaped literals allowed in the shipped tree;
 // growing this list is a review decision, never a silent edit to green CI.
@@ -112,6 +116,7 @@ export function scanText(text, relPath) {
     // `<REPLACE-ME>` in any spelling. Only a real `<` counts — a closing
     // bracket on its own would let a secret ending in `>` walk past.
     if (gap.includes("<") || raw.startsWith("<")) continue;
+    if (ENV_NAME.test(value)) continue;
     if (PLACEHOLDER.test(value) || ALLOWED.has(value)) continue;
     const line = text.slice(0, m.index).split("\n").length;
     hits.push(`${relPath}:${line}: ${key} assigned a ${value.length}-char literal`);
@@ -215,7 +220,7 @@ function selfCheck(identifiers) {
     const planted = path.join(dir, "planted.env.example");
     fs.writeFileSync(
       planted,
-      'HOMESERVER=https://example.test\npassword="Pp_planted_fake_9"\nAPI_KEY="your_api_key_here"\nREADER_PASSWORD=<DEMO-READER-PASSWORD>\n',
+      'HOMESERVER=https://example.test\npassword="Pp_planted_fake_9"\nAPI_KEY="your_api_key_here"\nREADER_PASSWORD=<DEMO-READER-PASSWORD>\nJUDGE_API_KEY=PI_MATRIX_JUDGE_API_KEY\nSECRET="Rot3ry_Master_Key"\n',
     );
     const found = scanFile(planted, "planted.env.example", identifiers);
     if (!found.some((h) => /password/.test(h))) throw new Error(`self-check: planted fake not detected (${found})`);
@@ -225,6 +230,11 @@ function selfCheck(identifiers) {
     // made the value group start after the bracket and read as a real literal.
     if (found.some((h) => /PASSWORD assigned/.test(h)))
       throw new Error(`self-check: angle-bracket placeholder flagged (${found})`);
+    // An UPPER_SNAKE value names an environment variable, it is not a secret.
+    if (found.some((h) => /JUDGE_API_KEY assigned/.test(h)))
+      throw new Error(`self-check: env-var-name value flagged (${found})`);
+    if (!found.some((h) => /SECRET assigned/.test(h)))
+      throw new Error(`self-check: mixed-case planted secret missed (${found})`);
 
     // A registry entry must bite, and the value must never be echoed.
     const canary = "canary.invalid.host.example";

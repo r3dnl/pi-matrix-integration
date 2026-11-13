@@ -70,9 +70,9 @@ come with a major version bump.
   committed and later deleted is still cloneable (824 blobs, ~1.5 s, so it runs
   in the nightly workflow, not the push gate); and `--registry <file>` reports
   private identifiers (hostnames, room ids, local paths) without ever echoing
-  the matched value. `--self-check` proves all four behaviours bite. Values
-  written as `<REPLACE-ME>` count as placeholders, so the docker example keeps
-  its convention.
+  the matched value. `--self-check` proves every behaviour bites. Values
+  written as `<REPLACE-ME>` or as an `UPPER_SNAKE_VARIABLE` count as
+  placeholders, so the docker example keeps its convention.
 - QUICKSTART now states when the login dialogue asks "Invite user to room":
   only when the room prompt's alias does not exist yet and the login creates
   the room. Joining an existing room skips the question — the trap that left
@@ -176,14 +176,13 @@ come with a major version bump.
   with an endpoint configured but the LAN down, the fallback is the failure the
   room gets told about.
 
-- `docker/.env.example` states what to substitute instead of presenting an
-  opaque string: `PI_MATRIX_READER_PASSWORD` and `PI_MATRIX_JUDGE_API_KEY`
-  carried 18- and 31-character literals that looked exactly like live values
-  (and were not — the live pair lives in the gitignored `docker/.env`, and
-  neither matches it). Both are now `<READER-PASSWORD>` and `<JUDGE-API-KEY>`,
-  the same convention the file already uses elsewhere. Anyone who copied the
-  old example literals into a deployment should treat them as public text and
-  replace them.
+- `docker/.env.example` says what to substitute. Its two credential fields
+  carried the environment-variable names (`PI_MATRIX_PASSWORD`, and the judge
+  key's env-var name) as the example values — which reads as documentation to a
+  human and as a secret to any scanner. They are now `<READER-PASSWORD>` and
+  `<JUDGE-API-KEY>`, the convention the file already uses elsewhere. Nothing was
+  exposed: the live pair lives in the gitignored `docker/.env` and neither value
+  matched it.
 - An ask-user questionnaire no longer answers itself when the pairing patches
   are missing. The room mirror pushed a snapshot of every buffered answer onto
   the answer channel flagged `partial: true` so the terminal tab followed the
