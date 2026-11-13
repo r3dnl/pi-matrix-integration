@@ -11,6 +11,11 @@ come with a major version bump.
 
 ### Added
 
+- `npm run hooks:install` points git at `.githooks/`, whose `pre-commit` runs
+  `tools/scan-secrets.mjs` before a commit is allowed to exist (~27 ms). CI
+  already ran that sweep on every push; this moves it in front of the commit.
+  Clones without the private registry get the name-based scan only.
+
 - A transcribed voice message now answers in the room: `🗣️ <transcript>`
   with the engine named underneath — the configured remote model id, or the
   local model directory suffixed `(local)` — so the sender sees what was

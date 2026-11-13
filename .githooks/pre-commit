@@ -1,0 +1,5 @@
+#!/bin/sh
+# Refuse a commit that carries a credential-shaped literal or a registered
+# private identifier. Runs in ~27 ms. The registry is private and gitignored,
+# so a clone without .secrets/private-identifiers.txt gets the name-based scan.
+exec node tools/scan-secrets.mjs

@@ -28,6 +28,12 @@ npm run test:integration             # manual: guards that the installed
                                      # ask-user-question package still carries
                                      # the local patch (maintainer machine;
                                      # never a gate)
+npm run hooks:install                # once per clone: a pre-commit hook runs
+                                     # tools/scan-secrets.mjs, so a credential
+                                     # or registered identifier is refused
+                                     # before the commit exists (~27 ms; CI
+                                     # runs the same sweep, and the nightly
+                                     # sweep covers history)
 npm run prepack                      # publish guard: runs the typecheck
 ```
 

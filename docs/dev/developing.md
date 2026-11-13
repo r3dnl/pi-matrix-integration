@@ -107,7 +107,12 @@ nothing in them identifies a real deployment. `tools/scan-secrets.mjs` enforces
 both: credential-shaped literals and anything listed in the private-identifier
 registry (see below). It runs in CI on the checkout and on the unpacked tarball,
 and the nightly workflow re-runs it over the whole git object database and with
-`gitleaks` as a second opinion. The live test tier reads its password from the
+`gitleaks` as a second opinion. To get the same sweep before a commit exists
+rather than after you push, run `npm run hooks:install` once per clone: it points
+git at `.githooks/`, whose `pre-commit` runs the scan (about 27 ms). It bites on
+credential-shaped literals and registered identifiers only — the scanner has no
+entropy check by design, so an unnamed `pw = "…"` passes and `gitleaks` in the
+nightly run is what looks for that. The live test tier reads its password from the
 environment, never from a file.
 
 ### The private-identifier registry

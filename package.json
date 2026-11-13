@@ -79,6 +79,7 @@
     "test:perf": "node test/perf.mjs",
     "typecheck": "tsc -p .",
     "lint": "eslint .",
+    "hooks:install": "git config core.hooksPath .githooks",
     "prepack": "npm run typecheck"
   },
   "pi": {
