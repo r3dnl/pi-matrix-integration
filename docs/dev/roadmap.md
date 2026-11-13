@@ -69,6 +69,7 @@ the [README](../../README.md); this page is intent, not status.
   release should warn when a file exists at a deleted tier, or whether we simply
   drop it and let the moved file be found where it is expected.
 - [ ] BUG / IMPROVEMENT - Thread mismatch detection: warn user if matrix messages come from a non-active thread (how to reproduce: start a new Pi session that spawns a fresh thread; in matrix open an old thread and send a message)
+- [ ] IMPROVEMENT - during login process, for username, add regexp rule explanation -> `[a-z0-9_]+`
 - [ ] IMPROVEMENT - `/matrix-status` shows the summarizer mode. Today a missing
   summarizer sub-agent drops the room into the in-session fallback silently: the
   warning is a log line only, so the room keeps working and nobody sees the
