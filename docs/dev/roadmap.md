@@ -82,6 +82,7 @@ the [README](../../README.md); this page is intent, not status.
 - [ ] IMPROVEMENT - when resuming a session, mark the milestone in the thread with `🎯 Milestone: Pi resumed this session`
 - [ ] IMPROVEMENT - use the poll for `@file` and `@@file` selector menu
 - [ ] IMPROVEMENT - the introduction tour gets spawned all at once atm; better to do this step-by-step
+- [ ] IMPROVEMENT - support the new "note" function of ask_user_question
 - [ ] FEATURE - concurrent sharing of one Matrix account across projects. Today the
   account directory holds the token, the Olm crypto store and `pi-matrix.lock`, so a
   second Pi session on the same `credentialsPath` fails soft by design (two Olm
