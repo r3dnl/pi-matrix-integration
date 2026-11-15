@@ -52,6 +52,10 @@ pi install npm:@juicesharp/rpiv-ask-user-question
 sh ~/.pi/agent/npm/node_modules/pi-matrix-integration/patches/rpiv-ask-user-question/apply.sh
 ```
 
+That path is where `pi install npm:` puts the package. An install from a
+checkout keeps the same script under the checkout itself, at
+`patches/rpiv-ask-user-question/apply.sh`.
+
 ## 2. Prepare the room
 
 1. Create the agent's account on your homeserver (see your server's

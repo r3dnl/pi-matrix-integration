@@ -9,6 +9,15 @@ come with a major version bump.
 
 ## [Unreleased]
 
+### Fixed
+
+- The install and configuration docs put the extension inside Pi's `pi -e`
+  package cache (`~/.pi/agent/tmp/extensions/`). An npm install lives at
+  `~/.pi/agent/npm/node_modules/pi-matrix-integration/`, which is where the
+  `apply.sh` command lines now point; both QUICKSTART and the questionnaire
+  guide also name the checkout path, so a source install is not sent looking in
+  the npm tree.
+
 ## [0.9.0] - 2026-11-15
 
 ### Added

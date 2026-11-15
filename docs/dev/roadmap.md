@@ -58,7 +58,8 @@ the [README](../../README.md); this page is intent, not status.
   are one and the same directory, and because the extension is a symlink into
   a source tree there, a config seeded at tier 3 is written into a git working
   tree. In the npm install most users get, `getExtensionDir()` resolves inside
-  Pi's package cache (`~/.pi/agent/tmp/extensions/`), which Pi reinstalls
+  the installed package (`~/.pi/agent/npm/node_modules/pi-matrix-integration/`),
+  which Pi reinstalls
   whenever the registry has a newer matching version — so a room, a
   credentials path or a profile sitting there is deleted by an update with no
   error, and the session falls back to defaults — the same lost-login symptom

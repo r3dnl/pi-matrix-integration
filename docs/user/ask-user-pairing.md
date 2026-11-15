@@ -31,6 +31,9 @@ package ships the patches, applied by one script:
 sh ~/.pi/agent/npm/node_modules/pi-matrix-integration/patches/rpiv-ask-user-question/apply.sh
 ```
 
+That is where `pi install npm:pi-matrix-integration` puts the package; an install
+from a checkout keeps the same script at `<checkout>/patches/rpiv-ask-user-question/apply.sh`.
+
 Check the state at any time:
 
 ```bash

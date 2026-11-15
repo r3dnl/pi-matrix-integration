@@ -11,7 +11,7 @@ install hold several homeserver/account/room combinations.
 |-------|----------|---------|
 | 1 | the `configPath` value passed in | explicit override |
 | 2 | `<cwd>/.pi/matrix/matrix-config.json[.c]` | project-local config, wins over everything below |
-| 3 | `~/.pi/agent/extensions/pi-matrix-integration/config/matrix-config.json[.c]` | the install's default config |
+| 3 | `<extension-dir>/config/matrix-config.json[.c]`, then `~/.pi/agent/extensions/pi-matrix-integration/config/` | the install's default config — one directory when the extension is a symlink into a checkout, and inside the reinstalled package (`~/.pi/agent/npm/node_modules/pi-matrix-integration/`) for an npm install, so it is not a place to keep user config |
 | 4 | `~/.config/pi-matrix-integration/config.json[.c]` | user-level config |
 
 `isActiveConfigProjectLocal` tells the rest of the code which world it is in, because project-local and global configurations carry credentials in different places. `getActiveConfigDir` returns the directory of whichever file won, and that is where profile state is written.

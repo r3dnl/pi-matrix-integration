@@ -25,10 +25,12 @@ The extension uses the **first config file that exists**:
 
 Tiers 3 and 4 are the same directory in a development install, where the
 extension is a symlink under `~/.pi/agent/extensions/` and its `config/`
-folder is the source tree. They are not a usable place for user config in an
-npm install: Pi caches such packages under `~/.pi/agent/tmp/extensions/` and
-reinstalls them whenever the registry has a newer matching version, so a file
-written inside the package does not survive an update. Pi defines no
+folder is the source tree. They are not a usable place for user config in
+the install `pi install npm:pi-matrix-integration` gives you: the package lives
+at `~/.pi/agent/npm/node_modules/pi-matrix-integration/` and Pi reinstalls it
+whenever the registry has a newer matching version, so a file written inside the
+package does not survive an update. (Pi's `~/.pi/agent/tmp/extensions/` cache is
+a different thing — it holds `pi -e` packages — and is replaced the same way.) Pi defines no
 user-level config directory for extensions — its only documented persistence
 surface is the session transcript (`pi.appendEntry()`), which is per session,
 not per machine. Use tier 2 for one project and tier 5 to cover a machine.

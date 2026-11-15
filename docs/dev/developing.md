@@ -91,11 +91,13 @@ starts exporting what the secure channel needs — at that point delete
 1. Update `CHANGELOG.md` (Keep a Changelog) and bump `version` in `package.json`.
 2. Confirm `npm pack --dry-run` ships what you expect: sources, `agents/`, the docs, `LICENSE`, `LICENSES/Apache-2.0.txt` and `NOTICE` — nothing from `state/`, `config/` or `manifests/`.
 3. Run `npm test` and `npm run test:live` once, fully.
-4. Cold-install smoke, by hand (five minutes): `npm pack`, `pi install`
-   the tarball against a clean Pi install (fresh $HOME or a fresh user
-   account), start a session, run `/matrix-login`. This is the check that
-   gates the artifact users actually receive; the live tier it exercises
-   is covered by the nightly workflow on its own.
+4. Cold-install smoke, by hand (five minutes), against the artifact users
+   actually receive: on a fresh `$HOME` (or a fresh user account) run
+   `pi install npm:pi-matrix-integration`, start a session, run
+   `/matrix-login`. Before the version is on the registry, rehearse with the
+   local bytes instead: `npm pack` and `pi install` the tarball. Either way
+   this is the check that gates the release; the live tier it exercises is
+   covered by the nightly workflow on its own.
 5. Tag `v<version>` and push the tag. The release workflow re-runs every gate,
    stages the tarball on npm through the package's trusted publisher (OIDC —
    there is no publish token in CI, and npm is removing direct publishing by
