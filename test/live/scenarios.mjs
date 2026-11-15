@@ -325,9 +325,16 @@ const SCENARIOS = [
       const { hit } = await c.room_("questionnaire in the room", (ev) =>
         ev.find((e) => e.body.includes(marker) && /Ship it\?/.test(e.body)), 30_000);
       await c.second.send(c.room, "1"); // the human taps option 1 in the room
-      await poll(30_000, () => answers.length > 0, "room answer emitted");
+      // Only the model-facing answer counts. `onPrompt` opens every
+      // questionnaire with a display-sync probe on the same channel — one
+      // `partial: true` emission with an empty answer set (ask-user-mirror.ts,
+      // 456f347) — so a poll on raw emissions settles on the probe before the
+      // room reply is even delivered, and the reply then lands in the NEXT
+      // scenario's mirror.
+      const modelAnswer = () => answers.filter((p) => !p.partial);
+      await poll(30_000, () => modelAnswer().length > 0, "room answer emitted");
       c.setOpenMirror(null);
-      const a = answers.at(-1);
+      const a = modelAnswer().at(-1);
       if (a.answers?.[0]?.optionIndexes?.join() !== "0") throw new Error(`wrong answer payload: ${JSON.stringify(a)}`);
       return { marker, answer: a };
     },
@@ -361,7 +368,10 @@ const SCENARIOS = [
       await c.second.send(c.room, "2");
       await new Promise((r) => setTimeout(r, 5_000)); // a full window for a late room answer
       c.setOpenMirror(null);
-      const forThisCall = answers.filter((a) => a.toolCallId === toolCallId);
+      // Display-sync emissions (`partial: true`, probe included) are terminal
+      // display traffic, not answers — the winner contract is about the
+      // model-facing set. See scenario 5 for the probe.
+      const forThisCall = answers.filter((a) => a.toolCallId === toolCallId && !a.partial);
       if (!terminalWon) throw new Error("terminal answer did not consume the mirror");
       if (forThisCall.length !== 1) throw new Error(`expected exactly one answer for ${toolCallId}, got ${forThisCall.length}: ${JSON.stringify(forThisCall)}`);
       if (forThisCall[0].answers?.[0]?.optionIndexes?.join() !== "0") throw new Error(`the winner should be the terminal option 1: ${JSON.stringify(forThisCall[0])}`);
