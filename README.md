@@ -43,7 +43,7 @@ _Using Element as a desktop companion app next to the terminal to keep a higher 
 ## Getting Started
 
 ### Pre-requisites
-- You need a personal Matrix account on your [matrix homeserver](https://matrix.org/homeserver/about/).
+- You need a personal Matrix account on your [matrix homeserver](https://matrix.org/homeserver/about/), and a client messaging app (I use [Element X and Desktop](https://element.io/en/download)).
 - A Matrix account for the Pi agent on that same (or federated[^1]) matrix homeserver — its own account, not your personal one — on any server with password login.
 - The easy setup below **requires** the agent account to be able to create rooms, set the room alias, and invite users. If your homeserver forbids that, use [Manual Room Setup](QUICKSTART.md#manual-room-setup) instead.
 
