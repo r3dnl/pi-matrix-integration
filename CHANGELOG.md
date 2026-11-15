@@ -9,6 +9,8 @@ come with a major version bump.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-15
+
 ### Added
 
 - `npm run hooks:install` points git at `.githooks/`, whose `pre-commit` runs
