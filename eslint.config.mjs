@@ -14,7 +14,10 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["node_modules/", "src/qr2025/"] },
+  // docker/my-demo-project is a gitignored local sandbox for the container
+  // demo — scratch extensions there are not part of the shipped tree and CI
+  // never sees them, so linting them only turns the gate red on a maintainer box.
+  { ignores: ["node_modules/", "src/qr2025/", "docker/my-demo-project/"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   { rules: { "no-undef": "off" } },
