@@ -9,8 +9,13 @@ on:
     tags:
       - "v*"
 
+# `id-token: write` is what lets npm fetch this run's OIDC claims and sign the
+# release (provenance); `contents: write` is what lets `gh release create` push
+# the release object with the default GITHUB_TOKEN. Without them the publish
+# step fails before it publishes anything.
 permissions:
-  contents: read
+  contents: write
+  id-token: write
 
 jobs:
   publish:
