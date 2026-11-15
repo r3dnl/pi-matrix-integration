@@ -96,7 +96,13 @@ starts exporting what the secure channel needs — at that point delete
    account), start a session, run `/matrix-login`. This is the check that
    gates the artifact users actually receive; the live tier it exercises
    is covered by the nightly workflow on its own.
-5. Tag `v<version>` and publish. The published tarball must be reproducible from the tag.
+5. Tag `v<version>` and push the tag. The release workflow re-runs every gate,
+   stages the tarball on npm through the package's trusted publisher (OIDC —
+   there is no publish token in CI, and npm is removing direct publishing by
+   token in January 2027), and opens the GitHub release from the CHANGELOG
+   section. Nothing is live yet: `npm stage list` prints the stage id, and
+   `npm stage approve <id> --otp <code>` puts the version on the registry.
+   The published tarball must be reproducible from the tag.
 
 Breaking changes to config keys or command names require a major bump. Both are user-facing surface.
 

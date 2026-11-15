@@ -1,8 +1,12 @@
 name: Release
 
-# Tag v* (story 16): pack, prove the tarball is clean and complete, publish
-# to npm with provenance, and cut the GitHub release from the CHANGELOG
-# section for that version.
+# Tag v* (story 16): pack, prove the tarball is clean and complete, stage it on
+# npm through trusted publishing (OIDC — no long-lived token), and cut the
+# GitHub release from the CHANGELOG section for that version. Staging is what
+# npm asks CI to use now that direct publishing by token is being removed
+# (January 2027): the run stages, a maintainer promotes with
+#   npm stage approve <stage-id> --otp <code>
+# so the version goes live only after a human with 2FA says so.
 
 on:
   push:
@@ -21,12 +25,14 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: npm # holds NPM_TOKEN; auditable, approvable
+    environment: npm # names the npm trusted publisher; holds no secret
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          # Node 22 ships npm 10.x, which has no `npm stage`. The trusted
+          # publisher's own docs example publishes on Node 24.
+          node-version: 24
           registry-url: https://registry.npmjs.org
       - run: npm ci
       - name: "Gate first: every check the PR gate runs"
@@ -44,10 +50,13 @@ jobs:
           tar xzf /tmp/pack/*.tgz -C /tmp/pack
           node tools/scan-secrets.mjs --dir /tmp/pack/package
           node tools/check-tarball.mjs
-      - name: Publish
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Stage the release
+        # Trusted publishing: npm authenticates with this run's OIDC token and
+        # generates the provenance attestation itself, so there is no token to
+        # hand it. `npm publish` here would fail E_STAGE_REQUIRED.
+        run: |
+          npm stage publish --provenance --access public
+          echo "::notice::v$GITHUB_REF_NAME staged on npm — promote it with: npm stage approve <stage-id> --otp <code> (npm stage list prints the id)"
       - name: GitHub release with the CHANGELOG section
         env:
           GH_TOKEN: ${{ github.token }}
