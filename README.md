@@ -51,10 +51,10 @@ _Using Element as a desktop companion app next to the terminal to keep a higher 
 ### Install
 
 ```sh
-pi install git:github.com/r3dnl/pi-matrix-integration
+pi install npm:pi-matrix-integration
 echo 'Restart / reload your Pi session.'
 ```
-(Once the npm publish lands: `pi install npm:pi-matrix-integration`.)
+(From a git tag: `pi install git:github.com/r3dnl/pi-matrix-integration@v0.9.0`. From a checkout: `pi install /path/to/pi-matrix-integration`.)
 
 See [quickstart](QUICKSTART.md) for details and integration with other extensions (decision dialogue, subagents) and tools (voice msg transcription).
 

@@ -18,7 +18,7 @@ render best in Element Desktop; in Element X they are a Labs feature.
 pi install npm:pi-matrix-integration
 ```
 
-(As a beta from git: `pi install git:github.com/r3dnl/pi-matrix-integration@v0.9.0`.
+(Pinned to the release tag: `pi install git:github.com/r3dnl/pi-matrix-integration@v0.9.0`.
 From a checkout: `pi install /path/to/pi-matrix-integration`.)
 
 ### 1b. Voice messages (optional)
