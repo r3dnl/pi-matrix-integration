@@ -71,8 +71,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version="${GITHUB_REF_NAME#v}"
-          body=$(awk -v v="## \\[$version\\]" '
-            $0 ~ v {found=1; next}
+          # A literal prefix test, not a regex. awk resolves escapes in a -v
+          # value before it builds the dynamic regex, so "## \[0.9.0\]" arrives
+          # as "## [[0.9.0]]" — a broken bracket expression that matches
+          # nothing. That is how v0.9.0 shipped with the fallback note instead
+          # of its CHANGELOG section.
+          body=$(awk -v h="## [$version]" '
+            index($0,h)==1 {found=1; next}
             found && /^## \[/ {exit}
             found {print}' CHANGELOG.md)
           if [ -z "$body" ]; then body="Release $GITHUB_REF_NAME"; fi
