@@ -66,7 +66,7 @@ See [quickstart](QUICKSTART.md) for details and integration with other extension
 | Feature | What you get |
 |---|---|
 | **Full autonomy** | Your own Pi harness, your own messaging server — fully integrated, no SaaS in between. |
-| **Steer from your phone** | Reply in the room and Pi picks it up. Terminal input echoes to the room as `🧑 User: …`, room input shows in the terminal as `[Matrix] …`, so you always know where an input came from. → [Example](#steer-from-your-phone) |
+| **Steer from your phone** | Full 2-way communication between Pi and Matrix. Reply in the room and Pi picks it up. Typing terminal input echoes to the room as `🧑 User: …`, room input shows in the terminal as `[Matrix] …`, so you always know where an input came from. → [Example](#steer-from-your-phone) |
 | **Milestones** | The room gets highlighted `🎯` milestones, TODO progress, session/compact/model events and each turn's final answer (`💬 Pi: …`), so you know what the agent is doing from anywhere. → [Example](#milestones) |
 | **Drop a voice message** | Record on your phone and press send: the transcript lands in the Pi terminal, plus an echo in the room naming the engine that produced it (remote STT model or local Whisper). → [Example](#drop-a-voice-message) |
 | **Attach a file to the Pi session** | `@` picks a workspace file for the agent out of the room. → [Example](#attach-a-file-to-pi-terminal-session) |
