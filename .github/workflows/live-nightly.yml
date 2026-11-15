@@ -40,11 +40,12 @@ jobs:
       # local and gitignored, so a runner scans without it unless one is
       # supplied as a secret.
       - name: Credential and identifier scan over all git objects
-        # Drop continue-on-error once the history scrub (git filter-repo,
-        # replace-text spec) lands; until then the estate identifiers in old
-        # commits are known and reported here, not hidden.
-        continue-on-error: true
+        # The history scrub landed and this scan is green over the whole object
+        # database, so a hit here is new damage: fail the nightly on it.
         run: node tools/scan-secrets.mjs --history
+      # gitleaks stays a cross-check and not a gate: it has no registry of our
+      # identifiers, and its entropy rules flag the fixture tokens we ship on
+      # purpose (syt_fixture_access_token, fake-token), so it informs.
       - name: gitleaks (independent cross-check, never gates a push)
         continue-on-error: true
         uses: gitleaks/gitleaks-action@v2
