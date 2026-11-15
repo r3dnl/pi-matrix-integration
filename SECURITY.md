@@ -19,8 +19,9 @@ What to include:
 
 Expected response: an acknowledgement within three working days and a
 status update (fixed, declined, or needs coordination with the Matrix
-homeserver or the Pi host) within ten. Never post a working exploit in a
-public issue, even after reporting privately.
+homeserver or the Pi host) within ten. Not a guarantee since this is atm
+a 1-person voluntary effort.
+Never post a working exploit in a public issue, even after reporting privately.
 
 ## What this extension touches
 

@@ -15,15 +15,17 @@ the [README](../../README.md); this page is intent, not status.
   container harness and its Makefile are gone. The nightly workflow runs
   the live tier directly; the cold-install check is a five-minute manual
   release step)
+- [X] default to `"@tintinweb/pi-subagents"`
+- [ ] Test (and fix) for other matrix messaging clients, besides Element
+- [ ] Improve `SECURITY.md`: make this really process focussed, and move security dev guidance to docs/dev/security-guidance.md
+
+## Candidates for 0.10.0
+
 - [ ] release the `mtx` account tool — the live-tier account manifests
   (`test/live/accounts-manifest.example.json`) are written in its format;
   it is maintainer-local today, releasing it lets others provision their
   own live-tier test accounts
-- [X] default to `"@tintinweb/pi-subagents"`
-
-
-## Candidates for 0.10.0
-
+- [ ] FEATURE - attach an image (or any other file type?) to the matrix room and upload to the Pi terminal (consider security implications)
 - [ ] BUG - Decision Dialogue - sometimes with the lead-in user message gets shown before the ask_user_question dialogue (correct) and then repeats again after the dialogue has been answered (incorrect).
 - [ ] BUG - `"pi-subagents"` fix (dependency upstream) -> this impacts also the summarizer thread that bleeds into the main terminal session (note: `"@tintinweb/pi-subagents"` recommended for now)
 - [ ] IMPROVEMENT - Config writes must follow the `last-active-profile`

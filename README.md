@@ -12,7 +12,6 @@ Pi normally runs in a terminal, which is nice. But not when you are away from th
 
 Pi posts what it is doing into the matrix messaging room - milestones, questions, final answers - and you can reply. Just like the terminal. But now from your phone, tablet or PC.
 
-
 And you can seamlessly switch back and forth between the terminal and app.
 
 ---
@@ -25,8 +24,8 @@ Matrix provides messaging access from desktop, tablet and mobile devices to the 
 ### 2. Desktop Companion App
 Although not the original reason why I created this extension, I find that running Element on the desktop *next* to the Pi terminal session is really usefull as a high level overview of my Pi sessions (see example 2)
 
-### 3. Team access to Pi terminal agent without SSH access
-If you work with a team, but don't want the hassle of providing ssh access to each team member to the terminal, you can setup a matrix room with the team members, including your pi agent. This is a good idea anyway because it gives your team / organization autonomous messaging, and you can fully tailor it to your security and compliance needs.
+### 3. Team access to Pi terminal agent without SSH
+Provide access to Pi sessions for team members without having to open up SSH and all its security hardening.
 
 <img src="docs/user/media/screenshot_pi-matrix-integration_element_subagents_and_rich_formatting.png" alt="Sub-agents spawning and checking back in, milestones and rich formatting in an Element room" width="600px">
 
@@ -76,7 +75,7 @@ See [quickstart](QUICKSTART.md) for details and integration with other extension
 | **Watch the session get summarized** | That thread's root message is rewritten in place with topic, milestones and decisions as the session progresses. Fast and [configurable](docs/user/configuration.md#threading-and-summaries) (incl custom LLM) → [Example](#watch-your-session-get-summarized) |
 | **See subagents spawn and check back in** | Background spawns and their results post to the room and fold into their spawn lines. → [Example](#see-subagents-spawn-and-check-back-in) |
 | **Commands from the room** | `/matrix-*`, other extensions' commands and `/skill:` calls run when typed in the room — the full surface, membership-gated. (Pi built-ins like `/new` stay terminal-only.) → [Commands](#commands) |
-| **Security by default** | End-to-end encryption support, secure terminal login, agent-owned account, credentials in a `0600` file. |
+| **Security by default** | End-to-end encrypted rooms support, secure terminal login, agent-owned account, access token based credentials, in a `0600` file outside project dir, zero 3rd party traffic / telemetry. |
 | **Compliance ready** | Pi and matrix allow for tailoring the setup to your compliance needs. |
 
 ---
